@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bboj4f76kwbhq"
+path="res://.godot/imported/Bird Cry 1.ogg-51d435e8fa069463b459c22db2861a64.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/sound/Easter Eggs/Bird Cry 1.ogg"
+dest_files=["res://.godot/imported/Bird Cry 1.ogg-51d435e8fa069463b459c22db2861a64.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

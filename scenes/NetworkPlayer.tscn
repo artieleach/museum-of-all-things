@@ -1,0 +1,58 @@
+[gd_scene load_steps=7 format=3 uid="uid://dx5qn3m8fr2wk"]
+
+[ext_resource type="Script" uid="uid://b4w1fxbmkdcgh" path="res://scenes/Player.gd" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://dxfoujgkv1e2y" path="res://scenes/FootstepPlayer.tscn" id="2_footstep"]
+[ext_resource type="Material" uid="uid://dvpskin12345" path="res://assets/textures/player_skin.tres" id="3_skin"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_feet"]
+size = Vector3(0.6, 0.2, 0.6)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.3
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.3
+height = 1.4
+
+[node name="NetworkPlayer" type="CharacterBody3D" groups=["Player", "NetworkPlayer"]]
+collision_layer = 524288
+collision_mask = 524289
+script = ExtResource("1_player")
+jump_impulse = 12
+smooth_movement = true
+max_speed_walk = 6
+
+[node name="Pivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Pivot"]
+current = false
+far = 2000.0
+
+[node name="RayCast3D" type="RayCast3D" parent="Pivot/Camera3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+target_position = Vector3(0, -3, 0)
+collision_mask = 524290
+
+[node name="Feet" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+shape = SubResource("BoxShape3D_feet")
+
+[node name="CollisionShape2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="FootstepPlayer" parent="." instance=ExtResource("2_footstep")]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+mesh = SubResource("CapsuleMesh_body")
+surface_material_override/0 = ExtResource("3_skin")
+
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
+pixel_size = 0.01
+text = "Player"
+font_size = 32
+outline_size = 8
+billboard = 1

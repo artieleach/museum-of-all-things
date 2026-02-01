@@ -1,0 +1,53 @@
+[gd_scene load_steps=4 format=3 uid="uid://byb3uy8rswlaf"]
+
+[ext_resource type="Script" uid="uid://dbf5cmxi6qsaj" path="res://scenes/items/RichTextItem.gd" id="1_xha8l"]
+[ext_resource type="Theme" uid="uid://cr3fyffqdk4yo" path="res://assets/resources/rich_text_theme.tres" id="2_k1xr6"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_54vlm"]
+viewport_path = NodePath("SubViewport")
+
+[node name="RichTextItem" type="Node3D"]
+script = ExtResource("1_xha8l")
+
+[node name="Sprite3D" type="Sprite3D" parent="." groups=["render_distance"]]
+visibility_range_end = 30.0
+visibility_range_end_margin = 3.0
+visibility_range_fade_mode = 1
+pixel_size = 0.004
+texture_filter = 5
+texture = SubResource("ViewportTexture_54vlm")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+disable_3d = true
+transparent_bg = true
+use_occlusion_culling = true
+size = Vector2i(600, 1000)
+size_2d_override = Vector2i(600, 2500)
+render_target_clear_mode = 2
+render_target_update_mode = 1
+
+[node name="Control" type="Control" parent="SubViewport"]
+clip_contents = true
+custom_minimum_size = Vector2(600, 2500)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="SubViewport/Control"]
+custom_minimum_size = Vector2(512, 512)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_right = 0.95
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme = ExtResource("2_k1xr6")
+bbcode_enabled = true
+fit_content = true
+scroll_active = false

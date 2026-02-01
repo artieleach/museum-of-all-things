@@ -1,0 +1,76 @@
+[gd_scene load_steps=4 format=3 uid="uid://f0jxppprskc3"]
+
+[ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_cc3xp"]
+[ext_resource type="Script" uid="uid://pm3ql2l7i8d8" path="res://scenes/menu/DataSettings.gd" id="2_lrc5t"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_ktlel"]
+font_size = 64
+
+[node name="DataSettings" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_cc3xp")
+script = ExtResource("2_lrc5t")
+
+[node name="MainOptions" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainOptions"]
+layout_mode = 2
+text = "Data Settings"
+label_settings = SubResource("LabelSettings_ktlel")
+
+[node name="Back" type="Button" parent="MainOptions"]
+layout_mode = 2
+text = "Back"
+
+[node name="CacheOptions" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Spacer5" type="Label" parent="CacheOptions"]
+layout_mode = 2
+text = "
+"
+
+[node name="CacheLabel" type="Label" parent="CacheOptions"]
+layout_mode = 2
+text = "Cache"
+
+[node name="ClearCache" type="Button" parent="CacheOptions"]
+layout_mode = 2
+text = "Clear Cache"
+
+[node name="Spacer6" type="Label" parent="CacheOptions"]
+layout_mode = 2
+text = "
+"
+
+[node name="CacheLabel2" type="Label" parent="CacheOptions"]
+layout_mode = 2
+text = "Cache Size Limit"
+
+[node name="CacheSizeLimit" type="HSlider" parent="CacheOptions"]
+layout_mode = 2
+min_value = 1.0
+max_value = 20.0
+value = 4.0
+allow_greater = true
+
+[node name="CacheSizeLimitValue" type="Label" parent="CacheOptions"]
+layout_mode = 2
+text = "4 Gb"
+horizontal_alignment = 1
+
+[node name="CheckBox" type="CheckBox" parent="CacheOptions"]
+layout_mode = 2
+button_pressed = true
+text = "Automatically limit cache size (on quit)"
+
+[connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
+[connection signal="pressed" from="MainOptions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="CacheOptions/ClearCache" to="." method="_on_clear_cache_pressed"]
+[connection signal="value_changed" from="CacheOptions/CacheSizeLimit" to="." method="_on_cache_size_limit_value_changed"]
+[connection signal="toggled" from="CacheOptions/CheckBox" to="." method="_check_box_toggled"]

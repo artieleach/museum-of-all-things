@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cowbiuxj2uwa8"
+path="res://.godot/imported/Leaves 3.ogg-cd684f3be9dfa0967bd0397556a626d2.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/sound/Environmental Ambience/Leaves 3.ogg"
+dest_files=["res://.godot/imported/Leaves 3.ogg-cd684f3be9dfa0967bd0397556a626d2.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

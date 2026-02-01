@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bnxnoh1qush0a"
+path="res://.godot/imported/Easter Eggs pen drop 1.ogg-c710822a0b679dc1c5a91dfb16fc6154.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/sound/Easter Eggs/Easter Eggs pen drop 1.ogg"
+dest_files=["res://.godot/imported/Easter Eggs pen drop 1.ogg-c710822a0b679dc1c5a91dfb16fc6154.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
