@@ -234,6 +234,9 @@ func _teleport_all_network_players(to_hall, rot_diff: float) -> void:
 		var all_players = main_node.get_all_players()
 		for player in all_players:
 			if player != _player and is_instance_valid(player):
+				# Skip mounted players - they follow their mount
+				if "_is_mounted" in player and player._is_mounted:
+					continue
 				# Teleport network players to the destination
 				player.global_position = to_hall.position
 				player.global_rotation.y += rot_diff

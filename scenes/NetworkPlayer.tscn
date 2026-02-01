@@ -42,6 +42,11 @@ shape = SubResource("BoxShape3D_feet")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
 shape = SubResource("CapsuleShape3D_body")
 
+[node name="CeilingRayCast" type="RayCast3D" parent="."]
+enabled = true
+target_position = Vector3(0, 2.5, 0)
+collision_mask = 1
+
 [node name="FootstepPlayer" parent="." instance=ExtResource("2_footstep")]
 
 [node name="BodyMesh" type="MeshInstance3D" parent="."]

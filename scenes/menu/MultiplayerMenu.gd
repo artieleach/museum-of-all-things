@@ -80,7 +80,7 @@ func _on_host_pressed() -> void:
 
 func _on_join_pressed() -> void:
 	_show_state(MenuState.JOIN)
-	join_address_input.text = "localhost"
+	join_address_input.text = "frogwizard.online"
 	join_port_input.text = str(NetworkManager.DEFAULT_PORT)
 	join_name_input.text = "Player"
 

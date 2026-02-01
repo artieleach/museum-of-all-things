@@ -41,6 +41,10 @@ var _has_rider: bool = false
 var mount_peer_id: int = -1
 const MOUNT_HEIGHT_OFFSET: float = 1.7
 
+# Stacking collision constants
+const STANDING_BODY_HEIGHT: float = 1.7      # Full player height when standing
+const CROUCHING_BODY_HEIGHT: float = 0.68    # Full player height when crouched (40%)
+
 var _joy_right_x = JOY_AXIS_RIGHT_X
 var _joy_right_y = JOY_AXIS_RIGHT_Y
 
@@ -132,6 +136,15 @@ func _unhandled_input(event):
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):
+	# If mounted, follow mount's position and skip all other processing
+	if _is_mounted:
+		if is_instance_valid(mounted_on):
+			global_position = mounted_on.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
+		else:
+			# Mount became invalid, force dismount
+			execute_dismount()
+		return
+
 	# Interpolate remote player positions
 	if not is_local and _has_network_target:
 		global_position = global_position.lerp(_target_position, INTERPOLATION_SPEED * delta)
@@ -139,11 +152,6 @@ func _physics_process(delta):
 		$Pivot.rotation.x = lerp_angle($Pivot.rotation.x, _target_pivot_rot_x, INTERPOLATION_SPEED * delta)
 		$Pivot.position.y = lerp($Pivot.position.y, _target_pivot_pos_y, INTERPOLATION_SPEED * delta)
 		_update_crouch_body()
-
-	# If mounted, follow mount's position
-	if _is_mounted and is_instance_valid(mounted_on):
-		global_position = mounted_on.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
-		return
 
 	if not _enabled or not is_local:
 		return
@@ -190,7 +198,8 @@ func _physics_process(delta):
 	if Input.is_action_pressed("crouch") and not fully_crouched:
 		$Pivot.global_translate(Vector3(0, -crouch_speed * delta, 0))
 	elif not Input.is_action_pressed("crouch") and not fully_standing:
-		$Pivot.global_translate(Vector3(0, crouch_speed * delta, 0))
+		if _can_uncrouch():
+			$Pivot.global_translate(Vector3(0, crouch_speed * delta, 0))
 
 	# Update body collision and visual based on crouch
 	_update_crouch_body()
@@ -330,12 +339,27 @@ func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	mount_peer_id = target_peer_id
 	_is_mounted = true
 
-	# Disable collision while mounted
-	set_collision_layer_value(20, false)
-	set_collision_mask_value(1, false)
+	# Clear velocity and disable all collision while mounted
+	velocity = Vector3.ZERO
+	collision_layer = 0
+	collision_mask = 0
+
+	# Disable collision shapes entirely
+	if has_node("CollisionShape2"):
+		$CollisionShape2.disabled = true
+	if has_node("Feet"):
+		$Feet.disabled = true
+
+	# Remove from Player group to prevent triggering area detections
+	if is_in_group("Player"):
+		remove_from_group("Player")
 
 	# Disable movement
 	_enabled = false
+
+	# Force rider to crouched position immediately
+	$Pivot.position.y = crouching_height
+	_update_crouch_body()
 
 	# Tell mount they have a rider
 	target._accept_rider(self)
@@ -348,6 +372,16 @@ func execute_dismount() -> void:
 		_is_mounted = false
 		mounted_on = null
 		mount_peer_id = -1
+		# Re-enable collision shapes in case we got here from invalid mount
+		if has_node("CollisionShape2"):
+			$CollisionShape2.disabled = false
+		if has_node("Feet"):
+			$Feet.disabled = false
+		collision_layer = 524288
+		collision_mask = 524289
+		# Re-add to Player group
+		if not is_in_group("Player"):
+			add_to_group("Player")
 		return
 
 	# Get dismount position (offset to the side of mount)
@@ -357,12 +391,23 @@ func execute_dismount() -> void:
 	# Tell mount we're leaving
 	mounted_on._remove_rider(self)
 
-	# Re-enable collision
-	set_collision_layer_value(20, true)
-	set_collision_mask_value(1, true)
+	# Re-enable collision shapes
+	if has_node("CollisionShape2"):
+		$CollisionShape2.disabled = false
+	if has_node("Feet"):
+		$Feet.disabled = false
+
+	# Re-enable collision (layer 20 = Player Body, mask 1 = Static World, mask 20 = other players)
+	collision_layer = 524288  # Layer 20
+	collision_mask = 524289   # Layers 1 and 20
+
+	# Re-add to Player group
+	if not is_in_group("Player"):
+		add_to_group("Player")
 
 	# Move to dismount position
 	global_position = dismount_pos
+	velocity = Vector3.ZERO
 
 	# Re-enable movement for local player
 	if is_local:
@@ -385,27 +430,71 @@ func _remove_rider(rider: Node) -> void:
 	if mounted_by == rider:
 		mounted_by = null
 		_has_rider = false
+
 		if OS.is_debug_build():
 			print("Player: Removed rider ", rider.name)
 
-func apply_network_mount_state(is_mounted: bool, peer_id: int, mount_node: Node) -> void:
+func apply_network_mount_state(is_mounted_state: bool, peer_id: int, mount_node: Node) -> void:
 	# Called for remote players to sync mount state
-	_is_mounted = is_mounted
+	_is_mounted = is_mounted_state
 	mount_peer_id = peer_id
 	mounted_on = mount_node
 
-	if is_mounted and is_instance_valid(mount_node):
-		set_collision_layer_value(20, false)
+	if is_mounted_state and is_instance_valid(mount_node):
+		# Disable all collision while mounted
+		velocity = Vector3.ZERO
+		collision_layer = 0
+		collision_mask = 0
+		if has_node("CollisionShape2"):
+			$CollisionShape2.disabled = true
+		if has_node("Feet"):
+			$Feet.disabled = true
+		# Remove from Player group to prevent triggering area detections
+		if is_in_group("Player"):
+			remove_from_group("Player")
+		# Force crouched position
+		$Pivot.position.y = crouching_height
+		_update_crouch_body()
 	else:
-		set_collision_layer_value(20, true)
+		# Re-enable collision shapes
+		if has_node("CollisionShape2"):
+			$CollisionShape2.disabled = false
+		if has_node("Feet"):
+			$Feet.disabled = false
+		# Re-enable collision
+		collision_layer = 524288  # Layer 20
+		collision_mask = 524289   # Layers 1 and 20
+		# Re-add to Player group
+		if not is_in_group("Player"):
+			add_to_group("Player")
 		mounted_on = null
 		mount_peer_id = -1
 
-func _update_crouch_body() -> void:
-	# Calculate crouch factor (0 = standing, 1 = fully crouched)
+func _get_crouch_factor() -> float:
 	var current_height = $Pivot.position.y
-	var crouch_factor = 1.0 - (current_height - crouching_height) / (starting_height - crouching_height)
-	crouch_factor = clamp(crouch_factor, 0.0, 1.0)
+	var factor = 1.0 - (current_height - crouching_height) / (starting_height - crouching_height)
+	return clamp(factor, 0.0, 1.0)
+
+func _can_uncrouch() -> bool:
+	if not has_node("CeilingRayCast"):
+		return true
+
+	var ceiling_ray = $CeilingRayCast
+
+	var current_height = lerp(STANDING_BODY_HEIGHT, CROUCHING_BODY_HEIGHT, _get_crouch_factor())
+	var target_height = STANDING_BODY_HEIGHT
+
+	var clearance_needed = target_height - current_height + 0.1
+	if clearance_needed <= 0:
+		return true
+
+	ceiling_ray.target_position = Vector3(0, current_height + clearance_needed, 0)
+	ceiling_ray.force_raycast_update()
+
+	return not ceiling_ray.is_colliding()
+
+func _update_crouch_body() -> void:
+	var crouch_factor = _get_crouch_factor()
 
 	# Scale factor for crouched state (crouch reduces height to 1/3)
 	var height_scale = 1.0 - (crouch_factor * 0.6)  # Crouched is 40% of standing height

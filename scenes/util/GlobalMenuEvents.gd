@@ -25,6 +25,7 @@ signal multiplayer_started
 signal multiplayer_ended
 signal skin_selected(url: String, texture: ImageTexture)
 signal skin_reset
+signal quit_requested
 
 func emit_ui_cancel_pressed():
 	emit_signal("ui_cancel_pressed")
@@ -100,3 +101,6 @@ func emit_skin_selected(url: String, texture: ImageTexture):
 
 func emit_skin_reset():
 	emit_signal("skin_reset")
+
+func emit_quit_requested():
+	emit_signal("quit_requested")

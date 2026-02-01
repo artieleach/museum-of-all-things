@@ -5,6 +5,7 @@ extends Node
 @export var NetworkPlayer : PackedScene = preload("res://scenes/NetworkPlayer.tscn")
 var _player
 var _network_players: Dictionary = {}  # peer_id -> player node
+@onready var player_list_overlay = $TabMenu/PlayerListOverlay
 
 @export var smooth_movement = false
 @export var smooth_movement_dampening = 0.001
@@ -60,6 +61,7 @@ func _ready():
 	GlobalMenuEvents.open_terminal_menu.connect(_use_terminal)
 	GlobalMenuEvents.skin_selected.connect(_on_skin_selected)
 	GlobalMenuEvents.skin_reset.connect(_on_skin_reset)
+	GlobalMenuEvents.quit_requested.connect(_on_quit_requested)
 
 	# Load saved skin
 	_load_saved_skin()
@@ -260,6 +262,13 @@ func _input(event):
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
+	# Tab key for player list overlay (only in multiplayer, not XR, not in menus)
+	if _is_multiplayer_game and not Util.is_xr() and not $CanvasLayer.visible:
+		if event.is_action_pressed("show_player_list"):
+			player_list_overlay.visible = true
+		elif event.is_action_released("show_player_list"):
+			player_list_overlay.visible = false
+
 
 func _process(delta: float) -> void:
 	$FpsLabel.text = str(Engine.get_frames_per_second())
@@ -456,6 +465,14 @@ func _on_network_server_disconnected() -> void:
 	_end_multiplayer_session()
 	_open_main_menu()
 
+func _on_quit_requested() -> void:
+	if _is_multiplayer_game:
+		NetworkManager.disconnect_from_game()
+		_end_multiplayer_session()
+		_open_main_menu()
+	else:
+		get_tree().quit()
+
 func _on_network_player_info_updated(peer_id: int) -> void:
 	# Update network player's name, color, and skin when info is received/changed
 	if _network_players.has(peer_id):
@@ -498,6 +515,21 @@ func _get_player_by_peer_id(peer_id: int) -> Node:
 	elif _network_players.has(peer_id):
 		return _network_players[peer_id]
 	return null
+
+func _on_teleport_to_player(peer_id: int) -> void:
+	var target = _get_player_by_peer_id(peer_id)
+	if target and is_instance_valid(target):
+		# Dismount if currently mounted
+		if _player.has_method("execute_dismount") and _player._is_mounted:
+			_player.execute_dismount()
+
+		# Teleport 2 meters behind target player
+		var offset = target.global_transform.basis.z * 2.0
+		_player.global_position = target.global_position + offset
+		_player.look_at(target.global_position, Vector3.UP)
+
+		if OS.is_debug_build():
+			print("Main: Teleported to player ", peer_id)
 
 # Mounting system functions
 func _request_mount(target: Node) -> void:

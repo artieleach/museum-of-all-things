@@ -1,0 +1,14 @@
+[Unit]
+Description=Museum of All Things Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=artie
+WorkingDirectory=/home/artie/MOAT
+ExecStart=/home/artie/MOAT/MuseumOfAllThings_Server.sh --headless --server --port 7777
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://btdrwyul4s0cv" path="res://scenes/CacheCleaner.tscn" id="7_lsl8e"]
 [ext_resource type="AudioStream" uid="uid://b1h0hsbf5yxji" path="res://assets/sound/UI/UI Game Launch Sting/Game Launch Sting.ogg" id="9_ketwq"]
 [ext_resource type="PackedScene" uid="uid://bmp7qk2xnj5vy" path="res://scenes/menu/MultiplayerMenu.tscn" id="10_mpmenu"]
+[ext_resource type="PackedScene" uid="uid://bj7vvqjer0u7e" path="res://scenes/menu/PlayerListOverlay.tscn" id="11_plyrovly"]
 
 [node name="Main" type="Node" unique_id=557895252]
 script = ExtResource("1_d7g3n")
@@ -74,6 +75,11 @@ visible = false
 light_energy = 0.35
 sky_mode = 1
 
+[node name="TabMenu" type="CanvasLayer" parent="." unique_id=747814878]
+
+[node name="PlayerListOverlay" parent="TabMenu" unique_id=355744873 instance=ExtResource("11_plyrovly")]
+visible = false
+
 [connection signal="resume" from="CanvasLayer/Settings" to="." method="_on_settings_back"]
 [connection signal="settings" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_settings"]
 [connection signal="start" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_start_pressed"]
@@ -82,6 +88,7 @@ sky_mode = 1
 [connection signal="resume" from="CanvasLayer/PauseMenu" to="." method="_on_main_menu_start_pressed"]
 [connection signal="return_to_lobby" from="CanvasLayer/PauseMenu" to="." method="_on_pause_menu_return_to_lobby"]
 [connection signal="settings" from="CanvasLayer/PauseMenu" to="." method="_on_pause_menu_settings"]
+[connection signal="teleport_to_player" from="CanvasLayer/PauseMenu" to="." method="_on_teleport_to_player"]
 [connection signal="resume" from="CanvasLayer/PopupTerminalMenu" to="." method="_on_main_menu_start_pressed"]
 [connection signal="back" from="CanvasLayer/MultiplayerMenu" to="." method="_on_multiplayer_menu_back"]
 [connection signal="start_game" from="CanvasLayer/MultiplayerMenu" to="." method="_on_multiplayer_start_game"]
