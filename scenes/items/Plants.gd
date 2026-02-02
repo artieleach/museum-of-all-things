@@ -6,29 +6,29 @@ extends Node3D
 @export var area_size: Vector3 = Vector3(10, 0, 10)
 @export var instance_count: int = 100
 @export var max_leaves_per_plant: int = 10
-@export var max_leaf_scale = 2
-@export var min_leaf_scale = 0.25
+@export var max_leaf_scale: float = 2
+@export var min_leaf_scale: float = 0.25
 
 var multimesh_instance: MultiMeshInstance3D
 
 func _ready() -> void:
 	multimesh_instance = MultiMeshInstance3D.new()
 	mesh_instance.surface_set_material(0, material_override)
-	var multimesh = MultiMesh.new()
+	var multimesh: MultiMesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.instance_count = instance_count
 	multimesh.mesh = mesh_instance
 	multimesh_instance.multimesh = multimesh
 	add_child(multimesh_instance)
 
-	var random = RandomNumberGenerator.new()
+	var random: RandomNumberGenerator = RandomNumberGenerator.new()
 	random.randomize()
 
-	var last_origin
-	var leaves_in_plant
+	var last_origin: Vector3
+	var leaves_in_plant: int
 
-	for i in range(instance_count):
-		var transform = Transform3D()
+	for i: int in range(instance_count):
+		var transform: Transform3D = Transform3D()
 
 		if last_origin and leaves_in_plant <= max_leaves_per_plant:
 			transform.origin = last_origin
@@ -47,7 +47,7 @@ func _ready() -> void:
 			Vector3.RIGHT,
 			random.randf_range(-PI / 4, PI / 4))
 
-		var scale_factor = random.randf_range(min_leaf_scale, max_leaf_scale)
+		var scale_factor: float = random.randf_range(min_leaf_scale, max_leaf_scale)
 		transform = transform.scaled(Vector3.ONE * scale_factor)
 		transform.origin *= 1 / scale_factor
 		multimesh.set_instance_transform(i, transform)

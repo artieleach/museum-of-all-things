@@ -1,12 +1,8 @@
 extends Node3D
 
-static var margin_top = 100
+static var margin_top := 100
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
-
-func init(text):
+func init(text: String) -> void:
 	var label = $SubViewport/Control/RichTextLabel
 	var t = Util.strip_markup(text)
 	label.text = t

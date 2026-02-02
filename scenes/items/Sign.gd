@@ -4,10 +4,10 @@ extends Node3D
 @export var arrow: bool = true
 @export var arrow_left: bool = true
 
-static var max_lines = 4
-var L_ARROW = "←"
-var R_ARROW = "→"
-var _text_value = ""
+static var max_lines: int = 4
+var L_ARROW: String = "←"
+var R_ARROW: String = "→"
+var _text_value: String = ""
 
 var text: String:
 	get:
@@ -23,10 +23,10 @@ var left: bool:
 	set(v):
 		$Arrow.text = L_ARROW if v else R_ARROW
 
-func _resize_text():
+func _resize_text() -> void:
 	Util.resizeTextToPx($Text, $Text.width * max_lines)
 
-func _ready():
+func _ready() -> void:
 	if starting_text:
 		text = starting_text
 	if not arrow:

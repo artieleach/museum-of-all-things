@@ -1,26 +1,22 @@
 extends Node3D
 class_name HallDoor
 
-static var animation_duration = 0.25
+static var animation_duration: float = 0.25
 
-@onready var _door = $Door
-@onready var _open = false
-var _open_pos = Vector3(0, 6.5, 0)
-var _closed_pos = Vector3(0, 2, 0)
+@onready var _door: Node3D = $Door
+@onready var _open: bool = false
+var _open_pos: Vector3 = Vector3(0, 6.5, 0)
+var _closed_pos: Vector3 = Vector3(0, 2, 0)
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
-
-func open():
+func open() -> void:
 	set_open(true)
 
-func close():
+func close() -> void:
 	set_open(false)
 
-func set_open(open = true, instant = false):
+func set_open(open: bool = true, instant: bool = false) -> void:
 	if is_visible() and not instant:
-		var tween = get_tree().create_tween()
+		var tween: Tween = get_tree().create_tween()
 		tween.tween_property(
 			_door,
 			"position",
@@ -34,12 +30,12 @@ func set_open(open = true, instant = false):
 	else:
 		_door.position = _open_pos if open else _closed_pos
 
-@onready var label_pivot = $Door/LabelPivot
-@onready var top_label = $Door/LabelPivot/Label1
-@onready var bottom_label = $Door/LabelPivot/Label2
-var _label_tween = null
+@onready var label_pivot: Node3D = $Door/LabelPivot
+@onready var top_label: Label3D = $Door/LabelPivot/Label1
+@onready var bottom_label: Label3D = $Door/LabelPivot/Label2
+var _label_tween: Tween = null
 
-func set_message(msg, instant = false):
+func set_message(msg: String, instant: bool = false) -> void:
 	if _label_tween:
 		_label_tween.kill()
 
@@ -57,10 +53,6 @@ func set_message(msg, instant = false):
 		_label_tween = null
 		label_pivot.rotation.z += PI
 
-	var tmp = top_label
+	var tmp: Label3D = top_label
 	top_label = bottom_label
 	bottom_label = tmp
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass

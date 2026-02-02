@@ -2,27 +2,27 @@ extends MeshInstance3D
 
 signal loaded
 
-var image_url
-var _image
-var text
-var title
-var plate_style
+var image_url: String
+var _image: Texture2D
+var text: String
+var title: String
+var plate_style: String
 
-var plate_margin = 0.05
-var max_text_height = 0.5
+var plate_margin: float = 0.05
+var max_text_height: float = 0.5
 
-@onready var plate_black = preload("res://assets/textures/black.tres")
-@onready var plate_white = preload("res://assets/textures/flat_white.tres")
+const plate_black: Material = preload("res://assets/textures/black.tres")
+const plate_white: Material = preload("res://assets/textures/flat_white.tres")
 
-@onready var text_white = Color(0.8, 0.8, 0.8)
-@onready var text_black = Color(0.0, 0.0, 0.0)
-@onready var text_clear = Color(0.0, 0.0, 0.0, 0.0)
+const text_white: Color = Color(0.8, 0.8, 0.8)
+const text_black: Color = Color(0.0, 0.0, 0.0)
+const text_clear: Color = Color(0.0, 0.0, 0.0, 0.0)
 
-func get_image_size():
+func get_image_size() -> Vector2:
 	return Vector2(_image.get_width(), _image.get_height())
 
-func _update_text_plate():
-	var aabb = $Label.get_aabb()
+func _update_text_plate() -> void:
+	var aabb: AABB = $Label.get_aabb()
 	if aabb.size.length() == 0:
 		return
 
@@ -34,48 +34,47 @@ func _update_text_plate():
 	if not plate_style:
 		return
 
-	var plate = $Label/Plate
+	var plate: MeshInstance3D = $Label/Plate
 	plate.visible = true
 	plate.scale = Vector3(aabb.size.x + 2 * plate_margin, 1, aabb.size.y + 2 * plate_margin)
 	plate.position.y = -(aabb.size.y / 2.0)
 
-func _on_image_loaded(url, image, _ctx):
+func _on_image_loaded(url: String, image: Texture2D, _ctx: Variant) -> void:
 	if url != image_url:
 		return
 
 	DataManager.loaded_image.disconnect(_on_image_loaded)
 	_image = image
-	var size = _image.get_size()
+	var size: Vector2 = _image.get_size()
 	if size.length() > 0:
 		material_override.set_shader_parameter("texture_albedo", _image)
 
-	var label = $Label
+	var label: Label3D = $Label
 	label.text = Util.strip_markup(text)
 	call_deferred("_update_text_plate")
 
-	var w = _image.get_width()
-	var h = _image.get_height()
-	var fw = float(w)
-	var fh = float(h)
+	var w: int = _image.get_width()
+	var h: int = _image.get_height()
+	var fw: float = float(w)
+	var fh: float = float(h)
 
 	if w != 0:
-		var height = 2.0 if h > w else 2.0 * (fh / fw)
-		var width = 2.0 if w > h else 2.0 * (fw / fh)
+		var height: float = 2.0 if h > w else 2.0 * (fh / fw)
+		var width: float = 2.0 if w > h else 2.0 * (fw / fh)
 
 		mesh.size = Vector2(width, height)
 		label.position.z = (height / 2.0) + 0.2
 		label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
-		# Update collision shape to match image size
 		_update_collision_shape(width, height)
 
 		visible = true
-		emit_signal("loaded")
+		loaded.emit()
 
 func _update_collision_shape(width: float, height: float) -> void:
-	var collision_shape = $InteractionBody/CollisionShape3D
+	var collision_shape: CollisionShape3D = $InteractionBody/CollisionShape3D
 	if collision_shape and collision_shape.shape:
-		var box_shape = collision_shape.shape as BoxShape3D
+		var box_shape: BoxShape3D = collision_shape.shape as BoxShape3D
 		if box_shape:
 			box_shape.size = Vector3(width, height, 0.1)
 
@@ -83,22 +82,20 @@ func interact() -> void:
 	if _image and image_url:
 		GlobalMenuEvents.emit_skin_selected(image_url, _image)
 
-func _on_pointer_event(event) -> void:
-	# Handle VR pointer interaction
+func _on_pointer_event(event: Variant) -> void:
 	if event.event_type == "click" or (event.has("pressed") and event.pressed):
 		interact()
 
-func _on_image_complete(files, _ctx):
+func _on_image_complete(files: Dictionary, _ctx: Variant) -> void:
 	if files.has(title):
-		var data = ExhibitFetcher.get_result(title)
+		var data: Dictionary = ExhibitFetcher.get_result(title)
 		if data:
 			ExhibitFetcher.images_complete.disconnect(_on_image_complete)
 			ExhibitFetcher.commons_images_complete.disconnect(_on_image_complete)
 			_set_image(data)
 
-func _set_image(data):
-	# ensure this wasn't handled after free
-	var label = $Label
+func _set_image(data: Dictionary) -> void:
+	var label: Label3D = $Label
 	if is_instance_valid(label) and data.has("license_short_name") and data.has("artist"):
 		text += "\n"
 		text += data.license_short_name + " " + Util.strip_html(data.artist)
@@ -110,8 +107,7 @@ func _set_image(data):
 		DataManager.loaded_image.connect(_on_image_loaded)
 		DataManager.request_image(data.src)
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
+func _ready() -> void:
 	if not plate_style:
 		pass
 	elif plate_style == "white":
@@ -123,12 +119,12 @@ func _ready():
 		$Label.outline_modulate = text_black
 		$Label/Plate.material_override = plate_black
 
-func init(_title, _text, _plate_style = null):
+func init(_title: String, _text: String, _plate_style: String = "") -> void:
 	text = _text
 	title = _title
 	plate_style = _plate_style
 
-	var data = ExhibitFetcher.get_result(title)
+	var data: Dictionary = ExhibitFetcher.get_result(title)
 	if data:
 		_set_image(data)
 	else:

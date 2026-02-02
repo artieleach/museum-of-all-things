@@ -4,11 +4,11 @@ extends MeshInstance3D
 @export var no_light: bool = false
 @export var title_color: Color = Color.WHITE
 @export var hide_titles: bool = false
-@export var title_text = "Art"
-@export var subtitle_text = "Featured Art Exhibits"
+@export var title_text: String = "Art"
+@export var subtitle_text: String = "Featured Art Exhibits"
 
-var max_title_length_px = 320
-var start_font_size_title
+var max_title_length_px: int = 320
+var start_font_size_title: int
 
 func _ready() -> void:
 	if no_light:
@@ -28,6 +28,6 @@ func _ready() -> void:
 			GlobalMenuEvents.set_language.connect(_resize_text)
 			_resize_text()
 
-func _resize_text(_lang = ""):
+func _resize_text(_lang: String = "") -> void:
 	$Title.font_size = start_font_size_title
 	Util.resizeTextToPx($Title, max_title_length_px)
