@@ -272,7 +272,12 @@ func _process(delta: float) -> void:
 			pivot_pos_y = _player.get_node("Pivot").position.y
 		var is_mounted: bool = _player._is_mounted if _player.has_method("execute_mount") else false
 		var mounted_peer_id: int = _player.mount_peer_id if _player.has_method("execute_mount") else -1
-		var current_room: String = _player.current_room if "current_room" in _player else "$Lobby"
+		# If mounted, use mount's room to stay synced during room transitions
+		var current_room: String = "$Lobby"
+		if is_mounted and is_instance_valid(_player.mounted_on) and "current_room" in _player.mounted_on:
+			current_room = _player.mounted_on.current_room
+		elif "current_room" in _player:
+			current_room = _player.current_room
 		_sync_player_position.rpc(
 			NetworkManager.get_unique_id(),
 			_player.global_position,

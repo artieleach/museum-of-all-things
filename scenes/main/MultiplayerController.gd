@@ -169,10 +169,37 @@ func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_
 	if _network_players.has(peer_id):
 		var net_player: Node = _network_players[peer_id]
 		if is_instance_valid(net_player):
+			# Update network player's room property (needed for mount room syncing)
+			if "current_room" in net_player:
+				net_player.current_room = current_room
+
+			# Check if local player is mounted on this network player
+			var local_riding_this_player: bool = false
+			if local_player and "_is_mounted" in local_player and local_player._is_mounted:
+				if "mount_peer_id" in local_player and local_player.mount_peer_id == peer_id:
+					local_riding_this_player = true
+					# Only sync room if the exhibit exists on this client (or it's the lobby)
+					if "current_room" in local_player and local_player.current_room != current_room:
+						var can_transition: bool = current_room == "$Lobby"
+						if not can_transition and _main and _main.has_node("Museum"):
+							var museum: Node = _main.get_node("Museum")
+							if museum.has_method("has_exhibit"):
+								can_transition = museum.has_exhibit(current_room)
+						if can_transition:
+							local_player.current_room = current_room
+
 			# Check if player is in the same room before showing
 			var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "$Lobby"
 
-			if current_room != local_room:
+			# For mounted players, also check mount's room in case of sync timing issues
+			var effective_room: String = current_room
+			if is_mounted and mounted_peer_id > 0:
+				var mount_room: String = NetworkManager.get_player_room(mounted_peer_id)
+				if mount_room != "" and mount_room != current_room:
+					effective_room = mount_room
+
+			# Always show mount if local player is riding them, even if rooms differ
+			if effective_room != local_room and not local_riding_this_player:
 				net_player.set_body_visible(false)
 				return
 
@@ -205,6 +232,14 @@ func _update_player_visibility(peer_id: int) -> void:
 		return
 
 	var remote_room: String = NetworkManager.get_player_room(peer_id)
+
+	# If mounted, use mount's room to handle room transition sync timing
+	if "_is_mounted" in net_player and net_player._is_mounted:
+		if "mount_peer_id" in net_player and net_player.mount_peer_id > 0:
+			var mount_room: String = NetworkManager.get_player_room(net_player.mount_peer_id)
+			if mount_room != "":
+				remote_room = mount_room
+
 	var local_room: String = "$Lobby"
 	if _main and _main.has_method("get_local_player"):
 		var local_player: Node = _main.get_local_player()
@@ -220,4 +255,12 @@ func update_all_player_visibility(local_player: Node) -> void:
 		var net_player: Node = _network_players[peer_id]
 		if is_instance_valid(net_player):
 			var remote_room: String = NetworkManager.get_player_room(peer_id)
+
+			# If mounted, use mount's room to handle room transition sync timing
+			if "_is_mounted" in net_player and net_player._is_mounted:
+				if "mount_peer_id" in net_player and net_player.mount_peer_id > 0:
+					var mount_room: String = NetworkManager.get_player_room(net_player.mount_peer_id)
+					if mount_room != "":
+						remote_room = mount_room
+
 			net_player.set_body_visible(remote_room == local_room)

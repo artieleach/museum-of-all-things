@@ -36,13 +36,45 @@ func has_rider() -> bool:
 	return _has_rider
 
 
-func process_mount(delta: float) -> void:
+func process_mount(_delta: float) -> void:
 	if not _is_mounted:
 		return
 
 	# Follow mount's position
 	if is_instance_valid(mounted_on):
-		_player.global_position = mounted_on.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
+		# Check if we can safely follow mount to their room
+		var can_follow: bool = true
+		if "current_room" in _player and "current_room" in mounted_on:
+			if _player.current_room != mounted_on.current_room:
+				# Only follow if the exhibit exists on this client (or it's the lobby)
+				var target_room: String = mounted_on.current_room
+				can_follow = target_room == "$Lobby"
+				var museum: Node = null
+				if not can_follow:
+					var main_node: Node = _player.get_tree().current_scene
+					if main_node and main_node.has_node("Museum"):
+						museum = main_node.get_node("Museum")
+						if museum.has_method("has_exhibit"):
+							var exhibit_exists: bool = museum.has_exhibit(target_room)
+							if OS.is_debug_build() and exhibit_exists:
+								print("PlayerMountSystem: Exhibit now exists, can follow to '", target_room, "'")
+							can_follow = exhibit_exists
+
+						# If exhibit doesn't exist, trigger loading so we can follow next frame
+						if not can_follow and museum.has_method("load_exhibit_for_rider"):
+							if OS.is_debug_build():
+								print("PlayerMountSystem: Triggering exhibit load from '", _player.current_room, "' to '", target_room, "'")
+							museum.load_exhibit_for_rider(_player.current_room, target_room)
+
+				if can_follow:
+					_player.current_room = target_room
+					# Sync museum state for rider's client (updates fog, events, etc.)
+					if museum and museum.has_method("sync_rider_to_room"):
+						museum.sync_rider_to_room(target_room)
+
+		# Only update position if we can safely follow
+		if can_follow:
+			_player.global_position = mounted_on.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
 	else:
 		# Mount became invalid, force dismount
 		execute_dismount()

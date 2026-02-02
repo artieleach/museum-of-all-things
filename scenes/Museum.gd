@@ -44,6 +44,80 @@ var _exhibit_loader: ExhibitLoader = null
 var _exhibits: Dictionary:
 	get: return _exhibit_loader.get_exhibits() if _exhibit_loader else {}
 
+# Track exhibits currently being loaded for riders (to prevent duplicate fetches)
+var _rider_loading_exhibits: Dictionary = {}
+
+
+func has_exhibit(title: String) -> bool:
+	return _exhibits.has(title)
+
+
+func sync_rider_to_room(room_title: String) -> void:
+	## Called when a rider follows their mount to a new room.
+	## Updates museum state locally without broadcasting to network.
+	if room_title == _current_room_title:
+		return
+
+	if OS.is_debug_build():
+		print("Museum: Syncing rider to room: ", room_title)
+
+	_current_room_title = room_title
+	WorkQueue.set_current_exhibit(room_title)
+	GlobalMenuEvents.emit_set_current_room(room_title)
+	_start_queue()
+
+	# Update fog color
+	var fog_color: Color = ExhibitStyle.gen_fog(_current_room_title)
+	var environment: Environment = $WorldEnvironment.environment
+	if environment.fog_light_color != fog_color:
+		var tween: Tween = create_tween()
+		tween.tween_property(
+				environment,
+				"fog_light_color",
+				fog_color,
+				1.0)
+		tween.set_trans(Tween.TRANS_LINEAR)
+		tween.set_ease(Tween.EASE_IN_OUT)
+
+
+func load_exhibit_for_rider(from_room: String, to_room: String) -> void:
+	if has_exhibit(to_room):
+		_rider_loading_exhibits.erase(to_room)  # Clean up tracking
+		return  # Already loaded
+
+	# Prevent duplicate fetches while loading is in progress
+	if _rider_loading_exhibits.has(to_room):
+		return
+
+	var hall: Hall = _find_hall_for_room_transition(from_room, to_room)
+	if hall:
+		if OS.is_debug_build():
+			print("Museum: Loading exhibit for rider: ", to_room)
+		_rider_loading_exhibits[to_room] = true
+		_exhibit_loader.load_exhibit_from_exit(hall)
+	else:
+		if OS.is_debug_build():
+			print("Museum: Could not find hall from '", from_room, "' to '", to_room, "'")
+			print("  - _exhibits keys: ", _exhibits.keys())
+			print("  - has Lobby node: ", has_node("Lobby"))
+
+
+func _find_hall_for_room_transition(from_room: String, to_room: String) -> Hall:
+	if _exhibits.has(from_room):
+		var exhibit_data: Dictionary = _exhibits[from_room]
+		var exhibit: Node = exhibit_data.get("exhibit")
+		if is_instance_valid(exhibit) and "exits" in exhibit:
+			for exit: Hall in exhibit.exits:
+				if exit.to_title == to_room:
+					return exit
+
+	if from_room == "$Lobby" and has_node("Lobby"):
+		for exit: Hall in $Lobby.exits:
+			if exit.to_title == to_room:
+				return exit
+
+	return null
+
 
 # =============================================================================
 # LIFECYCLE
@@ -179,6 +253,12 @@ func _set_current_room_title(title: String) -> void:
 	# Update local player's room BEFORE broadcasting (so visibility checks use the new value)
 	if _player and "current_room" in _player:
 		_player.current_room = title
+
+		# Also update any rider mounted on local player (sync room immediately to prevent race condition)
+		if "_has_rider" in _player and _player._has_rider:
+			var rider: Node = _player.mounted_by
+			if is_instance_valid(rider) and "current_room" in rider:
+				rider.current_room = title
 
 	# Broadcast room change to network
 	if NetworkManager.is_multiplayer_active():
