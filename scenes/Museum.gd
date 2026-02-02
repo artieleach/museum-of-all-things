@@ -58,9 +58,6 @@ func sync_rider_to_room(room_title: String) -> void:
 	if room_title == _current_room_title:
 		return
 
-	if OS.is_debug_build():
-		print("Museum: Syncing rider to room: ", room_title)
-
 	_current_room_title = room_title
 	WorkQueue.set_current_exhibit(room_title)
 	GlobalMenuEvents.emit_set_current_room(room_title)
@@ -91,15 +88,8 @@ func load_exhibit_for_rider(from_room: String, to_room: String) -> void:
 
 	var hall: Hall = _find_hall_for_room_transition(from_room, to_room)
 	if hall:
-		if OS.is_debug_build():
-			print("Museum: Loading exhibit for rider: ", to_room)
 		_rider_loading_exhibits[to_room] = true
 		_exhibit_loader.load_exhibit_from_exit(hall)
-	else:
-		if OS.is_debug_build():
-			print("Museum: Could not find hall from '", from_room, "' to '", to_room, "'")
-			print("  - _exhibits keys: ", _exhibits.keys())
-			print("  - has Lobby node: ", has_node("Lobby"))
 
 
 func _find_hall_for_room_transition(from_room: String, to_room: String) -> Hall:

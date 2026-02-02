@@ -55,15 +55,10 @@ func process_mount(_delta: float) -> void:
 					if main_node and main_node.has_node("Museum"):
 						museum = main_node.get_node("Museum")
 						if museum.has_method("has_exhibit"):
-							var exhibit_exists: bool = museum.has_exhibit(target_room)
-							if OS.is_debug_build() and exhibit_exists:
-								print("PlayerMountSystem: Exhibit now exists, can follow to '", target_room, "'")
-							can_follow = exhibit_exists
+							can_follow = museum.has_exhibit(target_room)
 
 						# If exhibit doesn't exist, trigger loading so we can follow next frame
 						if not can_follow and museum.has_method("load_exhibit_for_rider"):
-							if OS.is_debug_build():
-								print("PlayerMountSystem: Triggering exhibit load from '", _player.current_room, "' to '", target_room, "'")
 							museum.load_exhibit_for_rider(_player.current_room, target_room)
 
 				if can_follow:
@@ -134,9 +129,6 @@ func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	if target.has_method("_accept_rider"):
 		target._accept_rider(_player)
 
-	if OS.is_debug_build():
-		print("PlayerMountSystem: Mounted on ", target.name)
-
 
 func execute_dismount() -> void:
 	if not _is_mounted or not is_instance_valid(mounted_on):
@@ -165,9 +157,6 @@ func execute_dismount() -> void:
 	mounted_on = null
 	mount_peer_id = -1
 
-	if OS.is_debug_build():
-		print("PlayerMountSystem: Dismounted")
-
 
 func _restore_collision() -> void:
 	# Re-enable collision shapes
@@ -188,17 +177,12 @@ func _restore_collision() -> void:
 func accept_rider(rider: Node) -> void:
 	mounted_by = rider
 	_has_rider = true
-	if OS.is_debug_build():
-		print("PlayerMountSystem: Accepted rider ", rider.name)
 
 
 func remove_rider(rider: Node) -> void:
 	if mounted_by == rider:
 		mounted_by = null
 		_has_rider = false
-
-		if OS.is_debug_build():
-			print("PlayerMountSystem: Removed rider ", rider.name)
 
 
 func apply_network_mount_state(is_mounted_state: bool, peer_id: int, mount_node: Node) -> void:
