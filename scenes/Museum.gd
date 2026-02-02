@@ -1,46 +1,60 @@
 extends Node3D
 
-@onready var TiledExhibitGenerator = preload("res://scenes/TiledExhibitGenerator.tscn")
-@onready var StaticData = preload("res://assets/resources/lobby_data.tres")
-var _lobby_data_path = "res://assets/resources/lobby_data.tres"
+# =============================================================================
+# PRELOADED SCENES/RESOURCES
+# =============================================================================
+var TiledExhibitGenerator = preload("res://scenes/TiledExhibitGenerator.tscn")
+var StaticData = preload("res://assets/resources/lobby_data.tres")
+var WallItem = preload("res://scenes/items/WallItem.tscn")
 
-@onready var QUEUE_DELAY = 0.05
+const _lobby_data_path = "res://assets/resources/lobby_data.tres"
+const QUEUE_DELAY = 0.05
 
-# item types
-@onready var WallItem = preload("res://scenes/items/WallItem.tscn")
-@onready var _xr = Util.is_xr()
-
-@onready var _exhibit_hist = []
-@onready var _exhibits = {}
-@onready var _backlink_map = {}
-@onready var _current_room_title = "$Lobby"
+# =============================================================================
+# EXPORT CONFIGURATION
+# =============================================================================
 @export var items_per_room_estimate = 7
 @export var min_rooms_per_exhibit = 2
-
-var _starting_height = 40
-var _height_increment = 20
-var _used_exhibit_heights = {}
-
 @export var fog_depth = 10.0
 @export var fog_depth_lobby = 20.0
 @export var ambient_light_lobby = 0.4
 @export var ambient_light = 0.2
+@export var max_teleport_distance: float = 10.0
+@export var max_exhibits_loaded: int = 2
+@export var min_room_dimension: int = 2
+@export var max_room_dimension: int = 5
+
+# =============================================================================
+# PRIVATE STATE VARIABLES
+# =============================================================================
+var _xr: bool
+var _exhibit_hist = []
+var _exhibits = {}
+var _backlink_map = {}
+var _current_room_title = "$Lobby"
+
+var _starting_height = 40
+var _height_increment = 20
+var _used_exhibit_heights = {}
 
 var _grid
 var _player
 var _custom_door
 var _transition_in_progress: bool = false
 
+var _queue_running = false
+var _global_item_queue_map = {}
+
+var text_item_fmt = "[color=black][b][font_size=200]%s[/font_size][/b]\n\n%s"
+
+# =============================================================================
+# LIFECYCLE
+# =============================================================================
 func _init():
 	RenderingServer.set_debug_generate_wireframes(true)
 
-func init(player):
-	_player = player
-	_set_up_lobby($Lobby)
-	reset_to_lobby()
-
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	_xr = Util.is_xr()
 	$WorldEnvironment.environment.ssr_enabled = not _xr
 
 	_grid = $Lobby/GridMap
@@ -51,18 +65,14 @@ func _ready() -> void:
 	GlobalMenuEvents.set_custom_door.connect(_set_custom_door)
 	GlobalMenuEvents.set_language.connect(_on_change_language)
 
-func _get_free_exhibit_height() -> int:
-	var height = _starting_height
-	while _used_exhibit_heights.has(height):
-		height += _height_increment
-	_used_exhibit_heights[height] = true
-	if OS.is_debug_build():
-		print("placing exhibit at height=", height)
-	return height
+func init(player):
+	_player = player
+	_set_up_lobby($Lobby)
+	reset_to_lobby()
 
-func _release_exhibit_height(height: int) -> void:
-	_used_exhibit_heights.erase(height)
-
+# =============================================================================
+# LOBBY MANAGEMENT
+# =============================================================================
 func _get_lobby_exit_zone(exit):
 	var ex = Util.gridToWorld(exit.from_pos).x
 	var ez = Util.gridToWorld(exit.from_pos).z
@@ -72,15 +82,6 @@ func _get_lobby_exit_zone(exit):
 		if ex >= c1.x and ex <= c2.x and ez >= c1.y and ez <= c2.y:
 			return w
 	return null
-
-func _on_change_language(_lang = ""):
-	# This is only safe to do if we're in the lobby
-	if _current_room_title == "$Lobby":
-		for exhibit in _exhibits.keys():
-			if exhibit != "$Lobby":
-				_erase_exhibit(exhibit)
-		StaticData = ResourceLoader.load(_lobby_data_path, "", ResourceLoader.CACHE_MODE_IGNORE)
-		_set_up_lobby($Lobby)
 
 func _set_up_lobby(lobby):
 	var exits = lobby.exits
@@ -108,9 +109,6 @@ func _set_up_lobby(lobby):
 
 		exit.loader.body_entered.connect(_on_loader_body_entered.bind(exit))
 
-func get_current_room():
-	return _current_room_title
-
 func _set_custom_door(title):
 	if _custom_door and is_instance_valid(_custom_door):
 		_custom_door.to_title = title
@@ -119,6 +117,21 @@ func _set_custom_door(title):
 func _reset_custom_door(title):
 	if _custom_door and is_instance_valid(_custom_door):
 		_custom_door.entry_door.set_open(false)
+
+func _on_change_language(_lang = ""):
+	# This is only safe to do if we're in the lobby
+	if _current_room_title == "$Lobby":
+		for exhibit in _exhibits.keys():
+			if exhibit != "$Lobby":
+				_erase_exhibit(exhibit)
+		StaticData = ResourceLoader.load(_lobby_data_path, "", ResourceLoader.CACHE_MODE_IGNORE)
+		_set_up_lobby($Lobby)
+
+# =============================================================================
+# ROOM/EXHIBIT STATE
+# =============================================================================
+func get_current_room():
+	return _current_room_title
 
 func reset_to_lobby():
 	_set_current_room_title("$Lobby")
@@ -155,6 +168,21 @@ func _set_current_room_title(title):
 		tween.set_trans(Tween.TRANS_LINEAR)
 		tween.set_ease(Tween.EASE_IN_OUT)
 
+func _get_free_exhibit_height() -> int:
+	var height = _starting_height
+	while _used_exhibit_heights.has(height):
+		height += _height_increment
+	_used_exhibit_heights[height] = true
+	if OS.is_debug_build():
+		print("placing exhibit at height=", height)
+	return height
+
+func _release_exhibit_height(height: int) -> void:
+	_used_exhibit_heights.erase(height)
+
+# =============================================================================
+# TELEPORTATION
+# =============================================================================
 func _teleport(from_hall, to_hall, entry_to_exit=false):
 	_prepare_halls_for_teleport(from_hall, to_hall, entry_to_exit)
 
@@ -245,6 +273,9 @@ func _teleport_all_network_players(to_hall, rot_diff: float) -> void:
 				player.global_position = to_hall.position
 				player.global_rotation.y += rot_diff
 
+# =============================================================================
+# MULTIPLAYER TRANSITIONS
+# =============================================================================
 func _on_loader_body_entered(body, hall, backlink=false):
 	if hall.to_title == "" or hall.to_title == _current_room_title:
 		return
@@ -364,6 +395,9 @@ func sync_to_exhibit(exhibit_title: String) -> void:
 	# The exhibit will be generated locally since generation is deterministic
 	_set_current_room_title(exhibit_title)
 
+# =============================================================================
+# EXHIBIT LOADING
+# =============================================================================
 func _load_exhibit_from_entry(entry):
 	var prev_article = Util.coalesce(entry.from_title, "Fungus")
 
@@ -405,78 +439,6 @@ func _load_exhibit_from_exit(exit):
 		"title": next_article,
 		"exit": exit
 	})
-
-func _add_item(exhibit, item_data):
-	if not is_instance_valid(exhibit):
-		return
-
-	var slot = exhibit.get_item_slot()
-	if slot == null:
-		exhibit.add_room()
-		if exhibit.has_item_slot():
-			_add_item(exhibit, item_data)
-		else:
-			push_error("unable to add item slots to exhibit.")
-		return
-
-	var item = WallItem.instantiate()
-	item.position = Util.gridToWorld(slot[0]) - slot[1] * 0.01
-	item.rotation.y = Util.vecToRot(slot[1])
-
-	# we use a delay to stop there from being a frame drop when a bunch of items are added at once
-	# get_tree().create_timer(delay).timeout.connect(_init_item.bind(exhibit, item, item_data))
-	_init_item(exhibit, item, item_data)
-
-var text_item_fmt = "[color=black][b][font_size=200]%s[/font_size][/b]\n\n%s"
-
-func _init_item(exhibit, item, data):
-	if is_instance_valid(exhibit) and is_instance_valid(item):
-		exhibit.add_child(item)
-		item.init(data)
-
-func _link_halls(entry, exit):
-	if entry.linked_hall == exit and exit.linked_hall == entry:
-		return
-
-	for hall in [entry, exit]:
-		Util.clear_listeners(hall, "on_player_toward_exit")
-		Util.clear_listeners(hall, "on_player_toward_entry")
-
-	_backlink_map[exit.to_title] = exit.from_title
-	exit.on_player_toward_exit.connect(_teleport.bind(exit, entry))
-	entry.on_player_toward_entry.connect(_teleport.bind(entry, exit, true))
-	exit.linked_hall = entry
-	entry.linked_hall = exit
-
-	if exit.player_in_hall and exit.player_direction == "exit":
-		_teleport(exit, entry)
-	elif entry.player_in_hall and entry.player_direction == "entry":
-		_teleport(entry, exit, true)
-
-func _count_image_items(arr):
-	var count = 0
-	for i in arr:
-		if i.has("type") and i.type == "image":
-			count += 1
-	return count
-
-func _on_exit_added(exit, doors, backlink, new_exhibit, hall):
-	var linked_exhibit = Util.coalesce(doors.pop_front(), "")
-	exit.to_title = linked_exhibit
-	exit.loader.body_entered.connect(_on_loader_body_entered.bind(exit))
-	if is_instance_valid(hall) and backlink and exit.to_title == hall.to_title:
-		_link_halls(hall, exit)
-
-func _erase_exhibit(key):
-	if OS.is_debug_build():
-		print("erasing exhibit ", key)
-	_exhibits[key].exhibit.queue_free()
-	_release_exhibit_height(_exhibits[key].height)
-	_global_item_queue_map.erase(key)
-	_exhibits.erase(key)
-	var i = _exhibit_hist.find(key)
-	if i >= 0:
-		_exhibit_hist.remove_at(i)
 
 func _on_fetch_complete(_titles, context):
 	# we don't need to do anything to handle a prefetch
@@ -568,25 +530,6 @@ func _on_fetch_complete(_titles, context):
 	else:
 		_link_halls(new_exhibit.entry, hall)
 
-func _queue_extra_text(exhibit, extra_text):
-	for item in extra_text:
-		_queue_item(exhibit.title, _add_item.bind(exhibit, item))
-
-func _link_backlink_to_exit(exhibit, hall):
-	if not is_instance_valid(exhibit) or not is_instance_valid(hall):
-		return
-
-	var new_hall
-	for exit in exhibit.exits:
-		if exit.to_title == hall.to_title:
-			new_hall = exit
-			break
-	if not new_hall and exhibit.entry:
-		push_error("could not backlink new hall")
-		new_hall = exhibit.entry
-	if new_hall:
-		_link_halls(hall, new_hall)
-
 func _on_wikidata_complete(entity, ctx):
 	var result = ExhibitFetcher.get_result(entity)
 	if result and (result.has("commons_category") or result.has("commons_gallery")):
@@ -618,9 +561,98 @@ func _on_finished_exhibit(ctx):
 	if ctx.backlink:
 		_link_backlink_to_exit(ctx.exhibit, ctx.hall)
 
-var _queue_running = false
-var _global_item_queue_map = {}
+func _add_item(exhibit, item_data):
+	if not is_instance_valid(exhibit):
+		return
 
+	var slot = exhibit.get_item_slot()
+	if slot == null:
+		exhibit.add_room()
+		if exhibit.has_item_slot():
+			_add_item(exhibit, item_data)
+		else:
+			push_error("unable to add item slots to exhibit.")
+		return
+
+	var item = WallItem.instantiate()
+	item.position = Util.gridToWorld(slot[0]) - slot[1] * 0.01
+	item.rotation.y = Util.vecToRot(slot[1])
+
+	# we use a delay to stop there from being a frame drop when a bunch of items are added at once
+	# get_tree().create_timer(delay).timeout.connect(_init_item.bind(exhibit, item, item_data))
+	_init_item(exhibit, item, item_data)
+
+func _init_item(exhibit, item, data):
+	if is_instance_valid(exhibit) and is_instance_valid(item):
+		exhibit.add_child(item)
+		item.init(data)
+
+func _link_halls(entry, exit):
+	if entry.linked_hall == exit and exit.linked_hall == entry:
+		return
+
+	for hall in [entry, exit]:
+		Util.clear_listeners(hall, "on_player_toward_exit")
+		Util.clear_listeners(hall, "on_player_toward_entry")
+
+	_backlink_map[exit.to_title] = exit.from_title
+	exit.on_player_toward_exit.connect(_teleport.bind(exit, entry))
+	entry.on_player_toward_entry.connect(_teleport.bind(entry, exit, true))
+	exit.linked_hall = entry
+	entry.linked_hall = exit
+
+	if exit.player_in_hall and exit.player_direction == "exit":
+		_teleport(exit, entry)
+	elif entry.player_in_hall and entry.player_direction == "entry":
+		_teleport(entry, exit, true)
+
+func _count_image_items(arr):
+	var count = 0
+	for i in arr:
+		if i.has("type") and i.type == "image":
+			count += 1
+	return count
+
+func _on_exit_added(exit, doors, backlink, new_exhibit, hall):
+	var linked_exhibit = Util.coalesce(doors.pop_front(), "")
+	exit.to_title = linked_exhibit
+	exit.loader.body_entered.connect(_on_loader_body_entered.bind(exit))
+	if is_instance_valid(hall) and backlink and exit.to_title == hall.to_title:
+		_link_halls(hall, exit)
+
+func _erase_exhibit(key):
+	if OS.is_debug_build():
+		print("erasing exhibit ", key)
+	_exhibits[key].exhibit.queue_free()
+	_release_exhibit_height(_exhibits[key].height)
+	_global_item_queue_map.erase(key)
+	_exhibits.erase(key)
+	var i = _exhibit_hist.find(key)
+	if i >= 0:
+		_exhibit_hist.remove_at(i)
+
+func _link_backlink_to_exit(exhibit, hall):
+	if not is_instance_valid(exhibit) or not is_instance_valid(hall):
+		return
+
+	var new_hall
+	for exit in exhibit.exits:
+		if exit.to_title == hall.to_title:
+			new_hall = exit
+			break
+	if not new_hall and exhibit.entry:
+		push_error("could not backlink new hall")
+		new_hall = exhibit.entry
+	if new_hall:
+		_link_halls(hall, new_hall)
+
+func _queue_extra_text(exhibit, extra_text):
+	for item in extra_text:
+		_queue_item(exhibit.title, _add_item.bind(exhibit, item))
+
+# =============================================================================
+# ITEM QUEUE SYSTEM
+# =============================================================================
 func _process_item_queue():
 	var queue = _global_item_queue_map.get(_current_room_title, [])
 	var callable = queue.pop_front()
@@ -649,8 +681,3 @@ func _queue_item(title, item, front = false):
 func _start_queue():
 	if not _queue_running:
 		_process_item_queue()
-
-@export var max_teleport_distance: float = 10.0
-@export var max_exhibits_loaded: int = 2
-@export var min_room_dimension: int = 2
-@export var max_room_dimension: int = 5

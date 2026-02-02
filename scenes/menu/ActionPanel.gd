@@ -51,7 +51,7 @@ func _on_button_toggled_aux(button_state : bool, button : Button) -> void:
 
 func _on_focus_exited_aux(button : Button) -> void:
 	button.button_pressed = false
-	set_process_input(joypad_button.pressed or joypad_button.pressed)
+	set_process_input(keyboard_button.pressed or joypad_button.pressed)
 	update_action()
 
 func _input(event: InputEvent) -> void:

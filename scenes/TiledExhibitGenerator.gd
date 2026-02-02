@@ -44,8 +44,6 @@ func _rand_dim():
 func _ready() -> void:
 	pass # Replace with function body.
 
-func _process(delta: float) -> void:
-	pass
 
 const FLOOR_WOOD = 0
 const RESERVED_VAL = 1

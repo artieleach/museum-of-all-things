@@ -21,4 +21,4 @@ func _on_race_ended(winner_peer_id: int, winner_name: String) -> void:
 
 func _on_continue_pressed() -> void:
 	visible = false
-	emit_signal("continue_pressed")
+	continue_pressed.emit()

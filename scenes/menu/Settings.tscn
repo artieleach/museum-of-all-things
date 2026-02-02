@@ -73,7 +73,7 @@ layout_mode = 2
 visible = false
 layout_mode = 2
 
-[node name="XrControlsMenu" parent="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer" instance=ExtResource("3_s7rjb")]
+[node name="XRControlsMenu" parent="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer" instance=ExtResource("3_s7rjb")]
 visible = false
 layout_mode = 2
 
@@ -87,5 +87,5 @@ layout_mode = 2
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/GraphicsSettings" to="." method="_on_resume"]
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/AudioSettings" to="." method="_on_resume"]
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/DataSettings" to="." method="_on_resume"]
-[connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/XrControlsMenu" to="." method="_on_resume"]
+[connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/XRControlsMenu" to="." method="_on_resume"]
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/ControlSettings" to="." method="_on_resume"]

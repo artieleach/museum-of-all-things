@@ -61,7 +61,7 @@ func _on_restore_pressed():
 
 func _on_resume_pressed():
 	GraphicsManager.save_settings()
-	emit_signal("resume")
+	resume.emit()
 
 func _on_reflection_quality_value_changed(value: float):
 	GraphicsManager.get_env().ssr_max_steps = int(value)
@@ -140,9 +140,6 @@ func _on_fsr_quality_item_selected(index: int) -> void:
 func _on_sharpness_scale_value_changed(value: float) -> void:
 	GraphicsManager.set_fsr_sharpness(value)
 	_vbox.get_node("DisplayOptions/SharpnessScaleValue").text = str(value)
-
-func _on_pause_menu_settings() -> void:
-	pass # Replace with function body.
 
 func _on_post_processing_effect_item_selected(index: int):
 	GraphicsManager.set_post_processing(post_processing_options[index])

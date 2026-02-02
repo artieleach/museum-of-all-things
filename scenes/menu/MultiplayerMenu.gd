@@ -3,6 +3,10 @@ extends Control
 signal back
 signal start_game
 
+const DEFAULT_SERVER_ADDRESS := "frogwizard.online"
+const DEFAULT_HOST_NAME := "Host"
+const DEFAULT_PLAYER_NAME := "Player"
+
 enum MenuState { MAIN, HOST, JOIN, LOBBY }
 
 var current_state: MenuState = MenuState.MAIN
@@ -76,17 +80,17 @@ func _update_player_list() -> void:
 func _on_host_pressed() -> void:
 	_show_state(MenuState.HOST)
 	host_port_input.text = str(NetworkManager.DEFAULT_PORT)
-	host_name_input.text = "Host"
+	host_name_input.text = DEFAULT_HOST_NAME
 
 func _on_join_pressed() -> void:
 	_show_state(MenuState.JOIN)
-	join_address_input.text = "frogwizard.online"
+	join_address_input.text = DEFAULT_SERVER_ADDRESS
 	join_port_input.text = str(NetworkManager.DEFAULT_PORT)
-	join_name_input.text = "Player"
+	join_name_input.text = DEFAULT_PLAYER_NAME
 
 func _on_back_pressed() -> void:
 	if current_state == MenuState.MAIN:
-		emit_signal("back")
+		back.emit()
 	else:
 		_show_state(MenuState.MAIN)
 
@@ -170,4 +174,4 @@ func _on_server_disconnected() -> void:
 @rpc("authority", "call_local", "reliable")
 func _start_multiplayer_game() -> void:
 	GlobalMenuEvents.emit_multiplayer_started()
-	emit_signal("start_game")
+	start_game.emit()

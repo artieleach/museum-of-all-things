@@ -26,8 +26,8 @@ func _ready() -> void:
 	$StaticBody3D/CollisionShape3D.shape = collision_shape
 
 	for i in range(0, railing_length + 1.0, 1.0):
-		var transform = Transform3D()
+		var tform = Transform3D()
 		var x_offset = -railing_length / 2.0 + i
-		transform.origin = Vector3(x_offset, 0, 0)
+		tform.origin = Vector3(x_offset, 0, 0)
 
-		multimesh.set_instance_transform(i, transform)
+		multimesh.set_instance_transform(i, tform)

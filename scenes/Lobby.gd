@@ -43,7 +43,3 @@ func _ready() -> void:
 			add_child(hall)
 			hall.init(_grid, "$Lobby", "$Lobby", c, hall_dir, [true, _rng.randi_range(-1, 1)])
 			exits.append(hall)
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass

@@ -46,13 +46,13 @@ func set_current_room(room):
 	$MarginContainer/VBoxContainer/Language.visible = current_room == "$Lobby"
 
 func _on_resume_pressed():
-	emit_signal("resume")
+	resume.emit()
 
 func _on_settings_pressed():
-	emit_signal("settings")
+	settings.emit()
 
 func _on_lobby_pressed():
-	emit_signal("return_to_lobby")
+	return_to_lobby.emit()
 
 func _on_open_pressed():
 	var lang = TranslationServer.get_locale()
@@ -75,10 +75,10 @@ func _on_cancel_quit_pressed():
 	$MarginContainer/VBoxContainer/Resume.grab_focus()
 
 func _on_vr_controls_pressed() -> void:
-	emit_signal("vr_controls")
+	vr_controls.emit()
 
 func _on_race_pressed() -> void:
-	emit_signal("start_race")
+	start_race.emit()
 
 func _on_race_state_changed(_arg1 = null, _arg2 = null) -> void:
 	_update_race_button_visibility()

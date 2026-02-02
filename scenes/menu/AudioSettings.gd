@@ -1,8 +1,14 @@
-extends VBoxContainer
+extends "res://scenes/menu/BaseSettingsPanel.gd"
 
-signal resume
+@onready var global_volume: HSlider = $VolumeOptions/GlobalVolume
+@onready var sound_volume: HSlider = $VolumeOptions/SoundVolume
+@onready var ambience_volume: HSlider = $VolumeOptions/AmbienceVolume
+@onready var music_volume: HSlider = $VolumeOptions/MusicVolume
+@onready var global_value: Label = $VolumeOptions/GlobalValue
+@onready var sound_value: Label = $VolumeOptions/SoundValue
+@onready var ambience_value: Label = $VolumeOptions/AmbienceValue
+@onready var music_value: Label = $VolumeOptions/MusicValue
 
-var _audio_ns = "audio"
 var global_bus_name: String = "Master"
 var global_bus_idx: int
 var sound_bus_name: String = "Sound"
@@ -11,56 +17,44 @@ var ambience_bus_name: String = "Ambience"
 var ambience_bus_idx: int
 var music_bus_name: String = "Music"
 var music_bus_idx: int
-var _loaded_settings = false
 
 func _ready() -> void:
+	_settings_namespace = "audio"
 	global_bus_idx = AudioServer.get_bus_index(global_bus_name)
 	sound_bus_idx = AudioServer.get_bus_index(sound_bus_name)
 	ambience_bus_idx = AudioServer.get_bus_index(ambience_bus_name)
 	music_bus_idx = AudioServer.get_bus_index(music_bus_name)
+	super._ready()
 
-	var settings = SettingsManager.get_settings(_audio_ns)
-	_loaded_settings = true
-	if settings:
-		$VolumeOptions/GlobalVolume.value = settings.global
-		$VolumeOptions/SoundVolume.value = settings.sound
-		$VolumeOptions/AmbienceVolume.value = settings.ambience
-		$VolumeOptions/MusicVolume.value = settings.music
+func _apply_settings(settings: Dictionary) -> void:
+	global_volume.value = settings.global
+	sound_volume.value = settings.sound
+	ambience_volume.value = settings.ambience
+	music_volume.value = settings.music
 
-func _create_settings_obj():
+func _create_settings_obj() -> Dictionary:
 	return {
-		"global": $VolumeOptions/GlobalVolume.value,
-		"sound": $VolumeOptions/SoundVolume.value,
-		"ambience": $VolumeOptions/AmbienceVolume.value,
-		"music": $VolumeOptions/MusicVolume.value,
+		"global": global_volume.value,
+		"sound": sound_volume.value,
+		"ambience": ambience_volume.value,
+		"music": music_volume.value,
 	}
 
-func _on_visibility_changed():
-	if _loaded_settings and not visible:
-		_save_settings()
-
-func _save_settings():
-	SettingsManager.save_settings(_audio_ns, _create_settings_obj())
-
 func _on_global_volume_changed(value: float) -> void:
-	$VolumeOptions/GlobalValue.text = str(value * 100) + "%"
+	global_value.text = str(value * 100) + "%"
 	_change_volume(global_bus_idx, value)
 
 func _on_sound_volume_changed(value: float) -> void:
-	$VolumeOptions/SoundValue.text = str(value * 100) + "%"
+	sound_value.text = str(value * 100) + "%"
 	_change_volume(sound_bus_idx, value)
 
 func _on_ambience_volume_changed(value: float) -> void:
-	$VolumeOptions/AmbienceValue.text = str(value * 100) + "%"
+	ambience_value.text = str(value * 100) + "%"
 	_change_volume(ambience_bus_idx, value)
 
 func _on_music_volume_changed(value: float) -> void:
-	$VolumeOptions/MusicValue.text = str(value * 100) + "%"
+	music_value.text = str(value * 100) + "%"
 	_change_volume(music_bus_idx, value)
 
 func _change_volume(idx: int, value: float) -> void:
 	AudioServer.set_bus_volume_db(idx, linear_to_db(value))
-
-func _on_resume():
-	_save_settings()
-	emit_signal("resume")

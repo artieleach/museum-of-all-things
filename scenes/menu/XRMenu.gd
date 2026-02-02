@@ -2,11 +2,11 @@ extends Node3D
 
 const collision_layer := 0b0000_0000_0101_0000_0000_0000_0000_0000
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	global_rotation.z = 0
 
-func enable_collision():
+func enable_collision() -> void:
 	$Viewport2Din3D.set_collision_layer(collision_layer)
 
-func disable_collision():
+func disable_collision() -> void:
 	$Viewport2Din3D.set_collision_layer(0)

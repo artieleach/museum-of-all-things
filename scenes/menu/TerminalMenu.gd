@@ -13,7 +13,7 @@ func _ready() -> void:
 	reset()
 
 func _resume():
-	emit_signal("resume")
+	resume.emit()
 
 func reset():
 	$MarginContainer/StartPage/RandomExhibit.disabled = false
