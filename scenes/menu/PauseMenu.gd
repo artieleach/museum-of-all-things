@@ -4,31 +4,25 @@ signal resume
 signal settings
 signal vr_controls
 signal return_to_lobby
-signal teleport_to_player(peer_id: int)
+signal start_race
 
 @onready var vbox = $MarginContainer/VBoxContainer
+@onready var race_button = $MarginContainer/VBoxContainer/Race
 @onready var _xr = Util.is_xr()
-@onready var player_list_section = $MarginContainer/VBoxContainer/PlayerListSection
-@onready var player_list = %PlayerList
-@onready var teleport_button = %TeleportButton
-
-var _player_peer_ids: Array = []  # Maps ItemList indices to peer_ids
 
 func _on_visibility_changed():
 	if visible and vbox:
 		vbox.get_node("Resume").grab_focus()
-		_update_player_list_visibility()
-		if player_list_section.visible:
-			_update_player_list()
+		_update_race_button_visibility()
 
 func _ready():
 	GlobalMenuEvents.set_current_room.connect(set_current_room)
 	GlobalMenuEvents.ui_cancel_pressed.connect(ui_cancel_pressed)
-	GlobalMenuEvents.multiplayer_started.connect(_on_multiplayer_started)
-	GlobalMenuEvents.multiplayer_ended.connect(_on_multiplayer_ended)
-	NetworkManager.peer_connected.connect(_on_peer_changed)
-	NetworkManager.peer_disconnected.connect(_on_peer_changed)
-	NetworkManager.player_info_updated.connect(_on_peer_changed)
+	GlobalMenuEvents.multiplayer_started.connect(_update_race_button_visibility)
+	GlobalMenuEvents.multiplayer_ended.connect(_update_race_button_visibility)
+	RaceManager.race_started.connect(_on_race_state_changed)
+	RaceManager.race_ended.connect(_on_race_state_changed)
+	RaceManager.race_cancelled.connect(_update_race_button_visibility)
 	set_current_room(current_room)
 
 	# opening page in a browser outside VR is confusing
@@ -38,7 +32,7 @@ func _ready():
 	if Util.is_web():
 		%AskQuit.visible = false
 
-	_update_player_list_visibility()
+	_update_race_button_visibility()
 
 func ui_cancel_pressed():
 	if visible:
@@ -83,47 +77,15 @@ func _on_cancel_quit_pressed():
 func _on_vr_controls_pressed() -> void:
 	emit_signal("vr_controls")
 
-func _update_player_list_visibility() -> void:
-	if player_list_section:
-		player_list_section.visible = NetworkManager.is_multiplayer_active()
+func _on_race_pressed() -> void:
+	emit_signal("start_race")
 
-func _on_multiplayer_started() -> void:
-	_update_player_list_visibility()
+func _on_race_state_changed(_arg1 = null, _arg2 = null) -> void:
+	_update_race_button_visibility()
 
-func _on_multiplayer_ended() -> void:
-	_update_player_list_visibility()
-
-func _on_peer_changed(_id = null) -> void:
-	if visible and player_list_section.visible:
-		_update_player_list()
-
-func _update_player_list() -> void:
-	player_list.clear()
-	_player_peer_ids.clear()
-	teleport_button.disabled = true
-
-	for peer_id in NetworkManager.get_player_list():
-		var player_name = NetworkManager.get_player_name(peer_id)
-		var suffix = " (Host)" if peer_id == 1 else ""
-		var you_suffix = " (You)" if peer_id == NetworkManager.get_unique_id() else ""
-		var idx = player_list.add_item(player_name + suffix + you_suffix)
-		player_list.set_item_custom_fg_color(idx, NetworkManager.get_player_color(peer_id))
-		_player_peer_ids.append(peer_id)
-
-func _on_player_list_item_selected(index: int) -> void:
-	if index >= 0 and index < _player_peer_ids.size():
-		var peer_id = _player_peer_ids[index]
-		# Disable teleport if selecting self
-		teleport_button.disabled = (peer_id == NetworkManager.get_unique_id())
-	else:
-		teleport_button.disabled = true
-
-func _on_teleport_pressed() -> void:
-	var selected = player_list.get_selected_items()
-	if selected.size() > 0:
-		var index = selected[0]
-		if index >= 0 and index < _player_peer_ids.size():
-			var peer_id = _player_peer_ids[index]
-			if peer_id != NetworkManager.get_unique_id():
-				emit_signal("teleport_to_player", peer_id)
-				emit_signal("resume")
+func _update_race_button_visibility() -> void:
+	if not race_button:
+		return
+	# Show race button if: multiplayer active and no race is active (any player can start)
+	var should_show = NetworkManager.is_multiplayer_active() and not RaceManager.is_race_active()
+	race_button.visible = should_show

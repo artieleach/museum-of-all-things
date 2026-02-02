@@ -26,6 +26,8 @@ signal multiplayer_ended
 signal skin_selected(url: String, texture: ImageTexture)
 signal skin_reset
 signal quit_requested
+signal race_started(target_article: String)
+signal race_ended(winner_peer_id: int, winner_name: String)
 
 func emit_ui_cancel_pressed():
 	emit_signal("ui_cancel_pressed")
@@ -104,3 +106,9 @@ func emit_skin_reset():
 
 func emit_quit_requested():
 	emit_signal("quit_requested")
+
+func emit_race_started(target_article: String):
+	emit_signal("race_started", target_article)
+
+func emit_race_ended(winner_peer_id: int, winner_name: String):
+	emit_signal("race_ended", winner_peer_id, winner_name)

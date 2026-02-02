@@ -39,6 +39,7 @@ CacheControl="*res://scenes/util/CacheControl.gd"
 MipmapThread="*res://scenes/util/MipmapThread.gd"
 LanguageManager="*res://scenes/util/LanguageManager.gd"
 NetworkManager="*res://scenes/util/NetworkManager.gd"
+RaceManager="*res://scenes/util/RaceManager.gd"
 
 [display]
 
@@ -249,7 +250,6 @@ common/enable_pause_aware_picking=true
 [rendering]
 
 occlusion_culling/bvh_build_quality=0
-renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 limits/opengl/max_renderable_lights=16
 occlusion_culling/use_occlusion_culling=true

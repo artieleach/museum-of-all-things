@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://crace_hud_001"]
+
+[ext_resource type="Script" uid="uid://crace_hud_script" path="res://scenes/menu/RaceHUD.gd" id="1_racehud"]
+[ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="2_theme"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_target"]
+font_size = 32
+
+[node name="RaceHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -350.0
+offset_bottom = 60.0
+grow_horizontal = 0
+theme = ExtResource("2_theme")
+script = ExtResource("1_racehud")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="TargetLabel" type="Label" parent="MarginContainer"]
+layout_mode = 2
+text = "Target: Article Name"
+label_settings = SubResource("LabelSettings_target")
+horizontal_alignment = 2

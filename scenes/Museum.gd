@@ -137,6 +137,10 @@ func _set_current_room_title(title):
 	GlobalMenuEvents.emit_set_current_room(title)
 	_start_queue()
 
+	# Race win detection
+	if RaceManager.is_race_active() and title == RaceManager.get_target_article():
+		RaceManager.notify_article_reached(NetworkManager.get_unique_id(), title)
+
 	var fog_color = Util.gen_fog(_current_room_title)
 	var environment = $WorldEnvironment.environment
 

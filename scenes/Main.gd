@@ -63,6 +63,11 @@ func _ready():
 	GlobalMenuEvents.skin_reset.connect(_on_skin_reset)
 	GlobalMenuEvents.quit_requested.connect(_on_quit_requested)
 
+	# Race signals
+	$CanvasLayer/PauseMenu.start_race.connect(_on_start_race_pressed)
+	RaceManager.race_started.connect(_on_race_started)
+	ExhibitFetcher.random_complete.connect(_on_random_article_complete)
+
 	# Load saved skin
 	_load_saved_skin()
 
@@ -362,6 +367,68 @@ func _load_saved_skin() -> void:
 			if OS.is_debug_build():
 				print("Main: Loaded saved skin: ", skin_url)
 
+# Race functions
+func _on_start_race_pressed() -> void:
+	if RaceManager.is_race_active():
+		return
+
+	if NetworkManager.is_server():
+		if OS.is_debug_build():
+			print("Main: Fetching random article for race...")
+		ExhibitFetcher.fetch_random({ "race": true })
+	else:
+		# Request the server to start a race
+		if OS.is_debug_build():
+			print("Main: Sending _request_race_start RPC to server (my id: %d, multiplayer active: %s)" % [multiplayer.get_unique_id(), NetworkManager.is_multiplayer_active()])
+		_request_race_start.rpc_id(1)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_race_start() -> void:
+	if OS.is_debug_build():
+		print("Main: _request_race_start RPC received from peer %d" % multiplayer.get_remote_sender_id())
+	if not NetworkManager.is_server():
+		return
+
+	if RaceManager.is_race_active():
+		return
+
+	if OS.is_debug_build():
+		print("Main: Race start requested by peer, fetching random article...")
+
+	ExhibitFetcher.fetch_random({ "race": true })
+
+func _on_random_article_complete(title: String, context) -> void:
+	if not context or not context.has("race") or not context.race:
+		return
+
+	if title == null or title == "":
+		push_error("Main: Failed to fetch random article for race")
+		return
+
+	if OS.is_debug_build():
+		print("Main: Starting race to '", title, "'")
+
+	RaceManager.start_race(title)
+
+func _on_race_started(target_article: String) -> void:
+	if OS.is_debug_build():
+		print("Main: Race started, teleporting to lobby")
+
+	_close_menus()
+
+	# Teleport local player to starting point
+	if not Util.is_xr():
+		_player.rotation.y = starting_rotation
+	_player.position = starting_point
+
+	# Reset to lobby
+	$Museum.reset_to_lobby()
+
+	# Start game (close menus, capture mouse)
+	_start_game()
+
+	GlobalMenuEvents.emit_race_started(target_article)
+
 # Multiplayer functions
 func _start_dedicated_server() -> void:
 	print("Starting dedicated server on port %d..." % _server_port)
@@ -370,6 +437,10 @@ func _start_dedicated_server() -> void:
 	NetworkManager.peer_connected.connect(_on_network_peer_connected)
 	NetworkManager.peer_disconnected.connect(_on_network_peer_disconnected)
 	NetworkManager.player_info_updated.connect(_on_network_player_info_updated)
+
+	# Connect race signals (needed for RPC handling)
+	RaceManager.race_started.connect(_on_race_started)
+	ExhibitFetcher.random_complete.connect(_on_random_article_complete)
 
 	var error = NetworkManager.host_game(_server_port, true)
 	if error != OK:
@@ -515,21 +586,6 @@ func _get_player_by_peer_id(peer_id: int) -> Node:
 	elif _network_players.has(peer_id):
 		return _network_players[peer_id]
 	return null
-
-func _on_teleport_to_player(peer_id: int) -> void:
-	var target = _get_player_by_peer_id(peer_id)
-	if target and is_instance_valid(target):
-		# Dismount if currently mounted
-		if _player.has_method("execute_dismount") and _player._is_mounted:
-			_player.execute_dismount()
-
-		# Teleport 2 meters behind target player
-		var offset = target.global_transform.basis.z * 2.0
-		_player.global_position = target.global_position + offset
-		_player.look_at(target.global_position, Vector3.UP)
-
-		if OS.is_debug_build():
-			print("Main: Teleported to player ", peer_id)
 
 # Mounting system functions
 func _request_mount(target: Node) -> void:
