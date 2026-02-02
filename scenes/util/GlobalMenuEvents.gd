@@ -47,7 +47,7 @@ func _ready() -> void:
 	_settings_events.set_mouse_sensitivity.connect(func(f): set_mouse_sensitivity.emit(f))
 	_settings_events.set_joypad_deadzone.connect(func(v): set_joypad_deadzone.emit(v))
 
-	_multiplayer_events.player_joined.connect(func(id, name): player_joined.emit(id, name))
+	_multiplayer_events.player_joined.connect(func(id, player_name): player_joined.emit(id, player_name))
 	_multiplayer_events.player_left.connect(func(id): player_left.emit(id))
 	_multiplayer_events.multiplayer_started.connect(func(): multiplayer_started.emit())
 	_multiplayer_events.multiplayer_ended.connect(func(): multiplayer_ended.emit())
@@ -57,7 +57,7 @@ func _ready() -> void:
 	_gameplay_events.return_to_lobby.connect(func(): return_to_lobby.emit())
 	_gameplay_events.language_changed.connect(func(l): set_language.emit(l))
 	_gameplay_events.race_started.connect(func(t): race_started.emit(t))
-	_gameplay_events.race_ended.connect(func(id, name): race_ended.emit(id, name))
+	_gameplay_events.race_ended.connect(func(id, player_name): race_ended.emit(id, player_name))
 
 # =============================================================================
 # LEGACY SIGNALS - Deprecated, prefer using domain-specific event buses

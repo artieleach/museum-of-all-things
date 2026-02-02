@@ -66,9 +66,9 @@ func _texture_load_item():
 						if result[0] != OK:
 							push_error("failed to fetch image ", result[1], " ", item.url)
 						else:
-							data = result[3]
-							_write_url(item.url, data)
-							_load_image(item.url, data, item.ctx)
+							var fetched_data: PackedByteArray = result[3]
+							_write_url(item.url, fetched_data)
+							_load_image(item.url, fetched_data, item.ctx)
 
 					if Platform.is_web():
 						RequestSync.request_async(request_url, COMMON_HEADERS).completed.connect(handle_result)

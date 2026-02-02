@@ -1,12 +1,14 @@
 extends Node
+## Manages cache cleanup on application exit.
 
-@export var max_cache_size = 5e8
-@export var target_cache_size = 5e8
+@export var max_cache_size: float = 5e8
+@export var target_cache_size: float = 5e8
 
-func _exit_tree():
+
+func _exit_tree() -> void:
 	if CacheControl.auto_limit_cache_enabled():
 		Util.t_start()
-		var settings = SettingsManager.get_settings("data")
+		var settings: Dictionary = SettingsManager.get_settings("data")
 		if settings and settings.has("cache_limit_size"):
 			CacheControl.cull_cache_to_size(
 				settings.cache_limit_size,

@@ -1,0 +1,171 @@
+extends Node
+class_name MultiplayerController
+## Handles network player spawning, position sync, and multiplayer session management.
+
+signal player_spawned(peer_id: int)
+signal player_removed(peer_id: int)
+
+const POSITION_SYNC_INTERVAL: float = 0.05  # 20 updates per second
+
+var _main: Node = null
+var _network_players: Dictionary = {}  # peer_id -> player node
+var _is_multiplayer_game: bool = false
+var _position_sync_timer: float = 0.0
+var _server_mode: bool = false
+var _server_port: int = 7777
+
+var NetworkPlayer: PackedScene = null
+var _starting_point: Vector3 = Vector3(0, 4, 0)
+
+
+func init(main: Node, network_player_scene: PackedScene, starting_point: Vector3) -> void:
+	_main = main
+	NetworkPlayer = network_player_scene
+	_starting_point = starting_point
+
+
+func set_server_mode(enabled: bool, port: int = 7777) -> void:
+	_server_mode = enabled
+	_server_port = port
+
+
+func is_server_mode() -> bool:
+	return _server_mode
+
+
+func get_server_port() -> int:
+	return _server_port
+
+
+func is_multiplayer_game() -> bool:
+	return _is_multiplayer_game
+
+
+func set_multiplayer_game(value: bool) -> void:
+	_is_multiplayer_game = value
+
+
+func get_network_players() -> Dictionary:
+	return _network_players
+
+
+func spawn_network_player(peer_id: int) -> Node:
+	if _network_players.has(peer_id):
+		return _network_players[peer_id]
+
+	var net_player: Node = NetworkPlayer.instantiate()
+	net_player.name = "NetworkPlayer_" + str(peer_id)
+	net_player.is_local = false
+	_main.add_child(net_player)
+
+	net_player.set_player_authority(peer_id)
+	net_player.set_player_name(NetworkManager.get_player_name(peer_id))
+	net_player.set_player_color(NetworkManager.get_player_color(peer_id))
+	var skin_url: String = NetworkManager.get_player_skin(peer_id)
+	if skin_url != "":
+		net_player.set_player_skin(skin_url)
+	net_player.position = _starting_point
+
+	_network_players[peer_id] = net_player
+	GlobalMenuEvents.emit_player_joined(peer_id, NetworkManager.get_player_name(peer_id))
+
+	if OS.is_debug_build():
+		print("MultiplayerController: Spawned network player for peer %d" % peer_id)
+
+	emit_signal("player_spawned", peer_id)
+	return net_player
+
+
+func remove_network_player(peer_id: int, local_player: Node, mount_state: Dictionary) -> void:
+	if _network_players.has(peer_id):
+		var player_node: Node = _network_players[peer_id]
+		if is_instance_valid(player_node):
+			# Handle mount cleanup before removing player
+			# If disconnected player had a rider, dismount them
+			if player_node._has_rider and is_instance_valid(player_node.mounted_by):
+				player_node.mounted_by.execute_dismount()
+
+			# If disconnected player was riding someone, clear mount's rider state
+			if player_node._is_mounted and is_instance_valid(player_node.mounted_on):
+				player_node.mounted_on._remove_rider(player_node)
+
+			# If local player was mounted on disconnected player, dismount
+			if local_player and local_player._is_mounted and local_player.mounted_on == player_node:
+				local_player.execute_dismount()
+
+			player_node.queue_free()
+			_network_players.erase(peer_id)
+
+		# Clear mount state tracking
+		if mount_state.has(peer_id):
+			mount_state.erase(peer_id)
+
+		GlobalMenuEvents.emit_player_left(peer_id)
+		emit_signal("player_removed", peer_id)
+
+		if OS.is_debug_build():
+			print("MultiplayerController: Removed network player for peer %d" % peer_id)
+
+
+func update_player_info(peer_id: int) -> void:
+	if _network_players.has(peer_id):
+		var net_player: Node = _network_players[peer_id]
+		if is_instance_valid(net_player):
+			net_player.set_player_name(NetworkManager.get_player_name(peer_id))
+			net_player.set_player_color(NetworkManager.get_player_color(peer_id))
+			var skin_url: String = NetworkManager.get_player_skin(peer_id)
+			if skin_url != "":
+				net_player.set_player_skin(skin_url)
+			else:
+				net_player.clear_player_skin()
+
+
+func end_multiplayer_session() -> void:
+	_is_multiplayer_game = false
+
+	# Remove all network players
+	for peer_id: int in _network_players.keys():
+		var player_node: Node = _network_players[peer_id]
+		if is_instance_valid(player_node):
+			player_node.queue_free()
+	_network_players.clear()
+
+	GlobalMenuEvents.emit_multiplayer_ended()
+
+
+func get_player_by_peer_id(peer_id: int, local_player: Node) -> Node:
+	if peer_id == NetworkManager.get_unique_id():
+		return local_player
+	elif _network_players.has(peer_id):
+		return _network_players[peer_id]
+	return null
+
+
+func get_all_players(local_player: Node) -> Array:
+	var players: Array = [local_player]
+	for peer_id: int in _network_players:
+		if is_instance_valid(_network_players[peer_id]):
+			players.append(_network_players[peer_id])
+	return players
+
+
+func process_position_sync(delta: float, local_player: Node) -> bool:
+	if not _is_multiplayer_game or not NetworkManager.is_multiplayer_active() or not local_player:
+		return false
+
+	_position_sync_timer += delta
+	if _position_sync_timer >= POSITION_SYNC_INTERVAL:
+		_position_sync_timer = 0.0
+		return true
+	return false
+
+
+func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node) -> void:
+	if _network_players.has(peer_id):
+		var net_player: Node = _network_players[peer_id]
+		if is_instance_valid(net_player):
+			if net_player.has_method("apply_network_position"):
+				net_player.apply_network_position(pos, rot_y, pivot_rot_x, pivot_pos_y)
+			if net_player.has_method("apply_network_mount_state"):
+				var mount_node: Node = get_player_by_peer_id(mounted_peer_id, local_player) if is_mounted else null
+				net_player.apply_network_mount_state(is_mounted, mounted_peer_id, mount_node)

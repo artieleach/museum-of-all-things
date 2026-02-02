@@ -68,7 +68,7 @@ func _processor_thread_loop():
 	while not WorkQueue.get_quitting():
 		_processor_thread_item()
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not Platform.is_using_threads():
 		_processor_thread_item()
 
@@ -77,9 +77,9 @@ func _processor_thread_item():
 		if item:
 			_create_items(item[0], item[1], item[2])
 
-func _seeded_shuffle(seed, arr, bias=false):
+func _seeded_shuffle(new_seed, arr, bias=false):
 	var rng = RandomNumberGenerator.new()
-	rng.seed = hash(seed)
+	rng.seed = hash(new_seed)
 	if not bias:
 		CollectionUtils.shuffle(rng, arr)
 	else:

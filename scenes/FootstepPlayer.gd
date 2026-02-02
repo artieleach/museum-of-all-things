@@ -1,15 +1,12 @@
 extends Node3D
+## Plays footstep sounds based on movement and floor surface type.
+
+@onready var _audio_stream_player_3d: AudioStreamPlayer3D = $AudioStreamPlayer3D
+@onready var _water_enter_sound: AudioStream = preload("res://assets/sound/Footsteps/Water/Player Enters Water 2.ogg")
 
 # TODO: this should be a custom resource instead
-@onready var _footsteps = {
+@onready var _footsteps: Dictionary = {
 	"hard": [
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 1 reverb.ogg"),
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 2 reverb.ogg"),
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 3 reverb.ogg"),
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 4 reverb.ogg"),
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 5 reverb.ogg"),
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 6 reverb.ogg"),
-		#preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 7 reverb.ogg"),
 		preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 8 reverb.ogg"),
 		preload("res://assets/sound/Footsteps/Tile/Reverb/Footsteps Tile 9 reverb.ogg"),
 	],
@@ -54,31 +51,34 @@ extends Node3D
 	],
 }
 
-@onready var audio_stream_player_3d: AudioStreamPlayer3D = $AudioStreamPlayer3D
-@onready var water_enter_sound = preload("res://assets/sound/Footsteps/Water/Player Enters Water 2.ogg")
+const _DEFAULT_FLOOR_TYPE: String = "hard"
+const _FLOOR_CARPET_CELL: int = 11
 
-var _default_floor_type = "hard"
-var _floor_material_map = {
-	11: "soft", # carpet
+var _floor_material_map: Dictionary = {
+	_FLOOR_CARPET_CELL: "soft",
 }
 
 @export var _step_length: float = 3.0
 
-var _on_floor = false
-var _distance_from_last_step = 0.0
-var _step_idx = 0
-var _last_in_water = false
-var _last_on_floor = false
-@onready var _last_position = global_position
+var _on_floor: bool = false
+var _distance_from_last_step: float = 0.0
+var _step_idx: int = 0
+var _last_in_water: bool = false
+var _last_on_floor: bool = false
+
+@onready var _last_position: Vector3 = global_position
+
 
 func _ready() -> void:
-	audio_stream_player_3d.play()
+	_audio_stream_player_3d.play()
 
-func set_on_floor(on_floor):
+
+func set_on_floor(on_floor: bool) -> void:
 	_on_floor = on_floor
 
-func _physics_process(delta):
-	var step = (global_position - _last_position).length()
+
+func _physics_process(_delta: float) -> void:
+	var step: float = (global_position - _last_position).length()
 	_last_position = global_position
 
 	if not _on_floor:
@@ -107,32 +107,32 @@ func _physics_process(delta):
 		_distance_from_last_step = 0.0
 		call_deferred("_play_footstep")
 
-func _play_footstep(override_type=null):
-	var step_type
-	var obj = $FloorCast.get_collider()
-	if override_type:
+
+func _play_footstep(override_type: String = "") -> void:
+	var step_type: String
+	var obj: Node = $FloorCast.get_collider()
+	if override_type != "":
 		step_type = override_type
 	elif obj and obj.is_in_group("footstep_dirt"):
 		step_type = "dirt"
 	elif obj and obj.is_in_group("footstep_water"):
 		step_type = "water"
 	else:
-		var floor_cell = GridUtils.world_to_grid(global_position) - Vector3.UP
-		var floor_cell_type = GridManager.get_cell_item(floor_cell)
+		var floor_cell: Vector3 = GridUtils.world_to_grid(global_position) - Vector3.UP
+		var floor_cell_type: int = GridManager.get_cell_item(floor_cell)
 		step_type = _floor_material_map.get(
 			floor_cell_type,
-			_default_floor_type
+			_DEFAULT_FLOOR_TYPE
 		)
 
-
-	var step_sfx_list = _footsteps[step_type]
-	var step_sfx
+	var step_sfx_list: Array = _footsteps[step_type]
+	var step_sfx: AudioStream
 	if step_type == "water" and not _last_in_water:
-		step_sfx = water_enter_sound
+		step_sfx = _water_enter_sound
 	else:
-		step_sfx = step_sfx_list[randi() % len(step_sfx_list)]
+		step_sfx = step_sfx_list[randi() % step_sfx_list.size()]
 
-	var playback: AudioStreamPlaybackPolyphonic = audio_stream_player_3d.get_stream_playback()
+	var playback: AudioStreamPlaybackPolyphonic = _audio_stream_player_3d.get_stream_playback()
 	playback.play_stream(step_sfx)
 
 	_last_in_water = step_type == "water"

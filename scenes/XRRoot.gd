@@ -1,26 +1,22 @@
 extends Node3D
+## XR controller setup and input handling.
 
-@onready var left_controller = $XROrigin3D/XRController3D_left
-@onready var right_controller = $XROrigin3D/XRController3D_right
+const TRIGGER_TELEPORT_ACTION: String = "trigger_click"
+const THUMBSTICK_TELEPORT_ACTION: String = "thumbstick_up"
+const THUMBSTICK_TELEPORT_PRESSED_THRESHOLD: float = 0.8
+const THUMBSTICK_TELEPORT_RELEASED_THRESHOLD: float = 0.4
 
-"""
-signal set_xr_movement_style
-signal set_movement_speed
-signal set_xr_rotation_increment
-signal set_xr_smooth_rotation
-"""
+@onready var _left_controller: XRController3D = $XROrigin3D/XRController3D_left
+@onready var _right_controller: XRController3D = $XROrigin3D/XRController3D_right
 
-const TRIGGER_TELEPORT_ACTION = "trigger_click"
-const THUMBSTICK_TELEPORT_ACTION = "thumbstick_up"
+var _thumbstick_teleport_pressed: bool = false
+var _menu_active: bool = false
+var _movement_style: String = "teleportation"
 
-const THUMBSTICK_TELEPORT_PRESSED_THRESHOLD := 0.8
-const THUMBSTICK_TELEPORT_RELEASED_THRESHOLD := 0.4
 
-var _thumbstick_teleport_pressed := false
-
-func _ready():
+func _ready() -> void:
 	if Platform.is_openxr():
-		var interface = XRServer.find_interface("OpenXR")
+		var interface: XRInterface = XRServer.find_interface("OpenXR")
 		print("initializing XR interface OpenXR...")
 		if interface and interface.initialize():
 			print("initialized")
@@ -38,7 +34,7 @@ func _ready():
 			return
 
 	if Platform.is_webxr():
-		var interface = XRServer.find_interface("WebXR")
+		var interface: XRInterface = XRServer.find_interface("WebXR")
 
 		# WebXR is less powerful than when running natively in OpenXR, so target 72 FPS.
 		interface.set_display_refresh_rate(72)
@@ -54,66 +50,75 @@ func _ready():
 	GlobalMenuEvents.set_xr_rotation_increment.connect(_set_xr_rotation_increment)
 	GlobalMenuEvents.set_xr_smooth_rotation.connect(_set_xr_smooth_rotation)
 	GlobalMenuEvents.emit_load_xr_settings()
-	left_controller.get_node("FunctionPointer/Laser").visibility_changed.connect(_laser_visible_changed)
+	_left_controller.get_node("FunctionPointer/Laser").visibility_changed.connect(_laser_visible_changed)
 
-func _failed_vr_accept_confirmed():
+
+func _failed_vr_accept_confirmed() -> void:
 	get_tree().quit()
 
-func _on_webxr_primary_changed(webxr_primary: int):
+
+func _on_webxr_primary_changed(webxr_primary: int) -> void:
 	# Default to thumbstick.
 	if webxr_primary == 0:
 		webxr_primary = XRToolsUserSettings.WebXRPrimary.THUMBSTICK
 
-	var action_name = XRToolsUserSettings.get_webxr_primary_action(webxr_primary)
+	var action_name: String = XRToolsUserSettings.get_webxr_primary_action(webxr_primary)
 	%XRToolsMovementDirect.input_action = action_name
 	%XRToolsMovementTurn.input_action = action_name
 
-var menu_active = false
-var movement_style = "teleportation"
 
-func _set_xr_movement_style(style):
-	movement_style = style
+func _set_xr_movement_style(style: String) -> void:
+	_movement_style = style
 	if style == "teleportation":
-		left_controller.get_node("FunctionTeleport").enabled = not menu_active
-		left_controller.get_node("XRToolsMovementDirect").enabled = false
+		_left_controller.get_node("FunctionTeleport").enabled = not _menu_active
+		_left_controller.get_node("XRToolsMovementDirect").enabled = false
 	elif style == "direct":
-		left_controller.get_node("FunctionTeleport").enabled = false
-		left_controller.get_node("XRToolsMovementDirect").enabled = true
+		_left_controller.get_node("FunctionTeleport").enabled = false
+		_left_controller.get_node("XRToolsMovementDirect").enabled = true
 
-func _set_xr_movement_speed(speed):
-	left_controller.get_node("XRToolsMovementDirect").max_speed = speed
 
-func _set_xr_rotation_increment(increment):
-	right_controller.get_node("XRToolsMovementTurn").step_turn_angle = increment
+func _set_xr_movement_speed(speed: float) -> void:
+	_left_controller.get_node("XRToolsMovementDirect").max_speed = speed
 
-func _set_xr_smooth_rotation(enabled):
-	right_controller.get_node("XRToolsMovementTurn").turn_mode = XRToolsMovementTurn.TurnMode.SMOOTH if enabled else XRToolsMovementTurn.TurnMode.SNAP
 
-func _laser_visible_changed():
-	if movement_style == "teleportation":
-		left_controller.get_node("FunctionTeleport").enabled = not left_controller.get_node("FunctionPointer/Laser").visible
+func _set_xr_rotation_increment(increment: float) -> void:
+	_right_controller.get_node("XRToolsMovementTurn").step_turn_angle = increment
 
-func _hide_menu():
-	menu_active = false
-	right_controller.get_node("XrMenu").disable_collision()
-	right_controller.get_node("XrMenu").visible = false
 
-func _show_menu():
-	menu_active = true
-	right_controller.get_node("XrMenu").enable_collision()
-	right_controller.get_node("XrMenu").visible = true
+func _set_xr_smooth_rotation(enabled: bool) -> void:
+	_right_controller.get_node("XRToolsMovementTurn").turn_mode = XRToolsMovementTurn.TurnMode.SMOOTH if enabled else XRToolsMovementTurn.TurnMode.SNAP
 
-func _physics_process(delta: float) -> void:
+
+func _laser_visible_changed() -> void:
+	if _movement_style == "teleportation":
+		_left_controller.get_node("FunctionTeleport").enabled = not _left_controller.get_node("FunctionPointer/Laser").visible
+
+
+func _hide_menu() -> void:
+	_menu_active = false
+	_right_controller.get_node("XrMenu").disable_collision()
+	_right_controller.get_node("XrMenu").visible = false
+
+
+func _show_menu() -> void:
+	_menu_active = true
+	_right_controller.get_node("XrMenu").enable_collision()
+	_right_controller.get_node("XrMenu").visible = true
+
+
+func _physics_process(_delta: float) -> void:
 	$XROrigin3D/XRToolsPlayerBody/FootstepPlayer.set_on_floor($XROrigin3D/XRToolsPlayerBody.is_on_floor())
 
+
 func _toggle_menu() -> void:
-	if not menu_active:
+	if not _menu_active:
 		_show_menu()
 	else:
 		_hide_menu()
 
+
 func _on_xr_controller_3d_left_input_vector2_changed(name: String, value: Vector2) -> void:
-	var xr_tracker: XRPositionalTracker = XRServer.get_tracker(left_controller.tracker)
+	var xr_tracker: XRPositionalTracker = XRServer.get_tracker(_left_controller.tracker)
 
 	if _thumbstick_teleport_pressed:
 		if value.length() < THUMBSTICK_TELEPORT_RELEASED_THRESHOLD:
@@ -121,25 +126,29 @@ func _on_xr_controller_3d_left_input_vector2_changed(name: String, value: Vector
 			xr_tracker.set_input(THUMBSTICK_TELEPORT_ACTION, false)
 
 	else:
-		if value.y > THUMBSTICK_TELEPORT_PRESSED_THRESHOLD and not left_controller.is_button_pressed(TRIGGER_TELEPORT_ACTION):
+		if value.y > THUMBSTICK_TELEPORT_PRESSED_THRESHOLD and not _left_controller.is_button_pressed(TRIGGER_TELEPORT_ACTION):
 			_thumbstick_teleport_pressed = true
 			xr_tracker.set_input(THUMBSTICK_TELEPORT_ACTION, true)
 
+
 func _on_xr_controller_3d_left_button_pressed(name: String) -> void:
 	if not _thumbstick_teleport_pressed and name == TRIGGER_TELEPORT_ACTION:
-		var xr_tracker: XRPositionalTracker = XRServer.get_tracker(left_controller.tracker)
+		var xr_tracker: XRPositionalTracker = XRServer.get_tracker(_left_controller.tracker)
 		xr_tracker.set_input(THUMBSTICK_TELEPORT_ACTION, true)
 	elif name in ["menu_button", "by_button"]:
 		_toggle_menu()
 
+
 func _on_xr_controller_3d_left_button_released(name: String) -> void:
 	if not _thumbstick_teleport_pressed and name == TRIGGER_TELEPORT_ACTION:
-		var xr_tracker: XRPositionalTracker = XRServer.get_tracker(left_controller.tracker)
+		var xr_tracker: XRPositionalTracker = XRServer.get_tracker(_left_controller.tracker)
 		xr_tracker.set_input(THUMBSTICK_TELEPORT_ACTION, false)
+
 
 func _on_xr_controller_3d_right_button_pressed(name: String) -> void:
 	if name == "by_button":
 		_toggle_menu()
 
-func _on_xr_controller_3d_right_button_released(name: String) -> void:
+
+func _on_xr_controller_3d_right_button_released(_name: String) -> void:
 	pass

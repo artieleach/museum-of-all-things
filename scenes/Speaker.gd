@@ -1,17 +1,20 @@
 extends Node
+## Text-to-speech wrapper for accessibility.
 
-var _voice
+var _voice: String = ""
 
-# Called when the node enters the scene tree for the first time.
+
 func _ready() -> void:
-	var voices = DisplayServer.tts_get_voices_for_language("en")
-	if len(voices) == 0:
+	var voices: PackedStringArray = DisplayServer.tts_get_voices_for_language("en")
+	if voices.size() == 0:
 		return
 	_voice = voices[0]
 
-func speak(text):
-	if _voice:
+
+func speak(text: String) -> void:
+	if _voice != "":
 		DisplayServer.tts_speak(text, _voice)
 
-func stop():
+
+func stop() -> void:
 	DisplayServer.tts_stop()

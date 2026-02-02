@@ -1,6 +1,5 @@
 extends Node
-
-enum Menu { NONE, MAIN, PAUSE, SETTINGS, TERMINAL, MULTIPLAYER }
+## Main game controller handling initialization, WebXR, and delegating to subsystems.
 
 @export var XrRoot: PackedScene = preload("res://scenes/XRRoot.tscn")
 @export var Player: PackedScene = preload("res://scenes/Player.tscn")
@@ -11,40 +10,57 @@ enum Menu { NONE, MAIN, PAUSE, SETTINGS, TERMINAL, MULTIPLAYER }
 @export var starting_point: Vector3 = Vector3(0, 4, 0)
 @export var starting_rotation: float = 0
 
-var _player
-var _network_players: Dictionary = {}  # peer_id -> player node
-var webxr_interface
+var _player: Node = null
+var webxr_interface: XRInterface = null
 var webxr_is_starting: bool = false
-var _is_multiplayer_game: bool = false
-var _position_sync_timer: float = 0.0
-var _server_mode: bool = false
-var _server_port: int = 7777
-var _mount_state: Dictionary = {}  # peer_id -> mount_peer_id (-1 if not mounted)
 
-const POSITION_SYNC_INTERVAL: float = 0.05  # 20 updates per second
+# Subsystems
+var _menu_controller: MainMenuController = null
+var _multiplayer_controller: MultiplayerController = null
+var _mount_controller: MountController = null
 
-@onready var player_list_overlay = $TabMenu/PlayerListOverlay
+@onready var player_list_overlay: Control = $TabMenu/PlayerListOverlay
 @onready var game_started: bool = false
-@onready var menu_nav_queue: Array = []
+
 
 func _debug_log(message: String) -> void:
 	if OS.is_debug_build():
 		print(message)
 
+
 func _parse_command_line() -> void:
-	var args = OS.get_cmdline_args()
-	for i in args.size():
+	var args: PackedStringArray = OS.get_cmdline_args()
+	for i: int in args.size():
 		match args[i]:
 			"--server":
-				_server_mode = true
+				_multiplayer_controller.set_server_mode(true)
 			"--port":
 				if i + 1 < args.size():
-					_server_port = int(args[i + 1])
+					_multiplayer_controller.set_server_mode(
+						_multiplayer_controller.is_server_mode(),
+						int(args[i + 1])
+					)
+
 
 func _ready() -> void:
+	# Initialize subsystems first
+	_menu_controller = MainMenuController.new()
+	_menu_controller.init(self, $CanvasLayer)
+	_menu_controller.game_start_requested.connect(_start_game)
+	_menu_controller.multiplayer_start_requested.connect(_on_multiplayer_start_game)
+	add_child(_menu_controller)
+
+	_multiplayer_controller = MultiplayerController.new()
+	_multiplayer_controller.init(self, NetworkPlayer, starting_point)
+	add_child(_multiplayer_controller)
+
+	_mount_controller = MountController.new()
+	_mount_controller.init(self, _multiplayer_controller)
+	add_child(_mount_controller)
+
 	_parse_command_line()
 
-	if _server_mode:
+	if _multiplayer_controller.is_server_mode():
 		_start_dedicated_server()
 		return
 
@@ -96,8 +112,10 @@ func _ready() -> void:
 
 		webxr_interface.is_session_supported("immersive-vr")
 
+
 func _play_sting() -> void:
 	$GameLaunchSting.play()
+
 
 func _recreate_player() -> void:
 	if _player:
@@ -120,21 +138,42 @@ func _recreate_player() -> void:
 		_player.dampening = smooth_movement_dampening
 		_player.position = starting_point
 
+
 func _change_post_processing(post_processing: String) -> void:
 	$CRTPostProcessing.visible = post_processing == "crt"
+
 
 func _start_game() -> void:
 	if not Platform.is_xr():
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		_player.start()
-	_close_menus()
+	_menu_controller.close_menus()
 	if not game_started:
 		game_started = true
 		$Museum.init(_player)
 
+
+func _pause_game() -> void:
+	_player.pause()
+	if game_started:
+		if $CanvasLayer.visible:
+			return
+		_menu_controller.open_pause_menu()
+	else:
+		_menu_controller.open_main_menu()
+
+
+func _use_terminal() -> void:
+	_player.pause()
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_menu_controller.open_terminal_menu()
+
+
+# =============================================================================
+# MENU CALLBACKS
+# =============================================================================
 func _on_main_menu_start_webxr() -> void:
-	# Prevent clicking the button multiple times.
 	if webxr_is_starting:
 		return
 
@@ -147,71 +186,31 @@ func _on_main_menu_start_webxr() -> void:
 			OS.alert("Failed to initialize WebXR")
 			webxr_is_starting = false
 
-func _pause_game() -> void:
-	_player.pause()
-	if game_started:
-		if $CanvasLayer.visible:
-			return
-		_open_pause_menu()
-	else:
-		_open_main_menu()
-
-func _use_terminal() -> void:
-	_player.pause()
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	_open_terminal_menu()
-
-func _open_menu(menu: Menu) -> void:
-	$CanvasLayer.visible = menu != Menu.NONE
-	$CanvasLayer/MainMenu.visible = menu == Menu.MAIN
-	$CanvasLayer/PauseMenu.visible = menu == Menu.PAUSE
-	$CanvasLayer/Settings.visible = menu == Menu.SETTINGS
-	$CanvasLayer/PopupTerminalMenu.visible = menu == Menu.TERMINAL
-	$CanvasLayer/MultiplayerMenu.visible = menu == Menu.MULTIPLAYER
-
-func _close_menus() -> void:
-	_open_menu(Menu.NONE)
-
-func _open_main_menu() -> void:
-	_open_menu(Menu.MAIN)
-
-func _open_pause_menu() -> void:
-	_open_menu(Menu.PAUSE)
-
-func _open_settings_menu() -> void:
-	_open_menu(Menu.SETTINGS)
-
-func _open_terminal_menu() -> void:
-	_open_menu(Menu.TERMINAL)
-
-func _open_multiplayer_menu() -> void:
-	_open_menu(Menu.MULTIPLAYER)
 
 func _on_main_menu_start_pressed() -> void:
 	_start_game()
 
+
 func _on_main_menu_multiplayer() -> void:
-	menu_nav_queue.append(_open_main_menu)
-	_open_multiplayer_menu()
+	_menu_controller.on_main_menu_multiplayer()
+
 
 func _on_multiplayer_menu_back() -> void:
-	var prev = menu_nav_queue.pop_back()
-	if prev:
-		prev.call()
-	else:
-		_open_main_menu()
+	_menu_controller.on_multiplayer_menu_back()
+
 
 func _on_multiplayer_start_game() -> void:
-	_is_multiplayer_game = true
+	_multiplayer_controller.set_multiplayer_game(true)
 	_start_multiplayer_game()
 
+
 func _on_main_menu_settings() -> void:
-	menu_nav_queue.append(_open_main_menu)
-	_open_settings_menu()
+	_menu_controller.on_main_menu_settings()
+
 
 func _on_pause_menu_settings() -> void:
-	menu_nav_queue.append(_open_pause_menu)
-	_open_settings_menu()
+	_menu_controller.on_pause_menu_settings()
+
 
 func _on_pause_menu_return_to_lobby() -> void:
 	if not Platform.is_xr():
@@ -220,14 +219,15 @@ func _on_pause_menu_return_to_lobby() -> void:
 	$Museum.reset_to_lobby()
 	_start_game()
 
-func _on_settings_back() -> void:
-	var prev = menu_nav_queue.pop_back()
-	if prev:
-		prev.call()
-	else:
-		_start_game()
 
-func _input(event) -> void:
+func _on_settings_back() -> void:
+	_menu_controller.on_settings_back()
+
+
+# =============================================================================
+# INPUT HANDLING
+# =============================================================================
+func _input(event: InputEvent) -> void:
 	if Input.is_action_pressed("toggle_fullscreen"):
 		GlobalMenuEvents.emit_on_fullscreen_toggled(not GraphicsManager.fullscreen)
 
@@ -252,8 +252,8 @@ func _input(event) -> void:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
-	# Tab key for player list overlay (only in multiplayer, not XR, not in menus)
-	if _is_multiplayer_game and not Platform.is_xr() and not $CanvasLayer.visible:
+	# Tab key for player list overlay
+	if _multiplayer_controller.is_multiplayer_game() and not Platform.is_xr() and not $CanvasLayer.visible:
 		if event.is_action_pressed("show_player_list"):
 			player_list_overlay.visible = true
 		elif event.is_action_released("show_player_list"):
@@ -264,30 +264,32 @@ func _process(delta: float) -> void:
 	$FpsLabel.text = str(Engine.get_frames_per_second())
 
 	# Broadcast local player position to other players
-	if _is_multiplayer_game and NetworkManager.is_multiplayer_active() and _player:
-		_position_sync_timer += delta
-		if _position_sync_timer >= POSITION_SYNC_INTERVAL:
-			_position_sync_timer = 0.0
-			var pivot_rot_x = 0.0
-			var pivot_pos_y = 1.35  # Default standing height
-			if _player.has_node("Pivot"):
-				pivot_rot_x = _player.get_node("Pivot").rotation.x
-				pivot_pos_y = _player.get_node("Pivot").position.y
-			var is_mounted = _player._is_mounted if _player.has_method("execute_mount") else false
-			var mounted_peer_id = _player.mount_peer_id if _player.has_method("execute_mount") else -1
-			_sync_player_position.rpc(
-				NetworkManager.get_unique_id(),
-				_player.global_position,
-				_player.rotation.y,
-				pivot_rot_x,
-				pivot_pos_y,
-				is_mounted,
-				mounted_peer_id
-			)
+	if _multiplayer_controller.process_position_sync(delta, _player):
+		var pivot_rot_x: float = 0.0
+		var pivot_pos_y: float = 1.35
+		if _player.has_node("Pivot"):
+			pivot_rot_x = _player.get_node("Pivot").rotation.x
+			pivot_pos_y = _player.get_node("Pivot").position.y
+		var is_mounted: bool = _player._is_mounted if _player.has_method("execute_mount") else false
+		var mounted_peer_id: int = _player.mount_peer_id if _player.has_method("execute_mount") else -1
+		_sync_player_position.rpc(
+			NetworkManager.get_unique_id(),
+			_player.global_position,
+			_player.rotation.y,
+			pivot_rot_x,
+			pivot_pos_y,
+			is_mounted,
+			mounted_peer_id
+		)
 
+
+# =============================================================================
+# WEBXR
+# =============================================================================
 func _webxr_session_supported(session_mode: String, supported: bool) -> void:
 	if session_mode == 'immersive-vr' and supported:
 		%MainMenu.set_webxr_enabled(true)
+
 
 func _webxr_session_started() -> void:
 	webxr_is_starting = false
@@ -296,44 +298,55 @@ func _webxr_session_started() -> void:
 	get_viewport().use_xr = true
 	_start_game()
 
+
 func _webxr_session_ended() -> void:
 	webxr_is_starting = false
 	_recreate_player()
 	$CanvasLayer.visible = true
 	get_viewport().use_xr = false
-	_open_main_menu()
+	_menu_controller.open_main_menu()
+
 
 func _webxr_session_failed(message: String) -> void:
 	webxr_is_starting = false
 	OS.alert("Failed to initialize WebXR: " + message)
 
-# Skin functions
+
+# =============================================================================
+# SKIN FUNCTIONS
+# =============================================================================
 func _save_skin_preference(url: String) -> void:
-	var player_settings = SettingsManager.get_settings("player")
+	var player_settings: Dictionary = SettingsManager.get_settings("player")
 	if player_settings == null:
 		player_settings = {}
 	player_settings["skin_url"] = url
 	SettingsManager.save_settings("player", player_settings)
+
 
 func _on_skin_selected(url: String, _texture: ImageTexture) -> void:
 	NetworkManager.set_local_player_skin(url)
 	_save_skin_preference(url)
 	_debug_log("Main: Skin selected: " + url)
 
+
 func _on_skin_reset() -> void:
 	NetworkManager.set_local_player_skin("")
 	_save_skin_preference("")
 	_debug_log("Main: Skin reset")
 
+
 func _load_saved_skin() -> void:
-	var player_settings = SettingsManager.get_settings("player")
+	var player_settings: Dictionary = SettingsManager.get_settings("player")
 	if player_settings and player_settings.has("skin_url"):
-		var skin_url = player_settings["skin_url"]
+		var skin_url: String = player_settings["skin_url"]
 		if skin_url != "":
 			NetworkManager.local_player_skin = skin_url
 			_debug_log("Main: Loaded saved skin: " + skin_url)
 
-# Race functions
+
+# =============================================================================
+# RACE FUNCTIONS
+# =============================================================================
 func _on_start_race_pressed() -> void:
 	if RaceManager.is_race_active():
 		return
@@ -345,6 +358,7 @@ func _on_start_race_pressed() -> void:
 		_debug_log("Main: Sending _request_race_start RPC to server (my id: %d, multiplayer active: %s)" % [multiplayer.get_unique_id(), NetworkManager.is_multiplayer_active()])
 		_request_race_start.rpc_id(1)
 
+
 @rpc("any_peer", "call_remote", "reliable")
 func _request_race_start() -> void:
 	_debug_log("Main: _request_race_start RPC received from peer %d" % multiplayer.get_remote_sender_id())
@@ -355,7 +369,8 @@ func _request_race_start() -> void:
 	_debug_log("Main: Race start requested by peer, fetching random article...")
 	ExhibitFetcher.fetch_random({ "race": true })
 
-func _on_random_article_complete(title: String, context) -> void:
+
+func _on_random_article_complete(title: String, context: Dictionary) -> void:
 	if not context or not context.has("race") or not context.race:
 		return
 
@@ -365,9 +380,10 @@ func _on_random_article_complete(title: String, context) -> void:
 	_debug_log("Main: Starting race to '%s'" % title)
 	RaceManager.start_race(title)
 
+
 func _on_race_started(target_article: String) -> void:
 	_debug_log("Main: Race started, teleporting to lobby")
-	_close_menus()
+	_menu_controller.close_menus()
 
 	# Teleport local player to starting point
 	if not Platform.is_xr():
@@ -382,9 +398,12 @@ func _on_race_started(target_article: String) -> void:
 
 	GlobalMenuEvents.emit_race_started(target_article)
 
-# Multiplayer functions
+
+# =============================================================================
+# MULTIPLAYER FUNCTIONS
+# =============================================================================
 func _start_dedicated_server() -> void:
-	print("Starting dedicated server on port %d..." % _server_port)
+	print("Starting dedicated server on port %d..." % _multiplayer_controller.get_server_port())
 
 	# Connect multiplayer signals before hosting
 	NetworkManager.peer_connected.connect(_on_network_peer_connected)
@@ -395,13 +414,13 @@ func _start_dedicated_server() -> void:
 	RaceManager.race_started.connect(_on_race_started)
 	ExhibitFetcher.random_complete.connect(_on_random_article_complete)
 
-	var error = NetworkManager.host_game(_server_port, true)
+	var error: Error = NetworkManager.host_game(_multiplayer_controller.get_server_port(), true)
 	if error != OK:
 		printerr("Failed to start server: ", error)
 		get_tree().quit(1)
 		return
 
-	_is_multiplayer_game = true
+	_multiplayer_controller.set_multiplayer_game(true)
 	game_started = true
 
 	# Initialize museum without a local player
@@ -409,264 +428,114 @@ func _start_dedicated_server() -> void:
 
 	print("Server started successfully. Waiting for players...")
 
+
 func _start_multiplayer_game() -> void:
 	_start_game()
 	if NetworkManager.is_multiplayer_active():
-		for peer_id in NetworkManager.get_player_list():
+		for peer_id: int in NetworkManager.get_player_list():
 			if peer_id != NetworkManager.get_unique_id():
-				_spawn_network_player(peer_id)
+				_multiplayer_controller.spawn_network_player(peer_id)
 
-func _spawn_network_player(peer_id: int) -> void:
-	if _network_players.has(peer_id):
-		return
-
-	var net_player = NetworkPlayer.instantiate()
-	net_player.name = "NetworkPlayer_" + str(peer_id)
-	net_player.is_local = false
-	add_child(net_player)
-
-	net_player.set_player_authority(peer_id)
-	net_player.set_player_name(NetworkManager.get_player_name(peer_id))
-	net_player.set_player_color(NetworkManager.get_player_color(peer_id))
-	var skin_url = NetworkManager.get_player_skin(peer_id)
-	if skin_url != "":
-		net_player.set_player_skin(skin_url)
-	net_player.position = starting_point
-
-	_network_players[peer_id] = net_player
-	GlobalMenuEvents.emit_player_joined(peer_id, NetworkManager.get_player_name(peer_id))
-	_debug_log("Main: Spawned network player for peer %d" % peer_id)
-
-func _remove_network_player(peer_id: int) -> void:
-	if _network_players.has(peer_id):
-		var player_node = _network_players[peer_id]
-		if is_instance_valid(player_node):
-			# Handle mount cleanup before removing player
-			# If disconnected player had a rider, dismount them
-			if player_node._has_rider and is_instance_valid(player_node.mounted_by):
-				player_node.mounted_by.execute_dismount()
-
-			# If disconnected player was riding someone, clear mount's rider state
-			if player_node._is_mounted and is_instance_valid(player_node.mounted_on):
-				player_node.mounted_on._remove_rider(player_node)
-
-			# If local player was mounted on disconnected player, dismount
-			if _player and _player._is_mounted and _player.mounted_on == player_node:
-				_player.execute_dismount()
-
-			player_node.queue_free()
-			_network_players.erase(peer_id)
-
-		# Clear mount state tracking
-		if _mount_state.has(peer_id):
-			_mount_state.erase(peer_id)
-
-		GlobalMenuEvents.emit_player_left(peer_id)
-		_debug_log("Main: Removed network player for peer %d" % peer_id)
 
 func _on_network_peer_connected(peer_id: int) -> void:
-	if _is_multiplayer_game and game_started:
-		_spawn_network_player(peer_id)
+	if _multiplayer_controller.is_multiplayer_game() and game_started:
+		_multiplayer_controller.spawn_network_player(peer_id)
 
 		# If we're the server, tell the new player the game has already started
 		if NetworkManager.is_server():
 			_notify_game_started.rpc_id(peer_id)
-			var current_room = $Museum.get_current_room()
+			var current_room: String = $Museum.get_current_room()
 			_sync_exhibit_to_peer.rpc_id(peer_id, current_room)
 
+
 func _on_network_peer_disconnected(peer_id: int) -> void:
-	_remove_network_player(peer_id)
+	_multiplayer_controller.remove_network_player(peer_id, _player, _mount_controller.get_mount_state())
+
 
 func _on_network_server_disconnected() -> void:
 	# Return to main menu when host disconnects
-	_end_multiplayer_session()
-	_open_main_menu()
+	_multiplayer_controller.end_multiplayer_session()
+	_menu_controller.open_main_menu()
+
 
 func _on_quit_requested() -> void:
-	if _is_multiplayer_game:
+	if _multiplayer_controller.is_multiplayer_game():
 		NetworkManager.disconnect_from_game()
-		_end_multiplayer_session()
-		_open_main_menu()
+		_multiplayer_controller.end_multiplayer_session()
+		_menu_controller.open_main_menu()
 	else:
 		get_tree().quit()
 
+
 func _on_network_player_info_updated(peer_id: int) -> void:
-	# Update network player's name, color, and skin when info is received/changed
-	if _network_players.has(peer_id):
-		var net_player = _network_players[peer_id]
-		if is_instance_valid(net_player):
-			net_player.set_player_name(NetworkManager.get_player_name(peer_id))
-			net_player.set_player_color(NetworkManager.get_player_color(peer_id))
-			var skin_url = NetworkManager.get_player_skin(peer_id)
-			if skin_url != "":
-				net_player.set_player_skin(skin_url)
-			else:
-				net_player.clear_player_skin()
+	_multiplayer_controller.update_player_info(peer_id)
 
-func _end_multiplayer_session() -> void:
-	_is_multiplayer_game = false
-
-	# Remove all network players
-	for peer_id in _network_players.keys():
-		_remove_network_player(peer_id)
-	_network_players.clear()
-
-	GlobalMenuEvents.emit_multiplayer_ended()
 
 func get_local_player() -> Node:
 	return _player
 
+
 func get_all_players() -> Array:
-	var players = [_player]
-	for peer_id in _network_players:
-		if is_instance_valid(_network_players[peer_id]):
-			players.append(_network_players[peer_id])
-	return players
+	return _multiplayer_controller.get_all_players(_player)
+
 
 func is_multiplayer_game() -> bool:
-	return _is_multiplayer_game
+	return _multiplayer_controller.is_multiplayer_game()
+
 
 func _get_player_by_peer_id(peer_id: int) -> Node:
-	if peer_id == NetworkManager.get_unique_id():
-		return _player
-	elif _network_players.has(peer_id):
-		return _network_players[peer_id]
-	return null
+	return _multiplayer_controller.get_player_by_peer_id(peer_id, _player)
 
-# Mounting system functions
+
+# =============================================================================
+# MOUNT SYSTEM
+# =============================================================================
 func _request_mount(target: Node) -> void:
-	if not _is_multiplayer_game or not NetworkManager.is_multiplayer_active():
-		# Single player - just mount directly
-		if is_instance_valid(target) and not target._has_rider:
-			_player.execute_mount(target)
-		return
+	_mount_controller.request_mount(target, _player)
 
-	# Multiplayer - find peer_id of target
-	var mount_peer_id = -1
-	for peer_id in _network_players:
-		if _network_players[peer_id] == target:
-			mount_peer_id = peer_id
-			break
-
-	if mount_peer_id == -1:
-		return  # Target not found
-
-	# Send RPC to server
-	if NetworkManager.is_server():
-		_handle_mount_request(NetworkManager.get_unique_id(), mount_peer_id)
-	else:
-		_request_mount_rpc.rpc_id(1, NetworkManager.get_unique_id(), mount_peer_id)
 
 func _request_dismount() -> void:
-	if not _is_multiplayer_game or not NetworkManager.is_multiplayer_active():
-		# Single player - dismount directly
-		_player.execute_dismount()
-		return
+	_mount_controller.request_dismount(_player)
 
-	# Multiplayer - send RPC to server
-	if NetworkManager.is_server():
-		_handle_dismount_request(NetworkManager.get_unique_id())
-	else:
-		_request_dismount_rpc.rpc_id(1, NetworkManager.get_unique_id())
 
-func _handle_mount_request(rider_peer_id: int, mount_peer_id: int) -> void:
-	# Server-side validation and execution
-	var rider = _get_player_by_peer_id(rider_peer_id)
-	var mount = _get_player_by_peer_id(mount_peer_id)
-
-	if not is_instance_valid(rider) or not is_instance_valid(mount):
-		return
-	if rider == mount:
-		return  # Can't mount self
-	if mount._has_rider:
-		return  # Mount already has a rider
-	if rider._is_mounted:
-		return  # Rider is already mounted
-
-	# Store mount state
-	_mount_state[rider_peer_id] = mount_peer_id
-
-	# Execute locally if this is the server's player
-	if rider_peer_id == NetworkManager.get_unique_id():
-		_player.execute_mount(mount, mount_peer_id)
-	elif _network_players.has(rider_peer_id):
-		_network_players[rider_peer_id].execute_mount(mount, mount_peer_id)
-
-	# Broadcast to all clients
-	_execute_mount_sync.rpc(rider_peer_id, mount_peer_id)
-
-func _handle_dismount_request(rider_peer_id: int) -> void:
-	# Server-side validation and execution
-	if not _mount_state.has(rider_peer_id) or _mount_state[rider_peer_id] == -1:
-		return  # Not mounted
-
-	# Clear mount state
-	_mount_state[rider_peer_id] = -1
-
-	# Execute locally if this is the server's player
-	if rider_peer_id == NetworkManager.get_unique_id():
-		_player.execute_dismount()
-	elif _network_players.has(rider_peer_id):
-		_network_players[rider_peer_id].execute_dismount()
-
-	# Broadcast to all clients
-	_execute_dismount_sync.rpc(rider_peer_id)
-
+# =============================================================================
+# MULTIPLAYER RPCS
+# =============================================================================
 @rpc("authority", "call_remote", "reliable")
 func _notify_game_started() -> void:
 	_debug_log("Main: Received notification that game has already started")
-	_is_multiplayer_game = true
+	_multiplayer_controller.set_multiplayer_game(true)
 	_start_multiplayer_game()
+
 
 @rpc("authority", "call_remote", "reliable")
 func _sync_exhibit_to_peer(exhibit_title: String) -> void:
 	_debug_log("Main: Syncing exhibit to late joiner: " + exhibit_title)
 	$Museum.sync_to_exhibit(exhibit_title)
 
+
 @rpc("any_peer", "call_remote", "unreliable_ordered")
 func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1) -> void:
-	# Update the NetworkPlayer for the given peer_id
-	if _network_players.has(peer_id):
-		var net_player = _network_players[peer_id]
-		if is_instance_valid(net_player):
-			if net_player.has_method("apply_network_position"):
-				net_player.apply_network_position(pos, rot_y, pivot_rot_x, pivot_pos_y)
-			if net_player.has_method("apply_network_mount_state"):
-				var mount_node = _get_player_by_peer_id(mounted_peer_id) if is_mounted else null
-				net_player.apply_network_mount_state(is_mounted, mounted_peer_id, mount_node)
+	_multiplayer_controller.apply_network_position(peer_id, pos, rot_y, pivot_rot_x, pivot_pos_y, is_mounted, mounted_peer_id, _player)
 
-# Mount system RPCs
+
 @rpc("any_peer", "call_remote", "reliable")
 func _request_mount_rpc(rider_peer_id: int, mount_peer_id: int) -> void:
 	if NetworkManager.is_server():
-		_handle_mount_request(rider_peer_id, mount_peer_id)
+		_mount_controller.handle_mount_request(rider_peer_id, mount_peer_id, _player)
+
 
 @rpc("any_peer", "call_remote", "reliable")
 func _request_dismount_rpc(rider_peer_id: int) -> void:
 	if NetworkManager.is_server():
-		_handle_dismount_request(rider_peer_id)
+		_mount_controller.handle_dismount_request(rider_peer_id, _player)
+
 
 @rpc("authority", "call_local", "reliable")
 func _execute_mount_sync(rider_peer_id: int, mount_peer_id: int) -> void:
-	var rider = _get_player_by_peer_id(rider_peer_id)
-	var mount = _get_player_by_peer_id(mount_peer_id)
+	_mount_controller.execute_mount_sync(rider_peer_id, mount_peer_id, _player)
 
-	if not is_instance_valid(rider) or not is_instance_valid(mount):
-		return
-
-	# Don't re-execute if we're the server (already done)
-	if NetworkManager.is_server():
-		return
-
-	rider.execute_mount(mount, mount_peer_id)
-	_debug_log("Main: Mount sync - %d mounted on %d" % [rider_peer_id, mount_peer_id])
 
 @rpc("authority", "call_local", "reliable")
 func _execute_dismount_sync(rider_peer_id: int) -> void:
-	var rider = _get_player_by_peer_id(rider_peer_id)
-	if not is_instance_valid(rider):
-		return
-	if NetworkManager.is_server():
-		return
-	rider.execute_dismount()
-	_debug_log("Main: Dismount sync - %d" % rider_peer_id)
+	_mount_controller.execute_dismount_sync(rider_peer_id, _player)

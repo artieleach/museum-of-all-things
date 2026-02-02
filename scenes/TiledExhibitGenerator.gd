@@ -1,115 +1,123 @@
 extends Node3D
+## Procedurally generates tiled exhibit rooms with walls, floors, and item slots.
 
-signal exit_added(exit)
+signal exit_added(exit: Hall)
 
-@onready var pool_scene = preload("res://scenes/items/Pool.tscn")
-@onready var planter_scene = preload("res://scenes/items/Planter.tscn")
-@onready var small_planter_scene = preload("res://scenes/items/SmallPlanter.tscn")
-@onready var hall = preload("res://scenes/Hall.tscn")
-@onready var grid_wrapper = preload("res://scenes/util/GridWrapper.tscn")
+# Use GridConstants for cell types
+const FLOOR_WOOD: int = GridConstants.FLOOR_WOOD
+const RESERVED_VAL: int = GridConstants.RESERVED_VAL
+const FLOOR_CARPET: int = GridConstants.FLOOR_CARPET
+const FLOOR_MARBLE: int = GridConstants.FLOOR_MARBLE
 
-@onready var _rng
-@onready var title
-@onready var _prev_title
+const WALL: int = GridConstants.WALL
+const CEILING: int = GridConstants.CEILING
+const INTERNAL_HALL: int = GridConstants.INTERNAL_HALL
+const INTERNAL_HALL_TURN: int = GridConstants.INTERNAL_HALL_TURN
+const HALL_STAIRS_UP: int = GridConstants.HALL_STAIRS_UP
+const HALL_STAIRS_DOWN: int = GridConstants.HALL_STAIRS_DOWN
+const HALL_STAIRS_TURN: int = GridConstants.HALL_STAIRS_TURN
+const MARKER: int = GridConstants.MARKER
+const BENCH: int = GridConstants.BENCH
+const FREE_WALL: int = GridConstants.FREE_WALL
 
-var entry
-var exits = []
+const DIRECTIONS: Array[Vector3] = GridConstants.DIRECTIONS
+
+@onready var _pool_scene: PackedScene = preload("res://scenes/items/Pool.tscn")
+@onready var _planter_scene: PackedScene = preload("res://scenes/items/Planter.tscn")
+@onready var _small_planter_scene: PackedScene = preload("res://scenes/items/SmallPlanter.tscn")
+@onready var _hall_scene: PackedScene = preload("res://scenes/Hall.tscn")
+@onready var _grid_wrapper: PackedScene = preload("res://scenes/util/GridWrapper.tscn")
+
+var _rng: RandomNumberGenerator = null
+var title: String = ""
+var _prev_title: String = ""
+
+var entry: Hall = null
+var exits: Array[Hall] = []
 
 var _room_count: int:
 	get:
-		return len(_room_list.keys())
+		return _room_list.size()
 	set(_v):
 		pass
 
-var _item_slot_map = {}
-var _item_slots = []
-var _item_slot_idx = 0
+var _item_slot_map: Dictionary = {}
+var _item_slots: Array = []
+var _item_slot_idx: int = 0
 
-var _y
-var _room_list = {}
-var _next_room_candidates = []
+var _y: int = 0
+var _room_list: Dictionary = {}
+var _next_room_candidates: Array = []
 
-var _raw_grid
-var _grid
-var _floor
-var _no_props
-var _exit_limit
-var _min_room_dimension
-var _max_room_dimension
+var _raw_grid: GridMap = null
+var _grid: Node = null
+var _floor: int = FLOOR_WOOD
+var _no_props: bool = false
+var _exit_limit: int = 1000000
+var _min_room_dimension: int = 2
+var _max_room_dimension: int = 5
 
-func _rand_dim():
+
+func _ready() -> void:
+	pass
+
+
+func _rand_dim() -> int:
 	return _rng.randi_range(_min_room_dimension, _max_room_dimension)
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
+
+func rand_dir() -> Vector3:
+	return DIRECTIONS[_rng.randi() % DIRECTIONS.size()]
 
 
-const FLOOR_WOOD = 0
-const RESERVED_VAL = 1
-const FLOOR_CARPET = 11
-const FLOOR_MARBLE = 12
-
-const WALL = 5
-const CEILING = 3
-const INTERNAL_HALL = 7
-const INTERNAL_HALL_TURN = 6
-const HALL_STAIRS_UP = 16
-const HALL_STAIRS_DOWN = 17
-const HALL_STAIRS_TURN = 18
-const MARKER = 8
-const BENCH = 9
-const FREE_WALL = 10
-
-const DIRECTIONS = [Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, 0, -1)]
-
-func rand_dir():
-	return DIRECTIONS[_rng.randi() % len(DIRECTIONS)]
-
-func vlt(v1, v2):
+func vlt(v1: Vector3, v2: Vector3) -> Vector3:
 	return v1 if v1.x < v2.x or v1.z < v2.z else v2
 
-func vgt(v1, v2):
+
+func vgt(v1: Vector3, v2: Vector3) -> Vector3:
 	return v1 if v1.x > v2.x or v1.z > v2.z else v2
 
-func vec_key(v):
+
+func vec_key(v: Vector3) -> PackedByteArray:
 	return var_to_bytes(v)
 
-func add_item_slot(s):
-	var k = vec_key(s[0])
+
+func add_item_slot(s: Array) -> void:
+	var k: PackedByteArray = vec_key(s[0])
 	if not _item_slot_map.has(k):
 		_item_slot_map[vec_key(s[0])] = s
 		_item_slots.append(s)
 
-func has_item_slot():
-	return _item_slot_idx < len(_item_slots)
 
-func get_item_slot():
+func has_item_slot() -> bool:
+	return _item_slot_idx < _item_slots.size()
+
+
+func get_item_slot() -> Variant:
 	if has_item_slot():
-		var slot = _item_slots[_item_slot_idx]
+		var slot: Array = _item_slots[_item_slot_idx]
 		_item_slot_idx += 1
 		return slot
 	else:
 		return null
 
-func generate(
-		params,
-	):
+
+func generate(params: Dictionary) -> void:
 	# set initial fields
 	_min_room_dimension = params.min_room_dimension
 	_max_room_dimension = params.max_room_dimension
 
-	var start_pos = params.start_pos
+	var start_pos: Vector3 = params.start_pos
 	title = params.title
-	var prev_title = params.prev_title
-	var hall_type = params.hall_type if params.has("hall_type") else [true, 0]
-	_y = start_pos.y
+	var prev_title: String = params.prev_title
+	var hall_type: Array = params.hall_type if params.has("hall_type") else [true, 0]
+	_y = int(start_pos.y)
 
 	_no_props = params.has("no_props") and params.no_props
-	_exit_limit = params.exit_limit if params.has("exit_limit") else 1e10
+	_exit_limit = params.exit_limit if params.has("exit_limit") else 1000000
 
 	# init grid
-	_grid = grid_wrapper.instantiate()
+	_grid = _grid_wrapper.instantiate()
 	add_child(_grid)
 	_raw_grid = _grid._grid
 
@@ -120,7 +128,7 @@ func generate(
 	_floor = ExhibitStyle.gen_floor(title)
 
 	# init starting hall
-	var starting_hall = hall.instantiate()
+	var starting_hall: Hall = _hall_scene.instantiate()
 	add_child(starting_hall)
 	starting_hall.init(
 		_grid,
@@ -138,37 +146,35 @@ func generate(
 	entry = starting_hall
 
 	# now we create the first room
-	var room_width = _rand_dim()
-	var room_length = _rand_dim()
-	var room_center = Vector3(
+	var room_width: int = _rand_dim()
+	var room_length: int = _rand_dim()
+	var room_center: Vector3 = Vector3(
 		starting_hall.to_pos.x + starting_hall.to_dir.x * (2 + room_width / 2),
 		_y,
 		starting_hall.to_pos.z + starting_hall.to_dir.z * (2 + room_length / 2),
 	) - (starting_hall.to_dir if hall_type[0] else Vector3.ZERO)
 
-	var room_obj = _add_to_room_list(room_center, room_width, room_length)
-	var bounds = room_to_bounds(room_center, room_width, room_length)
-	carve_room(bounds[0], bounds[1], _y)
+	var room_obj: Dictionary = _add_to_room_list(room_center, room_width, room_length)
+	var bounds: Array = _room_to_bounds(room_center, room_width, room_length)
+	_carve_room(bounds[0], bounds[1], _y)
 	_create_next_room_candidate(room_obj)
-	decorate_entry(starting_hall, room_obj)
-	decorate_room(room_obj)
+	_decorate_entry(starting_hall, room_obj)
+	_decorate_room(room_obj)
 
-func _create_next_room_candidate(last_room):
-	var room_width
-	var room_length
-	var room_center
-	var room_bounds
-	var next_room_dir
 
-	room_width = _rand_dim()
-	room_length = _rand_dim()
+func _create_next_room_candidate(last_room: Dictionary) -> void:
+	var room_width: int = _rand_dim()
+	var room_length: int = _rand_dim()
+	var room_center: Vector3
+	var room_bounds: Array
+	var next_room_dir: Vector3
 
 	# prepare directions to try
-	var try_dirs = DIRECTIONS.duplicate()
+	var try_dirs: Array = DIRECTIONS.duplicate()
 	CollectionUtils.shuffle(_rng, try_dirs)
 
-	var failed = true
-	for dir in try_dirs:
+	var failed: bool = true
+	for dir: Vector3 in try_dirs:
 		# project where the next room will be based on random direction
 		room_center = last_room.center + Vector3(
 			dir.x * (last_room.width / 2 + room_width / 2 + 3),
@@ -177,8 +183,8 @@ func _create_next_room_candidate(last_room):
 		)
 
 		# check if we found a valid room placement
-		room_bounds = room_to_bounds(room_center, room_width, room_length)
-		if not overlaps_room(room_bounds[0], room_bounds[1], _y):
+		room_bounds = _room_to_bounds(room_center, room_width, room_length)
+		if not _overlaps_room(room_bounds[0], room_bounds[1], _y):
 			next_room_dir = dir
 			failed = false
 			break
@@ -186,14 +192,14 @@ func _create_next_room_candidate(last_room):
 	if failed:
 		return
 
-	var room_obj = {
+	var room_obj: Dictionary = {
 		"center": room_center,
 		"width": room_width,
 		"length": room_length,
 	}
-	var hall_bounds = _create_hall_bounds(last_room, room_obj)
+	var hall_bounds: Array = _create_hall_bounds(last_room, room_obj)
 
-	decorate_reserved_walls(last_room, hall_bounds, next_room_dir)
+	_decorate_reserved_walls(last_room, hall_bounds, next_room_dir)
 
 	_grid.reserve_zone(hall_bounds)
 	_grid.reserve_zone(room_bounds)
@@ -201,8 +207,9 @@ func _create_next_room_candidate(last_room):
 	room_obj.hall = hall_bounds
 	_next_room_candidates.append(room_obj)
 
-func _add_to_room_list(c, w, l):
-	var room_obj = {
+
+func _add_to_room_list(c: Vector3, w: int, l: int) -> Dictionary:
+	var room_obj: Dictionary = {
 		"center": c,
 		"width": w,
 		"length": l,
@@ -210,87 +217,93 @@ func _add_to_room_list(c, w, l):
 	_room_list[vec_key(c)] = room_obj
 	return room_obj
 
-func add_room():
-	if len(_next_room_candidates) == 0:
+
+func add_room() -> void:
+	if _next_room_candidates.size() == 0:
 		push_error("no room candidate to create")
 		return
 	if _item_slots.size() > Platform.get_max_slots_per_exhibit():
 		return
 
-	var idx = _rng.randi() % len(_next_room_candidates)
-	var room = _next_room_candidates.pop_at(idx)
+	var idx: int = _rng.randi() % _next_room_candidates.size()
+	var room: Dictionary = _next_room_candidates.pop_at(idx)
 
 	_grid.free_reserved_zone(room.center)
 
 	_add_to_room_list(room.center, room.width, room.length)
-	carve_room(room.hall[0], room.hall[1], _y)
-	carve_room(room.bounds[0], room.bounds[1], _y)
+	_carve_room(room.hall[0], room.hall[1], _y)
+	_carve_room(room.bounds[0], room.bounds[1], _y)
 	_create_next_room_candidate(room)
 
 	# branch sometimes
 	if _rng.randi() % 2 == 0:
 		_create_next_room_candidate(room)
 
-	decorate_room(room)
+	_decorate_room(room)
 
-func _clear_scenery_in_area(h1, h2):
-	var wh1 = GridUtils.grid_to_world(h1)
-	var wh2 = GridUtils.grid_to_world(h2)
-	for c in get_children():
+
+func _clear_scenery_in_area(h1: Vector3, h2: Vector3) -> void:
+	var wh1: Vector3 = GridUtils.grid_to_world(h1)
+	var wh2: Vector3 = GridUtils.grid_to_world(h2)
+	for c: Node in get_children():
 		if c.is_in_group("Scenery"):
-			var p = c.global_position
+			var p: Vector3 = c.global_position
 			if p.x >= wh1.x and p.x <= wh2.x and p.z >= wh1.z and p.z <= wh2.z:
 				c.queue_free()
 
-func _create_hall_bounds(last_room, next_room):
-	var start_hall = vlt(last_room.center, next_room.center)
-	var end_hall = vgt(last_room.center, next_room.center)
-	var hall_width
+
+func _create_hall_bounds(last_room: Dictionary, next_room: Dictionary) -> Array:
+	var start_hall: Vector3 = vlt(last_room.center, next_room.center)
+	var end_hall: Vector3 = vgt(last_room.center, next_room.center)
+	var hall_width: int
 
 	if (start_hall - end_hall).x != 0:
-		hall_width = _rng.randi_range(1, min(last_room.length, next_room.length))
+		hall_width = _rng.randi_range(1, mini(last_room.length, next_room.length))
 		start_hall -= Vector3(0, 0, hall_width / 2)
 		end_hall += Vector3(0, 0, (hall_width - 1) / 2)
 	else:
-		hall_width = _rng.randi_range(1, min(last_room.width, next_room.width))
+		hall_width = _rng.randi_range(1, mini(last_room.width, next_room.width))
 		start_hall -= Vector3(hall_width / 2, 0, 0)
 		end_hall += Vector3((hall_width - 1) / 2, 0, 0)
 
 	return [start_hall, end_hall]
 
-func decorate_entry(starting_hall, room_obj):
-	var free_wall_pos = starting_hall.to_pos + 2 * starting_hall.to_dir
-	var free_wall_ori = GridUtils.vec_to_orientation(_grid, starting_hall.to_dir.rotated(Vector3.UP, PI / 2))
+
+func _decorate_entry(starting_hall: Hall, _room_obj: Dictionary) -> void:
+	var free_wall_pos: Vector3 = starting_hall.to_pos + 2 * starting_hall.to_dir
+	var free_wall_ori: int = GridUtils.vec_to_orientation(_grid, starting_hall.to_dir.rotated(Vector3.UP, PI / 2))
 	_grid.set_cell_item(free_wall_pos, FREE_WALL, free_wall_ori)
 	add_item_slot([free_wall_pos - starting_hall.to_dir * 0.075, starting_hall.to_dir])
 	add_item_slot([free_wall_pos + starting_hall.to_dir * 0.075, -starting_hall.to_dir])
 
-func decorate_room(room):
-	var center = room.center
-	var width = room.width
-	var length = room.length
 
-	var bounds = room_to_bounds(center, width, length)
-	var c1 = bounds[0]
-	var c2 = bounds[1]
-	var y = center.y
+func _decorate_room(room: Dictionary) -> void:
+	var center: Vector3 = room.center
+	var width: int = room.width
+	var length: int = room.length
+
+	var bounds: Array = _room_to_bounds(center, width, length)
+	var c1: Vector3 = bounds[0]
+	var c2: Vector3 = bounds[1]
+	var y: int = int(center.y)
 
 	# walk border of room to place wall objects
-	for z in [c1.z, c2.z]:
-		for x in range(c1.x, c2.x + 1):
-			decorate_wall_tile(Vector3(x, y, z))
-	for x in [c1.x, c2.x]:
-		for z in range(c1.z, c2.z + 1):
-			decorate_wall_tile(Vector3(x, y, z))
+	for z: int in [int(c1.z), int(c2.z)]:
+		for x: int in range(int(c1.x), int(c2.x) + 1):
+			_decorate_wall_tile(Vector3(x, y, z))
+	for x: int in [int(c1.x), int(c2.x)]:
+		for z: int in range(int(c1.z), int(c2.z) + 1):
+			_decorate_wall_tile(Vector3(x, y, z))
 
 	if !Engine.is_editor_hint() and not _no_props:
-		decorate_room_center(center, width, length)
+		_decorate_room_center(center, width, length)
 
-func decorate_reserved_walls(last_room, hall_bounds, dir):
-	var hall_bounds_width = hall_bounds[1].x - hall_bounds[0].x
-	var hall_bounds_length = hall_bounds[1].z - hall_bounds[0].z
-	var planter_pos
-	var planter_rot = Vector3(0, 0, 0)
+
+func _decorate_reserved_walls(last_room: Dictionary, hall_bounds: Array, dir: Vector3) -> void:
+	var hall_bounds_width: float = hall_bounds[1].x - hall_bounds[0].x
+	var hall_bounds_length: float = hall_bounds[1].z - hall_bounds[0].z
+	var planter_pos: Vector3
+	var planter_rot: Vector3 = Vector3(0, 0, 0)
 
 	if abs(dir.x) > 0:
 		if abs(hall_bounds_length) < 1:
@@ -310,80 +323,82 @@ func decorate_reserved_walls(last_room, hall_bounds, dir):
 			last_room.center.z + (last_room.length / 2 + 1) * dir.z,
 		)
 
-	var planter = small_planter_scene.instantiate()
+	var planter: Node3D = _small_planter_scene.instantiate()
 	planter.rotation = planter_rot
 	planter.position = GridUtils.grid_to_world(planter_pos) + dir
 	add_child(planter)
 
-func decorate_room_center(center, width, length):
+
+func _decorate_room_center(center: Vector3, width: int, length: int) -> void:
 	if width > 3 and length > 3:
-		var bounds = room_to_bounds(center, width, length)
-		var true_center = (bounds[0] + bounds[1]) / 2
-		var roll = _rng.randi_range(0, 3)
+		var bounds: Array = _room_to_bounds(center, width, length)
+		var true_center: Vector3 = (bounds[0] + bounds[1]) / 2
+		var roll: int = _rng.randi_range(0, 3)
 		if roll == 0:
-			var pool = pool_scene.instantiate()
+			var pool: Node3D = _pool_scene.instantiate()
 			pool.position = GridUtils.grid_to_world(true_center)
 			add_child(pool)
 			return
 		elif roll == 1:
-			var planter = planter_scene.instantiate()
+			var planter: Node3D = _planter_scene.instantiate()
 			planter.position = GridUtils.grid_to_world(true_center)
-			planter.rotation.y = PI / 2 if length > width else 0
+			planter.rotation.y = PI / 2 if length > width else 0.0
 			add_child(planter)
 			return
 
-	var bench_area_bounds = null
-	var bench_area_ori = 0
+	var bench_area_bounds: Variant = null
+	var bench_area_ori: int = 0
 
 	if width > length and width > 2:
-		bench_area_bounds = room_to_bounds(center, width - 2, 1)
+		bench_area_bounds = _room_to_bounds(center, width - 2, 1)
 	elif length > width and length > 2:
 		bench_area_ori = GridUtils.vec_to_orientation(_grid, Vector3(1, 0, 0))
-		bench_area_bounds = room_to_bounds(center, 1, length - 2)
+		bench_area_bounds = _room_to_bounds(center, 1, length - 2)
 	if bench_area_bounds:
-		var bench_slots = []
-		var c1 = bench_area_bounds[0]
-		var c2 = bench_area_bounds[1]
-		var y = center.y
-		for x in range(c1.x, c2.x + 1):
-			for z in range(c1.z, c2.z + 1):
-				var pos = Vector3(x, y, z)
+		var bench_slots: Array = []
+		var c1: Vector3 = bench_area_bounds[0]
+		var c2: Vector3 = bench_area_bounds[1]
+		var y: int = int(center.y)
+		for x: int in range(int(c1.x), int(c2.x) + 1):
+			for z: int in range(int(c1.z), int(c2.z) + 1):
+				var pos: Vector3 = Vector3(x, y, z)
 				if _raw_grid.get_cell_item(pos) != -1:
 					continue
 
-				var free_wall = _rng.randi_range(0, 1) == 0
-				var valid_bench = len(GridUtils.cell_neighbors(_raw_grid, pos, INTERNAL_HALL)) == 0 and\
-						len(GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_UP)) == 0 and\
-						len(GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_DOWN)) == 0
-				var valid_free_wall = valid_bench and len(GridUtils.cell_neighbors(_raw_grid, pos, WALL)) == 0
+				var free_wall: bool = _rng.randi_range(0, 1) == 0
+				var valid_bench: bool = GridUtils.cell_neighbors(_raw_grid, pos, INTERNAL_HALL).size() == 0 and\
+						GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_UP).size() == 0 and\
+						GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_DOWN).size() == 0
+				var valid_free_wall: bool = valid_bench and GridUtils.cell_neighbors(_raw_grid, pos, WALL).size() == 0
 
 				if width > 3 or length > 3 and free_wall and valid_free_wall and _room_count > 2:
-					var dir = Vector3.RIGHT if width > length else Vector3.FORWARD
-					var item_dir = Vector3.FORWARD if width > length else Vector3.RIGHT
-					var ori = GridUtils.vec_to_orientation(_grid, dir)
+					var dir: Vector3 = Vector3.RIGHT if width > length else Vector3.FORWARD
+					var item_dir: Vector3 = Vector3.FORWARD if width > length else Vector3.RIGHT
+					var ori: int = GridUtils.vec_to_orientation(_grid, dir)
 					_grid.set_cell_item(pos, FREE_WALL, ori)
 					bench_slots.push_front([pos - item_dir * 0.075, item_dir])
 					bench_slots.append([pos + item_dir * 0.075, -item_dir])
 				elif valid_bench:
 					_grid.set_cell_item(pos, BENCH, bench_area_ori)
-		for slot in bench_slots:
+		for slot: Array in bench_slots:
 			add_item_slot(slot)
 
-func decorate_wall_tile(pos):
+
+func _decorate_wall_tile(pos: Vector3) -> void:
 	# we use the raw grid bc we want to ignore reservations here
 	if _raw_grid.get_cell_item(pos) == FREE_WALL:
 		return
 
-	var wall_neighbors = GridUtils.cell_neighbors(_grid, pos, WALL)
-	for wall in wall_neighbors:
-		var slot = (wall + pos) / 2
-		var hall_dir = wall - pos
-		var valid_halls = Hall.valid_hall_types(_grid, wall, hall_dir)
+	var wall_neighbors: Array = GridUtils.cell_neighbors(_grid, pos, WALL)
+	for wall: Vector3 in wall_neighbors:
+		var slot: Vector3 = (wall + pos) / 2
+		var hall_dir: Vector3 = wall - pos
+		var valid_halls: Array = Hall.valid_hall_types(_grid, wall, hall_dir)
 
 		# put an exit everywhere it fits
-		if len(valid_halls) > 0 and len(exits) < _exit_limit:
-			var new_hall = hall.instantiate()
-			var hall_type = valid_halls[_rng.randi() % len(valid_halls)]
+		if valid_halls.size() > 0 and exits.size() < _exit_limit:
+			var new_hall: Hall = _hall_scene.instantiate()
+			var hall_type: Array = valid_halls[_rng.randi() % valid_halls.size()]
 			add_child(new_hall)
 			new_hall.init(
 				_grid,
@@ -400,23 +415,25 @@ func decorate_wall_tile(pos):
 		else:
 			add_item_slot([slot, hall_dir])
 
-func room_to_bounds(center, width, length):
+
+func _room_to_bounds(center: Vector3, width: int, length: int) -> Array:
 	return [
 		Vector3(center.x - width / 2, center.y, center.z - length / 2),
 		Vector3(center.x + width / 2 - ((width + 1) % 2), center.y, center.z + length / 2 + ((length + 1) % 2))
 	]
 
-func carve_room(corner1, corner2, y):
-	var lx = corner1.x
-	var gx = corner2.x
-	var lz = corner1.z
-	var gz = corner2.z
+
+func _carve_room(corner1: Vector3, corner2: Vector3, y: int) -> void:
+	var lx: int = int(corner1.x)
+	var gx: int = int(corner2.x)
+	var lz: int = int(corner1.z)
+	var gz: int = int(corner2.z)
 
 	_clear_scenery_in_area(Vector3(lx, 0, lz), Vector3(gx, 0, gz))
 
-	for x in range(lx - 1, gx + 2):
-		for z in range(lz - 1, gz + 2):
-			var c = _grid.get_cell_item(Vector3(x, y, z))
+	for x: int in range(lx - 1, gx + 2):
+		for z: int in range(lz - 1, gz + 2):
+			var c: int = _grid.get_cell_item(Vector3(x, y, z))
 			if x < lx or z < lz or x > gx or z > gz:
 				if c == HALL_STAIRS_UP or c == HALL_STAIRS_DOWN or c == HALL_STAIRS_TURN:
 					continue
@@ -433,9 +450,10 @@ func carve_room(corner1, corner2, y):
 				_grid.set_cell_item(Vector3(x, y + 2, z), CEILING, 0)
 				_grid.set_cell_item(Vector3(x, y - 1, z), _floor, 0)
 
-func overlaps_room(corner1, corner2, y):
-	for x in range(corner1.x - 1, corner2.x + 2):
-		for z in range(corner1.z - 1, corner2.z + 2):
+
+func _overlaps_room(corner1: Vector3, corner2: Vector3, y: int) -> bool:
+	for x: int in range(int(corner1.x) - 1, int(corner2.x) + 2):
+		for z: int in range(int(corner1.z) - 1, int(corner2.z) + 2):
 			if not GridUtils.safe_overwrite(_grid, Vector3(x, y, z)):
 				return true
 	return false

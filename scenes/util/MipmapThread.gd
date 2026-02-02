@@ -21,7 +21,7 @@ func _thread_loop():
 	while not WorkQueue.get_quitting():
 		_mipmap_process_item()
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not Platform.is_using_threads():
 		_mipmap_process_item()
 
