@@ -39,7 +39,13 @@ var _crouch_system: PlayerCrouchSystem = null
 var _mount_system: PlayerMountSystem = null
 var _skin_system: PlayerSkinSystem = null
 
-@onready var camera: Camera3D = get_node("Pivot/Camera3D")
+@onready var camera: Camera3D = $Pivot/Camera3D
+@onready var _pivot: Node3D = $Pivot
+@onready var _footstep_player: Node = $FootstepPlayer
+@onready var _raycast: RayCast3D = $Pivot/Camera3D/RayCast3D
+@onready var _multiplayer_sync: MultiplayerSynchronizer = get_node_or_null("MultiplayerSynchronizer")
+@onready var _name_label: Label3D = get_node_or_null("NameLabel")
+@onready var _body_mesh: MeshInstance3D = get_node_or_null("BodyMesh")
 
 
 func _ready() -> void:
@@ -128,8 +134,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		if not smooth_movement:
 			rotate_y(delta_x)
-			$Pivot.rotate_x(delta_y)
-			$Pivot.rotation.x = clamp($Pivot.rotation.x, -1.2, 1.2)
+			_pivot.rotate_x(delta_y)
+			_pivot.rotation.x = clamp(_pivot.rotation.x, -1.2, 1.2)
 		else:
 			_camera_v += Vector2(
 				clamp(delta_y, -dampening, dampening),
@@ -147,8 +153,8 @@ func _physics_process(delta: float) -> void:
 	if not is_local and _has_network_target:
 		global_position = global_position.lerp(_target_position, INTERPOLATION_SPEED * delta)
 		rotation.y = lerp_angle(rotation.y, _target_rotation_y, INTERPOLATION_SPEED * delta)
-		$Pivot.rotation.x = lerp_angle($Pivot.rotation.x, _target_pivot_rot_x, INTERPOLATION_SPEED * delta)
-		$Pivot.position.y = lerp($Pivot.position.y, _target_pivot_pos_y, INTERPOLATION_SPEED * delta)
+		_pivot.rotation.x = lerp_angle(_pivot.rotation.x, _target_pivot_rot_x, INTERPOLATION_SPEED * delta)
+		_pivot.position.y = lerp(_pivot.position.y, _target_pivot_pos_y, INTERPOLATION_SPEED * delta)
 		_crouch_system.update_crouch_body()
 
 	if not _enabled or not is_local:
@@ -176,16 +182,16 @@ func _physics_process(delta: float) -> void:
 	var delta_vec: Vector2 = Vector2(-Input.get_joy_axis(0, _joy_right_x), -Input.get_joy_axis(0, _joy_right_y))
 	if delta_vec.length() > _joy_deadzone:
 		rotate_y(delta_vec.x * _joy_sensitivity)
-		$Pivot.rotate_x(delta_vec.y * _joy_sensitivity)
-		$Pivot.rotation.x = clamp($Pivot.rotation.x, -1.2, 1.2)
+		_pivot.rotate_x(delta_vec.y * _joy_sensitivity)
+		_pivot.rotation.x = clamp(_pivot.rotation.x, -1.2, 1.2)
 
 	if smooth_movement:
 		rotate_y(_camera_v.y)
-		$Pivot.rotate_x(_camera_v.x)
-		$Pivot.rotation.x = clamp($Pivot.rotation.x, -1.2, 1.2)
+		_pivot.rotate_x(_camera_v.x)
+		_pivot.rotation.x = clamp(_pivot.rotation.x, -1.2, 1.2)
 		_camera_v *= 0.95
 
-	$FootstepPlayer.set_on_floor(is_on_floor())
+	_footstep_player.set_on_floor(is_on_floor())
 
 	if Input.is_action_pressed("jump") and is_on_floor():
 		velocity.y = jump_impulse
@@ -194,7 +200,7 @@ func _physics_process(delta: float) -> void:
 	_crouch_system.process_crouch(delta)
 
 	if Input.is_action_pressed("interact"):
-		var collider: Node = $Pivot/Camera3D/RayCast3D.get_collider()
+		var collider: Node = _raycast.get_collider()
 		if collider:
 			if collider.has_method("interact"):
 				collider.interact()
@@ -269,47 +275,46 @@ func clear_player_skin() -> void:
 # =============================================================================
 
 func set_player_authority(peer_id: int) -> void:
-	if has_node("MultiplayerSynchronizer"):
-		$MultiplayerSynchronizer.set_multiplayer_authority(peer_id)
+	if _multiplayer_sync:
+		_multiplayer_sync.set_multiplayer_authority(peer_id)
 	is_local = (peer_id == multiplayer.get_unique_id())
-	if is_local and has_node("Pivot/Camera3D"):
-		$Pivot/Camera3D.make_current()
+	if is_local and camera:
+		camera.make_current()
 
 
 func set_player_name(new_name: String) -> void:
 	player_name = new_name
-	if has_node("NameLabel"):
-		$NameLabel.text = new_name
+	if _name_label:
+		_name_label.text = new_name
 
 
-func set_body_visible(visible: bool) -> void:
-	if has_node("BodyMesh"):
-		$BodyMesh.visible = visible
-	if has_node("NameLabel"):
-		$NameLabel.visible = visible
+func set_body_visible(is_visible: bool) -> void:
+	if _body_mesh:
+		_body_mesh.visible = is_visible
+	if _name_label:
+		_name_label.visible = is_visible
 
 
 func set_player_color(color: Color) -> void:
-	if has_node("BodyMesh"):
-		var mesh_instance: MeshInstance3D = $BodyMesh as MeshInstance3D
-		var material: Material = mesh_instance.get_surface_override_material(0)
+	if _body_mesh:
+		var material: Material = _body_mesh.get_surface_override_material(0)
 		if material:
 			if material is ShaderMaterial:
 				var new_material: ShaderMaterial = material.duplicate() as ShaderMaterial
 				new_material.set_shader_parameter("fallback_color", color)
-				mesh_instance.set_surface_override_material(0, new_material)
+				_body_mesh.set_surface_override_material(0, new_material)
 			elif material is StandardMaterial3D:
 				var new_material: StandardMaterial3D = material.duplicate() as StandardMaterial3D
 				new_material.albedo_color = color
-				mesh_instance.set_surface_override_material(0, new_material)
+				_body_mesh.set_surface_override_material(0, new_material)
 
 
 func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35) -> void:
 	if not _has_network_target:
 		global_position = pos
 		rotation.y = rot_y
-		$Pivot.rotation.x = pivot_rot_x
-		$Pivot.position.y = pivot_pos_y
+		_pivot.rotation.x = pivot_rot_x
+		_pivot.position.y = pivot_pos_y
 		_has_network_target = true
 	_target_position = pos
 	_target_rotation_y = rot_y
