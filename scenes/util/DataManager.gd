@@ -1,6 +1,6 @@
 extends Node
 
-signal loaded_image(url: String, image: Image)
+signal loaded_image(url: String, texture: Texture2D, ctx: Variant)
 signal image_load_error(url: String, error: String)
 
 const COMMON_HEADERS: Array[String] = ["accept: image/png, image/jpeg; charset=utf-8"]

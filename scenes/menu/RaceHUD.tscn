@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://crace_hud_001"]
 
-[ext_resource type="Script" uid="uid://crace_hud_script" path="res://scenes/menu/RaceHUD.gd" id="1_racehud"]
+[ext_resource type="Script" path="res://scenes/menu/RaceHUD.gd" id="1_racehud"]
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="2_theme"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_target"]

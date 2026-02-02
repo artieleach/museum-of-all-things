@@ -86,9 +86,9 @@ func _on_pointer_event(event: Variant) -> void:
 	if event.event_type == "click" or (event.has("pressed") and event.pressed):
 		interact()
 
-func _on_image_complete(files: Dictionary, _ctx: Variant) -> void:
+func _on_image_complete(files: Array, _ctx: Variant) -> void:
 	if files.has(title):
-		var data: Dictionary = ExhibitFetcher.get_result(title)
+		var data = ExhibitFetcher.get_result(title)
 		if data:
 			ExhibitFetcher.images_complete.disconnect(_on_image_complete)
 			ExhibitFetcher.commons_images_complete.disconnect(_on_image_complete)
@@ -124,7 +124,7 @@ func init(_title: String, _text: String, _plate_style: String = "") -> void:
 	title = _title
 	plate_style = _plate_style
 
-	var data: Dictionary = ExhibitFetcher.get_result(title)
+	var data = ExhibitFetcher.get_result(title)
 	if data:
 		_set_image(data)
 	else:

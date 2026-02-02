@@ -87,7 +87,8 @@ func init(item_data: Dictionary) -> void:
 	if item_data.type == "image":
 		_item = ImageItem.instantiate()
 		_item.loaded.connect(_on_image_item_loaded)
-		_item.init(item_data.title, item_data.text, item_data.plate)
+		var plate = item_data.get("plate", "")
+		_item.init(item_data.get("title", ""), item_data.get("text", ""), plate if plate else "")
 	elif item_data.type == "text":
 		_frame.visible = false
 		_item = TextItem.instantiate()

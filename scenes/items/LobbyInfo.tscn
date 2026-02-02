@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://brfwcf0et4c42"]
+[gd_scene load_steps=11 format=3 uid="uid://brfwcf0et4c42"]
 
 [ext_resource type="ArrayMesh" uid="uid://dfalfeatlgtod" path="res://assets/models/lobby_plaque.obj" id="1_eagnn"]
 [ext_resource type="Material" uid="uid://b2iqa8ync4w35" path="res://assets/textures/lobby_plaque_intro_blank.tres" id="2_ggvd3"]
@@ -12,9 +12,6 @@
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_pkvds"]
 points = PackedVector3Array(-0.875, 0, -0.1, -0.875, 0, 0.1, -0.875, 3, -0.1, 0.875, 0, -0.1, 0.875, 0, 0.1, -0.875, 3, 0.1, 0.875, 3, -0.1, 0.875, 3, 0.1)
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_ty80d"]
-viewport_path = NodePath("SubViewport")
 
 [node name="LobbyInfo" type="MeshInstance3D"]
 mesh = ExtResource("1_eagnn")
@@ -39,16 +36,6 @@ surface_material_override/1 = ExtResource("6_l4t2p")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
 shape = SubResource("ConvexPolygonShape3D_pkvds")
-
-[node name="Sprite3D" type="Sprite3D" parent="." groups=["render_distance"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24522, 0.101)
-visibility_range_end = 30.0
-visibility_range_end_margin = 3.0
-pixel_size = 0.002
-shaded = true
-double_sided = false
-texture_filter = 5
-texture = SubResource("ViewportTexture_ty80d")
 
 [node name="SubViewport" type="SubViewport" parent="."]
 disable_3d = true
@@ -83,3 +70,12 @@ theme_override_font_sizes/bold_font_size = 48
 bbcode_enabled = true
 text = "[Replace me]"
 fit_content = true
+
+[node name="Sprite3D" type="Sprite3D" parent="." groups=["render_distance"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24522, 0.101)
+visibility_range_end = 30.0
+visibility_range_end_margin = 3.0
+pixel_size = 0.002
+shaded = true
+double_sided = false
+texture_filter = 5

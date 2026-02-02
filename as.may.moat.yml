@@ -15,18 +15,18 @@ finish-args:
 
 modules:
   - name: MuseumOfAllThings
-    buildsystem: simple
+	buildsystem: simple
 
-    sources:
-      - type: dir
-        path: .
+	sources:
+	  - type: dir
+		path: .
 
-      - type: file
-        url: https://github.com/m4ym4y/museum-of-all-things/releases/download/v1.0.0/MuseumOfAllThings.pck
-        sha256: a800c512f962106432cd1b7fe0dcc885e0cf89dcaea5979fb2b022228fcd16cc
+	  - type: file
+		url: https://github.com/m4ym4y/museum-of-all-things/releases/download/v1.0.0/MuseumOfAllThings.pck
+		sha256: a800c512f962106432cd1b7fe0dcc885e0cf89dcaea5979fb2b022228fcd16cc
 
-    build-commands:
-      - install -Dm644 MuseumOfAllThings.pck ${FLATPAK_DEST}/bin/godot-runner.pck
-      - install -Dm644 linux/${FLATPAK_ID}.desktop ${FLATPAK_DEST}/share/applications/${FLATPAK_ID}.desktop
-      - install -Dm644 linux/${FLATPAK_ID}.metainfo.xml ${FLATPAK_DEST}/share/metainfo/${FLATPAK_ID}.metainfo.xml
-      - install -Dm644 assets/logo/moat_logo_small.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png
+	build-commands:
+	  - install -Dm644 MuseumOfAllThings.pck ${FLATPAK_DEST}/bin/godot-runner.pck
+	  - install -Dm644 linux/${FLATPAK_ID}.desktop ${FLATPAK_DEST}/share/applications/${FLATPAK_ID}.desktop
+	  - install -Dm644 linux/${FLATPAK_ID}.metainfo.xml ${FLATPAK_DEST}/share/metainfo/${FLATPAK_ID}.metainfo.xml
+	  - install -Dm644 assets/logo/moat_logo_small.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png
