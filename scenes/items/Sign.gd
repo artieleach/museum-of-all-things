@@ -24,7 +24,7 @@ var left: bool:
 		$Arrow.text = L_ARROW if v else R_ARROW
 
 func _resize_text() -> void:
-	Util.resizeTextToPx($Text, $Text.width * max_lines)
+	TextUtils.resize_text_to_px($Text, $Text.width * max_lines)
 
 func _ready() -> void:
 	if starting_text:

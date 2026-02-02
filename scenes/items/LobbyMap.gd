@@ -14,7 +14,7 @@ func _resize_text(_lang: String = "") -> void:
 		if child is Label3D:
 			child.font_size = start_font_size
 
-	Util.resizeTextToPx($Search, max_search_length)
+	TextUtils.resize_text_to_px($Search, max_search_length)
 	for child in get_children():
 		if child is Label3D:
-			Util.resizeTextToPx(child, max_length_title)
+			TextUtils.resize_text_to_px(child, max_length_title)

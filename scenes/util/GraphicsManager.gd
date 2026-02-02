@@ -4,25 +4,26 @@ signal change_post_processing(post_processing: String)
 
 const _settings_ns = "graphics"
 
-const MANAGED_LIGHTS_MAX := 8
-const MANAGED_LIGHTS_DIRECTION_THRESHOLD := -0.2
-const MANAGED_LIGHTS_FREQUENCY := 1.0
+# Deprecated: use Constants.MANAGED_LIGHTS_* instead
+const MANAGED_LIGHTS_MAX := Constants.MANAGED_LIGHTS_MAX
+const MANAGED_LIGHTS_DIRECTION_THRESHOLD := Constants.MANAGED_LIGHTS_DIRECTION_THRESHOLD
+const MANAGED_LIGHTS_FREQUENCY := Constants.MANAGED_LIGHTS_FREQUENCY
 
-var _env
-var limit_fps = false
-var fps_limit = 60
-var _default_settings_obj
-var fullscreen = false
-var render_scale = 1.0
-var scale_mode = 0
-var fsr_quality = 5
-var fsr_sharpness = 0.2
-var post_processing = "none"
-var render_distance_multiplier = 2.5
-var vsync_enabled = true
+var _env: WorldEnvironment
+var limit_fps: bool = false
+var fps_limit: int = 60
+var _default_settings_obj: Dictionary
+var fullscreen: bool = false
+var render_scale: float = 1.0
+var scale_mode: int = 0
+var fsr_quality: int = 5
+var fsr_sharpness: float = 0.2
+var post_processing: String = "none"
+var render_distance_multiplier: float = 2.5
+var vsync_enabled: bool = true
 var light_timer: Timer
 
-func init():
+func init() -> void:
 	_env = get_tree().get_nodes_in_group("Environment")[0]
 
 	if not _env:
@@ -30,27 +31,27 @@ func init():
 		return
 
 	_default_settings_obj = _create_settings_obj()
-	var loaded_settings = SettingsManager.get_settings(_settings_ns)
+	var loaded_settings: Variant = SettingsManager.get_settings(_settings_ns)
 	if loaded_settings:
 		_apply_settings(loaded_settings, _default_settings_obj)
 
-func set_fps_limit(value: float):
+func set_fps_limit(value: float) -> void:
 	fps_limit = int(value)
 	if limit_fps:
 		Engine.set_max_fps(fps_limit)
 
-func set_fullscreen(_fullscreen: bool):
+func set_fullscreen(_fullscreen: bool) -> void:
 	fullscreen = _fullscreen
 	if fullscreen:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 
-func set_render_scale(scale: float):
+func set_render_scale(scale: float) -> void:
 	render_scale = scale
 	get_viewport().scaling_3d_scale = scale
 
-func set_scale_mode(mode: int):
+func set_scale_mode(mode: int) -> void:
 	scale_mode = mode
 	get_viewport().scaling_3d_mode = mode as Viewport.Scaling3DMode
 
@@ -59,7 +60,7 @@ func set_scale_mode(mode: int):
 	else:
 		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 
-func set_fsr_quality(quality: int):
+func set_fsr_quality(quality: int) -> void:
 	fsr_quality = quality
 
 	match quality:
@@ -74,26 +75,26 @@ func set_fsr_quality(quality: int):
 		4:
 			get_viewport().scaling_3d_scale = 1.0 / 3.0
 
-func set_fsr_sharpness(sharpness: float):
-		get_viewport().fsr_sharpness = sharpness
+func set_fsr_sharpness(sharpness: float) -> void:
+	get_viewport().fsr_sharpness = sharpness
 
-func set_post_processing(_post_processing: String):
+func set_post_processing(_post_processing: String) -> void:
 	post_processing = _post_processing
-	emit_signal("change_post_processing", post_processing)
+	change_post_processing.emit(post_processing)
 
-func enable_fps_limit(enabled: bool):
+func enable_fps_limit(enabled: bool) -> void:
 	limit_fps = enabled
 	if limit_fps:
 		Engine.set_max_fps(fps_limit)
 
-func set_render_distance_multiplier(value: float):
-	var last_distance = render_distance_multiplier
+func set_render_distance_multiplier(value: float) -> void:
+	var last_distance := render_distance_multiplier
 	render_distance_multiplier = value
 	if not is_equal_approx(last_distance, render_distance_multiplier):
 		for node in get_tree().get_nodes_in_group("render_distance"):
 			node.visibility_range_end *= render_distance_multiplier / last_distance
 
-func set_vsync_enabled(_vsync_enabled: bool):
+func set_vsync_enabled(_vsync_enabled: bool) -> void:
 	vsync_enabled = _vsync_enabled
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync_enabled else DisplayServer.VSYNC_DISABLED)
 
@@ -102,17 +103,17 @@ func _on_node_added(node: Node) -> void:
 		if node.is_in_group("render_distance"):
 			node.visibility_range_end *= render_distance_multiplier
 
-func get_env():
+func get_env() -> Environment:
 	# we assume that they modify the settings
 	if not _env:
 		init()
 	return _env.environment
 
-func _apply_settings(s, default={}):
-	var e = _env.environment
+func _apply_settings(s: Dictionary, default: Dictionary = {}) -> void:
+	var e: Environment = _env.environment
 	for field in ["ssr_enabled", "ssr_max_steps", "fog_enabled", "ssil_enabled", "ambient_light_energy"]:
 		e[field] = s[field] if s.has(field) else default[field]
-	if Util.is_xr():
+	if Platform.is_xr():
 		e["ssr_enabled"] = false
 	else:
 		set_vsync_enabled(s["vsync_enabled"] if s.has("vsync_enabled") else default["vsync_enabled"])
@@ -122,17 +123,17 @@ func _apply_settings(s, default={}):
 		set_fsr_sharpness(s["fsr_sharpness"] if s.has("fsr_sharpness") else default["fsr_sharpness"])
 		set_post_processing(s["post_processing"] if s.has("post_processing") else default["post_processing"])
 
-		var mode = s["scale_mode"] if s.has("scale_mode") else default["scale_mode"]
+		var mode: int = s["scale_mode"] if s.has("scale_mode") else default["scale_mode"]
 		set_scale_mode(mode)
 		if mode > 0:
-				set_fsr_quality(s["fsr_quality"] if s.has("fsr_quality") else default["fsr_quality"])
+			set_fsr_quality(s["fsr_quality"] if s.has("fsr_quality") else default["fsr_quality"])
 		else:
-				set_render_scale(s["render_scale"] if s.has("render_scale") else default["render_scale"])
+			set_render_scale(s["render_scale"] if s.has("render_scale") else default["render_scale"])
 
 	set_render_distance_multiplier(s["render_distance_multiplier"] if s.has("render_distance_multiplier") else default["render_distance_multiplier"])
 
-func _create_settings_obj():
-	var e = _env.environment
+func _create_settings_obj() -> Dictionary:
+	var e: Environment = _env.environment
 	return {
 		"ambient_light_energy": e.ambient_light_energy,
 		"ssr_enabled": e.ssr_enabled,
@@ -151,17 +152,17 @@ func _create_settings_obj():
 		"render_distance_multiplier": render_distance_multiplier,
 	}
 
-func restore_default_settings():
+func restore_default_settings() -> void:
 	_apply_settings(_default_settings_obj)
 
-func save_settings():
+func save_settings() -> void:
 	SettingsManager.save_settings(_settings_ns, _create_settings_obj())
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 
 	# When using the compatibility renderer, we need to manage the number of lights.
-	if Util.is_compatibility_renderer():
+	if Platform.is_compatibility_renderer():
 		light_timer = Timer.new()
 		add_child(light_timer)
 		light_timer.wait_time = MANAGED_LIGHTS_FREQUENCY
@@ -208,7 +209,7 @@ func _manage_lights() -> void:
 
 	print_verbose("Enabled %s lights out of %s total" % [enabled, lights.size()])
 
-func _toggle_managed_light(light, enable) -> void:
+func _toggle_managed_light(light: Light3D, enable: bool) -> void:
 	if light.visible == enable:
 		return
 

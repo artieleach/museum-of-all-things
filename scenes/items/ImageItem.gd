@@ -50,7 +50,7 @@ func _on_image_loaded(url: String, image: Texture2D, _ctx: Variant) -> void:
 		material_override.set_shader_parameter("texture_albedo", _image)
 
 	var label: Label3D = $Label
-	label.text = Util.strip_markup(text)
+	label.text = TextUtils.strip_markup(text)
 	call_deferred("_update_text_plate")
 
 	var w: int = _image.get_width()
@@ -98,7 +98,7 @@ func _set_image(data: Dictionary) -> void:
 	var label: Label3D = $Label
 	if is_instance_valid(label) and data.has("license_short_name") and data.has("artist"):
 		text += "\n"
-		text += data.license_short_name + " " + Util.strip_html(data.artist)
+		text += data.license_short_name + " " + TextUtils.strip_html(data.artist)
 		label.text = text
 		call_deferred("_update_text_plate")
 

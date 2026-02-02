@@ -8,7 +8,7 @@ var thread: Thread
 func _ready():
 	WorkQueue.setup_queue(MIPMAP_QUEUE, MIPMAP_FRAME_PACING)
 
-	if Util.is_using_threads():
+	if Platform.is_using_threads():
 		thread = Thread.new()
 		thread.start(_thread_loop)
 
@@ -22,7 +22,7 @@ func _thread_loop():
 		_mipmap_process_item()
 
 func _process(delta: float) -> void:
-	if not Util.is_using_threads():
+	if not Platform.is_using_threads():
 		_mipmap_process_item()
 
 func _mipmap_process_item():
@@ -62,7 +62,7 @@ func _get_texture_data_rd(texture: Texture2D, callback: Callable):
 
 func get_viewport_texture_with_mipmaps(subviewport: SubViewport, callback: Callable):
 	await RenderingServer.frame_post_draw
-	if Util.is_compatibility_renderer():
+	if Platform.is_compatibility_renderer():
 		WorkQueue.add_item(MIPMAP_QUEUE, {
 			"type": "get_texture_data",
 			"texture": subviewport.get_texture(),

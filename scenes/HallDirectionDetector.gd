@@ -3,7 +3,7 @@ extends Area3D
 signal direction_changed(direction: String)
 
 @export var project_dir: float = 2.0
-@onready var _xr = Util.is_xr()
+@onready var _xr = Platform.is_xr()
 
 var point_a: Vector3
 var point_b: Vector3

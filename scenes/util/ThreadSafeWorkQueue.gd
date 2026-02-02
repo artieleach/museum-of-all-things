@@ -62,7 +62,7 @@ func add_item(item_name, item, _exhibit=null, front=false):
 func process_queue(queue_name):
 	var queue = _get_queue(queue_name)
 
-	if Util.is_using_threads():
+	if Platform.is_using_threads():
 		while not _quitting:
 			var item = _process_queue_item(queue)
 			if item:

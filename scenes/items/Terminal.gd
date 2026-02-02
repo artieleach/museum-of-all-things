@@ -8,7 +8,7 @@ func _ready() -> void:
 			line_edit.focus_exited.connect(_on_line_edit_focus_exited)
 
 func _on_line_edit_focus_entered() -> void:
-	if Util.is_xr() and not Util.is_meta_quest():
+	if Platform.is_xr() and not Platform.is_meta_quest():
 		$VirtualKeyboard.visible = true
 
 func _on_line_edit_focus_exited() -> void:

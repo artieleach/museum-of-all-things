@@ -117,7 +117,7 @@ func _play_footstep(override_type=null):
 	elif obj and obj.is_in_group("footstep_water"):
 		step_type = "water"
 	else:
-		var floor_cell = Util.worldToGrid(global_position) - Vector3.UP
+		var floor_cell = GridUtils.world_to_grid(global_position) - Vector3.UP
 		var floor_cell_type = GridManager.get_cell_item(floor_cell)
 		step_type = _floor_material_map.get(
 			floor_cell_type,

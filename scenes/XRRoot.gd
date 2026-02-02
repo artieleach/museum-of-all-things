@@ -19,7 +19,7 @@ const THUMBSTICK_TELEPORT_RELEASED_THRESHOLD := 0.4
 var _thumbstick_teleport_pressed := false
 
 func _ready():
-	if Util.is_openxr():
+	if Platform.is_openxr():
 		var interface = XRServer.find_interface("OpenXR")
 		print("initializing XR interface OpenXR...")
 		if interface and interface.initialize():
@@ -37,7 +37,7 @@ func _ready():
 			get_tree().paused = true
 			return
 
-	if Util.is_webxr():
+	if Platform.is_webxr():
 		var interface = XRServer.find_interface("WebXR")
 
 		# WebXR is less powerful than when running natively in OpenXR, so target 72 FPS.

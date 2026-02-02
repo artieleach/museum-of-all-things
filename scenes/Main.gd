@@ -53,7 +53,7 @@ func _ready() -> void:
 
 	_recreate_player()
 
-	if Util.is_xr():
+	if Platform.is_xr():
 		_start_game()
 	else:
 		GraphicsManager.change_post_processing.connect(_change_post_processing)
@@ -81,12 +81,12 @@ func _ready() -> void:
 
 	call_deferred("_play_sting")
 
-	$DirectionalLight3D.visible = Util.is_compatibility_renderer()
+	$DirectionalLight3D.visible = Platform.is_compatibility_renderer()
 
-	if not Util.is_xr():
+	if not Platform.is_xr():
 		_pause_game()
 
-	if Util.is_web():
+	if Platform.is_web():
 		webxr_interface = XRServer.find_interface("WebXR")
 		if webxr_interface:
 			webxr_interface.session_supported.connect(_webxr_session_supported)
@@ -106,10 +106,10 @@ func _recreate_player() -> void:
 		remove_child(_player)
 		_player.queue_free()
 
-	_player = XrRoot.instantiate() if Util.is_xr() else Player.instantiate()
+	_player = XrRoot.instantiate() if Platform.is_xr() else Player.instantiate()
 	add_child(_player)
 
-	if Util.is_xr():
+	if Platform.is_xr():
 		_player = _player.get_node("XROrigin3D")
 		_player.get_node("XRToolsPlayerBody").rotate_player(-starting_rotation)
 	else:
@@ -124,7 +124,7 @@ func _change_post_processing(post_processing: String) -> void:
 	$CRTPostProcessing.visible = post_processing == "crt"
 
 func _start_game() -> void:
-	if not Util.is_xr():
+	if not Platform.is_xr():
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		_player.start()
@@ -214,7 +214,7 @@ func _on_pause_menu_settings() -> void:
 	_open_settings_menu()
 
 func _on_pause_menu_return_to_lobby() -> void:
-	if not Util.is_xr():
+	if not Platform.is_xr():
 		_player.rotation.y = starting_rotation
 	_player.position = starting_point
 	$Museum.reset_to_lobby()
@@ -243,17 +243,17 @@ func _input(event) -> void:
 	if Input.is_action_just_pressed("show_fps"):
 		$FpsLabel.visible = not $FpsLabel.visible
 
-	if event.is_action_pressed("pause") and not Util.is_xr():
+	if event.is_action_pressed("pause") and not Platform.is_xr():
 		_pause_game()
 
-	if event.is_action_pressed("free_pointer") and not Util.is_xr():
+	if event.is_action_pressed("free_pointer") and not Platform.is_xr():
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if event.is_action_pressed("click") and not Util.is_xr() and not $CanvasLayer.visible:
+	if event.is_action_pressed("click") and not Platform.is_xr() and not $CanvasLayer.visible:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 	# Tab key for player list overlay (only in multiplayer, not XR, not in menus)
-	if _is_multiplayer_game and not Util.is_xr() and not $CanvasLayer.visible:
+	if _is_multiplayer_game and not Platform.is_xr() and not $CanvasLayer.visible:
 		if event.is_action_pressed("show_player_list"):
 			player_list_overlay.visible = true
 		elif event.is_action_released("show_player_list"):
@@ -370,7 +370,7 @@ func _on_race_started(target_article: String) -> void:
 	_close_menus()
 
 	# Teleport local player to starting point
-	if not Util.is_xr():
+	if not Platform.is_xr():
 		_player.rotation.y = starting_rotation
 	_player.position = starting_point
 

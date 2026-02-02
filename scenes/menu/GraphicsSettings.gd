@@ -2,7 +2,7 @@ extends VBoxContainer
 
 signal resume
 @onready var _vbox = self
-@onready var _xr = Util.is_xr()
+@onready var _xr = Platform.is_xr()
 @onready var post_processing_options = ["none", "crt"]
 var _loaded_settings = false
 

@@ -1,83 +1,82 @@
 extends Node
 
-signal search_complete(title, context)
-signal random_complete(title, context)
-signal wikitext_complete(titles, context)
-signal wikitext_failed(titles, message)
-signal wikidata_complete(ids, context)
-signal images_complete(files, context)
-signal commons_images_complete(category, context)
+signal search_complete(title: Variant, context: Variant)
+signal random_complete(title: Variant, context: Variant)
+signal wikitext_complete(titles: Array, context: Variant)
+signal wikitext_failed(titles: Array, message: String)
+signal wikidata_complete(ids: Variant, context: Variant)
+signal images_complete(files: Array, context: Variant)
+signal commons_images_complete(category: Array, context: Variant)
 
-const MAX_BATCH_SIZE = 50
-const REQUEST_DELAY_MS = 1000
+const MAX_BATCH_SIZE: int = 50
+const REQUEST_DELAY_MS: int = 1000
 
-# TODO: wikimedia support, and category support
-const WIKIMEDIA_COMMONS_PREFIX = "https://commons.wikimedia.org/wiki/"
-const WIKIDATA_PREFIX = "https://www.wikidata.org/wiki/"
+const WIKIMEDIA_COMMONS_PREFIX: String = "https://commons.wikimedia.org/wiki/"
+const WIKIDATA_PREFIX: String = "https://www.wikidata.org/wiki/"
 
-const WIKIDATA_COMMONS_CATEGORY = "P373"
-const WIKIDATA_COMMONS_GALLERY = "P935"
+const WIKIDATA_COMMONS_CATEGORY: String = "P373"
+const WIKIDATA_COMMONS_GALLERY: String = "P935"
 
-var lang = TranslationServer.get_locale()
-var wikipedia_prefix = "https://" + lang + ".wikipedia.org/wiki/"
-var search_endpoint = "https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&list=search&srprop=title&origin=*&srsearch="
-var random_endpoint = "https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=0&prop=info&origin=*"
+var lang: String = TranslationServer.get_locale()
+var wikipedia_prefix: String = "https://" + lang + ".wikipedia.org/wiki/"
+var search_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&list=search&srprop=title&origin=*&srsearch="
+var random_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=0&prop=info&origin=*"
 
-var wikitext_endpoint = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops&ppprop=wikibase_item&explaintext=true&rvprop=content&format=json&redirects=1&origin=*&titles="
-var images_endpoint = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|url&iiurlwidth=640&iiextmetadatafilter=LicenseShortName|Artist&format=json&redirects=1&origin=*&titles="
-var wikidata_endpoint = "https://www.wikidata.org/w/api.php?action=wbgetclaims&uselang=" + lang + "&format=json&origin=*&entity="
+var wikitext_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops&ppprop=wikibase_item&explaintext=true&rvprop=content&format=json&redirects=1&origin=*&titles="
+var images_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|url&iiurlwidth=640&iiextmetadatafilter=LicenseShortName|Artist&format=json&redirects=1&origin=*&titles="
+var wikidata_endpoint: String = "https://www.wikidata.org/w/api.php?action=wbgetclaims&uselang=" + lang + "&format=json&origin=*&entity="
 
-var wikimedia_commons_category_images_endpoint = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + lang + "&generator=categorymembers&gcmtype=file&gcmlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&origin=*&gcmtitle="
-var wikimedia_commons_gallery_images_endpoint = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + lang + "&generator=images&gimlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&origin=*&titles="
+var wikimedia_commons_category_images_endpoint: String = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + lang + "&generator=categorymembers&gcmtype=file&gcmlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&origin=*&gcmtitle="
+var wikimedia_commons_gallery_images_endpoint: String = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + lang + "&generator=images&gimlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&origin=*&titles="
 
-var _fs_lock = Mutex.new()
-var _results_lock = Mutex.new()
-var _results = {}
+var _fs_lock := Mutex.new()
+var _results_lock := Mutex.new()
+var _results: Dictionary = {}
 
 var _network_request_thread: Thread
-var NETWORK_QUEUE = "Network"
+const NETWORK_QUEUE: String = "Network"
 
-func _ready():
-	if Util.is_using_threads():
+func _ready() -> void:
+	if Platform.is_using_threads():
 		_network_request_thread = Thread.new()
 		_network_request_thread.start(_network_request_thread_loop)
 
-func _exit_tree():
+func _exit_tree() -> void:
 	WorkQueue.set_quitting()
 	if _network_request_thread:
 		_network_request_thread.wait_to_finish()
 
-func _delayed_advance_queue():
+func _delayed_advance_queue() -> void:
 	Util.delay_msec(REQUEST_DELAY_MS)
 
-func _network_request_thread_loop():
+func _network_request_thread_loop() -> void:
 	while not WorkQueue.get_quitting():
 		_network_request_item()
 
-func _process(delta: float):
-	if not Util.is_using_threads():
+func _process(_delta: float) -> void:
+	if not Platform.is_using_threads():
 		_network_request_item()
 
-func _network_request_item():
-		var item = WorkQueue.process_queue(NETWORK_QUEUE)
-		if not item:
-			return
-		elif item[0] == "fetch_wikitext":
-			_fetch_wikitext(item[1], item[2])
-		elif item[0] == "fetch_search":
-			_fetch_search(item[1], item[2])
-		elif item[0] == "fetch_random":
-			_fetch_random(item[1])
-		elif item[0] == "fetch_images":
-			_fetch_images(item[1], item[2])
-		elif item[0] == "fetch_commons_images":
-			_fetch_commons_images(item[1], item[2])
-		elif item[0] == "fetch_wikidata":
-			_fetch_wikidata(item[1], item[2])
-		elif item[0] == "fetch_continue":
-			_dispatch_request(item[1], item[2], item[3])
+func _network_request_item() -> void:
+	var item: Variant = WorkQueue.process_queue(NETWORK_QUEUE)
+	if not item:
+		return
+	elif item[0] == "fetch_wikitext":
+		_fetch_wikitext(item[1], item[2])
+	elif item[0] == "fetch_search":
+		_fetch_search(item[1], item[2])
+	elif item[0] == "fetch_random":
+		_fetch_random(item[1])
+	elif item[0] == "fetch_images":
+		_fetch_images(item[1], item[2])
+	elif item[0] == "fetch_commons_images":
+		_fetch_commons_images(item[1], item[2])
+	elif item[0] == "fetch_wikidata":
+		_fetch_wikidata(item[1], item[2])
+	elif item[0] == "fetch_continue":
+		_dispatch_request(item[1], item[2], item[3])
 
-func set_language(language: String):
+func set_language(language: String) -> void:
 	wikipedia_prefix = "https://" + language + ".wikipedia.org/wiki/"
 	search_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&format=json&list=search&srprop=title&srsearch="
 	random_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=0&prop=info"
@@ -87,42 +86,46 @@ func set_language(language: String):
 	wikimedia_commons_category_images_endpoint = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + language + "&generator=categorymembers&gcmtype=file&gcmlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&gcmtitle="
 	wikimedia_commons_gallery_images_endpoint = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + language + "&generator=images&gimlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&titles="
 
-func fetch(titles, ctx):
+func fetch(titles: Array, ctx: Variant) -> void:
 	# queue wikitext fetch in front of queue to improve next exhibit load time
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_wikitext", titles, ctx], null, true)
 
-func fetch_search(title, ctx):
+func fetch_search(title: String, ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_search", title, ctx], null, true)
 
-func fetch_random(ctx):
+func fetch_random(ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_random", ctx], null, true)
 
-func fetch_images(titles, ctx):
+func fetch_images(titles: Array, ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_images", titles, ctx])
 
-func fetch_wikidata(titles, ctx):
+func fetch_wikidata(titles: String, ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_wikidata", titles, ctx])
 
-func fetch_commons_images(titles, ctx):
+func fetch_commons_images(titles: String, ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_commons_images", titles, ctx])
 
-func _fetch_continue(url, ctx, caller_ctx, queue):
+func _fetch_continue(url: String, ctx: Dictionary, caller_ctx: Variant, queue: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_continue", url, ctx, caller_ctx], queue)
 
-const LOCATION_STR = "location: "
-func _get_location_header(headers):
+const LOCATION_STR: String = "location: "
+
+func _get_location_header(headers: PackedStringArray) -> Variant:
 	for header in headers:
 		if header.begins_with(LOCATION_STR):
 			return header.substr(LOCATION_STR.length())
+	return null
 
-func _join_titles(titles):
+func _join_titles(titles: Array) -> String:
 	return "|".join(titles.map(func(t): return t.uri_encode()))
 
-func _read_from_cache(title, prefix=wikipedia_prefix):
-	if Util.is_web():
+func _read_from_cache(title: String, prefix: String = "") -> Variant:
+	if prefix.is_empty():
+		prefix = wikipedia_prefix
+	if Platform.is_web():
 		return null
 	_fs_lock.lock()
-	var json = DataManager.load_json_data(prefix + title)
+	var json: Variant = DataManager.load_json_data(prefix + title)
 	_fs_lock.unlock()
 	if json:
 		_results_lock.lock()
@@ -130,19 +133,21 @@ func _read_from_cache(title, prefix=wikipedia_prefix):
 		_results_lock.unlock()
 	return json
 
-func _get_uncached_titles(titles, prefix = wikipedia_prefix):
-	var new_titles = []
+func _get_uncached_titles(titles: Array, prefix: String = "") -> Array:
+	if prefix.is_empty():
+		prefix = wikipedia_prefix
+	var new_titles: Array = []
 	for title in titles:
 		if title == "":
 			continue
 		if not get_result(title):
-			var cached = _read_from_cache(title, prefix)
+			var cached: Variant = _read_from_cache(title, prefix)
 			if not cached:
 				new_titles.append(title)
 	return new_titles
 
-func _fetch_images(files, context):
-	var new_files = _get_uncached_titles(files)
+func _fetch_images(files: Array, context: Variant) -> void:
+	var new_files := _get_uncached_titles(files)
 
 	if len(new_files) == 0:
 		call_deferred("emit_signal", "images_complete", files, context)
@@ -152,8 +157,8 @@ func _fetch_images(files, context):
 		fetch_images(new_files.slice(MAX_BATCH_SIZE), context)
 		new_files = new_files.slice(0, MAX_BATCH_SIZE)
 
-	var url = images_endpoint + _join_titles(new_files)
-	var ctx = {
+	var url := images_endpoint + _join_titles(new_files)
+	var ctx := {
 		"files": files,
 		"new_files": new_files,
 		"queue": WorkQueue.get_current_exhibit()
@@ -161,17 +166,17 @@ func _fetch_images(files, context):
 
 	_dispatch_request(url, ctx, context)
 
-func _get_commons_url(category):
+func _get_commons_url(category: String) -> String:
 	if category.begins_with("Category:"):
 		return wikimedia_commons_category_images_endpoint
 	else:
 		return wikimedia_commons_gallery_images_endpoint
 
-func _fetch_commons_images(category, context):
-	var new_category = _get_uncached_titles([category], WIKIMEDIA_COMMONS_PREFIX)
+func _fetch_commons_images(category: String, context: Variant) -> void:
+	var new_category := _get_uncached_titles([category], WIKIMEDIA_COMMONS_PREFIX)
 
 	if len(new_category) == 0:
-		var result = get_result(category)
+		var result: Variant = get_result(category)
 		if result and result.has("images"):
 			for image in result.images:
 				if not _read_from_cache(image, WIKIMEDIA_COMMONS_PREFIX):
@@ -179,40 +184,40 @@ func _fetch_commons_images(category, context):
 			call_deferred("emit_signal", "commons_images_complete", result.images, context)
 			return
 
-	var url = _get_commons_url(category) + category.uri_encode()
-	var ctx = {
+	var url := _get_commons_url(category) + category.uri_encode()
+	var ctx := {
 		"category": category,
 		"queue": WorkQueue.get_current_exhibit()
 	}
 
 	_dispatch_request(url, ctx, context)
 
-func _fetch_wikidata(entity, context):
-	var new_entity = _get_uncached_titles([entity], WIKIDATA_PREFIX)
+func _fetch_wikidata(entity: String, context: Variant) -> void:
+	var new_entity := _get_uncached_titles([entity], WIKIDATA_PREFIX)
 
 	if len(new_entity) == 0:
 		call_deferred("emit_signal", "wikidata_complete", entity, context)
 		return
 
-	var url = wikidata_endpoint + entity.uri_encode()
-	var ctx = {
+	var url := wikidata_endpoint + entity.uri_encode()
+	var ctx := {
 		"entity": entity
 	}
 
 	_dispatch_request(url, ctx, context)
 
-func _fetch_search(title, context):
-	var url = search_endpoint + title.uri_encode()
-	var ctx = {}
+func _fetch_search(title: String, context: Variant) -> void:
+	var url := search_endpoint + title.uri_encode()
+	var ctx := {}
 	_dispatch_request(url, ctx, context)
 
-func _fetch_random(context):
-	var url = random_endpoint
-	var ctx = {}
+func _fetch_random(context: Variant) -> void:
+	var url := random_endpoint
+	var ctx := {}
 	_dispatch_request(url, ctx, context)
 
-func _fetch_wikitext(titles, context):
-	var new_titles = _get_uncached_titles(titles)
+func _fetch_wikitext(titles: Array, context: Variant) -> void:
+	var new_titles := _get_uncached_titles(titles)
 
 	if len(new_titles) == 0:
 		call_deferred("emit_signal", "wikitext_complete", titles, context)
@@ -222,8 +227,8 @@ func _fetch_wikitext(titles, context):
 		push_error("Too many page requests at once")
 		return
 
-	var url = wikitext_endpoint + _join_titles(new_titles)
-	var ctx = {
+	var url := wikitext_endpoint + _join_titles(new_titles)
+	var ctx := {
 		"titles": titles,
 		"new_titles": new_titles,
 	}
@@ -231,11 +236,11 @@ func _fetch_wikitext(titles, context):
 	# dispatching mediawiki request
 	_dispatch_request(url, ctx, context)
 
-func get_result(title):
-	var res = null
+func get_result(title: String) -> Variant:
+	var res: Variant = null
 	_results_lock.lock()
 	if _results.has(title):
-		var result = _results[title]
+		var result: Dictionary = _results[title]
 		if result.has("normalized"):
 			if _results.has(result.normalized):
 				res = _results[result.normalized]
@@ -246,29 +251,29 @@ func get_result(title):
 	_results_lock.unlock()
 	return res
 
-func _dispatch_request(url, ctx, caller_ctx):
+func _dispatch_request(url: String, ctx: Dictionary, caller_ctx: Variant) -> void:
 	ctx.url = url
 
-	var handle_result = func(result):
+	var handle_result := func(result: Array) -> void:
 		if result[0] != OK:
 			push_error("failed to send http request ", result[0], " ", url)
 			_delayed_advance_queue()
 		else:
 			_on_request_completed_wrapper(result[0], result[1], result[2], result[3], ctx, caller_ctx)
 
-	if Util.is_web():
+	if Platform.is_web():
 		RequestSync.request_async(url).completed.connect(handle_result)
 	else:
 		handle_result.call(RequestSync.request(url))
 
-func _set_page_field(title, field, value):
+func _set_page_field(title: String, field: String, value: Variant) -> void:
 	_results_lock.lock()
 	if not _results.has(title):
 		_results[title] = {}
 	_results[title][field] = value
 	_results_lock.unlock()
 
-func _append_page_field(title, field, values):
+func _append_page_field(title: String, field: String, values: Array) -> void:
 	_results_lock.lock()
 	if not _results.has(title):
 		_results[title] = {}
@@ -277,29 +282,29 @@ func _append_page_field(title, field, values):
 	_results[title][field].append_array(values)
 	_results_lock.unlock()
 
-func _get_json(body):
-	var test_json_conv = JSON.new()
-	var body_string = body.get_string_from_utf8()
-	test_json_conv.parse(body_string)
-	return test_json_conv.get_data()
+func _get_json(body: PackedByteArray) -> Variant:
+	var json := JSON.new()
+	var body_string := body.get_string_from_utf8()
+	json.parse(body_string)
+	return json.get_data()
 
-func _filter_links_ns(links):
-	var agg = []
+func _filter_links_ns(links: Array) -> Array:
+	var agg: Array = []
 	for link in links:
 		if link.has("ns") and link.has("title") and link.ns == 0:
 			agg.append(link.title)
 	return agg
 
-func _normalize_article_title(title):
-	var new_title = title.replace("_", " ").uri_decode()
-	var title_fragments = new_title.split("#")
+func _normalize_article_title(title: String) -> String:
+	var new_title := title.replace("_", " ").uri_decode()
+	var title_fragments := new_title.split("#")
 	return title_fragments[0]
 
-func _on_request_completed_wrapper(result, response_code, headers, body, ctx, caller_ctx):
+func _on_request_completed_wrapper(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, ctx: Dictionary, caller_ctx: Variant) -> void:
 	if _on_request_completed(result, response_code, headers, body, ctx, caller_ctx):
 		_delayed_advance_queue()
 
-func _on_request_completed(result, response_code, headers, body, ctx, caller_ctx):
+func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	if result != 0 or response_code != 200:
 		if response_code != 404:
 			push_error("error in request ", result, " ", response_code, " ", ctx.url)
@@ -342,9 +347,10 @@ func _on_request_completed(result, response_code, headers, body, ctx, caller_ctx
 		return _on_search_request_complete(res, ctx, caller_ctx)
 	elif ctx.url.begins_with(random_endpoint):
 		return _on_random_request_complete(res, ctx, caller_ctx)
+	return false
 
-func _dispatch_continue(continue_fields, base_url, titles, ctx, caller_ctx):
-	var continue_url = base_url
+func _dispatch_continue(continue_fields: Dictionary, base_url: String, titles: Variant, ctx: Dictionary, caller_ctx: Variant) -> bool:
+	var continue_url := base_url
 	if typeof(titles) == TYPE_ARRAY:
 		continue_url += _join_titles(titles)
 	else:
@@ -357,15 +363,17 @@ func _dispatch_continue(continue_fields, base_url, titles, ctx, caller_ctx):
 	_fetch_continue(continue_url, ctx, caller_ctx, ctx.queue)
 	return false
 
-func _cache_all(titles, prefix = wikipedia_prefix):
+func _cache_all(titles: Array, prefix: String = "") -> void:
+	if prefix.is_empty():
+		prefix = wikipedia_prefix
 	for title in titles:
-		var result = get_result(title)
+		var result: Variant = get_result(title)
 		if result != null:
 			_fs_lock.lock()
 			DataManager.save_json_data(prefix + title, result)
 			_fs_lock.unlock()
 
-func _get_original_title(query, title):
+func _get_original_title(query: Dictionary, title: String) -> String:
 	if query.has("normalized"):
 		for t in query.normalized:
 			if t.to == title:
@@ -376,7 +384,7 @@ func _get_original_title(query, title):
 				return t.from
 	return title
 
-func _on_wikitext_request_complete(res, ctx, caller_ctx):
+func _on_wikitext_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	# store the information we did get
 	if res.query.has("pages"):
 		var pages = res.query.pages
@@ -409,7 +417,7 @@ func _on_wikitext_request_complete(res, ctx, caller_ctx):
 		# wikitext ignores queue, so return false to prevent queue advance after completion
 		return false
 
-func _on_images_request_complete(res, ctx, caller_ctx):
+func _on_images_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	# store the information we did get
 	var file_batch = []
 
@@ -441,7 +449,7 @@ func _on_images_request_complete(res, ctx, caller_ctx):
 	else:
 		return true
 
-func _on_commons_images_request_complete(res, ctx, caller_ctx):
+func _on_commons_images_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	var file_batch = []
 
 	if res.query.has("pages"):
@@ -468,13 +476,13 @@ func _on_commons_images_request_complete(res, ctx, caller_ctx):
 		call_deferred("emit_signal", "commons_images_complete", file_batch, caller_ctx)
 
 	# handle continues
-	if res.has("continue") and len(get_result(ctx.category).images) <= Util.get_max_slots_per_exhibit():
+	if res.has("continue") and len(get_result(ctx.category).images) <= Platform.get_max_slots_per_exhibit():
 		return _dispatch_continue(res.continue, _get_commons_url(ctx.category), ctx.category, ctx, caller_ctx)
 	else:
 		_cache_all([ctx.category], WIKIMEDIA_COMMONS_PREFIX)
 		return true
 
-func _on_wikidata_request_complete(res, ctx, caller_ctx):
+func _on_wikidata_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	# store the information we did get
 	if res.has("claims"):
 		if res.claims.has(WIKIDATA_COMMONS_CATEGORY):
@@ -494,7 +502,7 @@ func _on_wikidata_request_complete(res, ctx, caller_ctx):
 	call_deferred("emit_signal", "wikidata_complete", ctx.entity, caller_ctx)
 	return true
 
-func _on_search_request_complete(res, ctx, caller_ctx):
+func _on_search_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	if res.query.has("search"):
 		if len(res.query.search) > 0:
 			var result_title = res.query.search[0].title
@@ -503,7 +511,7 @@ func _on_search_request_complete(res, ctx, caller_ctx):
 	call_deferred("emit_signal", "search_complete", null, caller_ctx)
 	return true
 
-func _on_random_request_complete(res, ctx, caller_ctx):
+func _on_random_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	if res.query.has("pages"):
 		var pages = res.query.pages
 		for page_id in pages.keys():

@@ -7,7 +7,7 @@ extends ScrollContainer
 var enabled = false
 
 func _ready():
-	if not Util.is_xr():
+	if not Platform.is_xr():
 		enabled = true
 
 func _process(delta: float) -> void:

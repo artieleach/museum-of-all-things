@@ -4,7 +4,7 @@ static var margin_top := 100
 
 func init(text: String) -> void:
 	var label = $SubViewport/Control/RichTextLabel
-	var t = Util.strip_markup(text)
+	var t = TextUtils.strip_markup(text)
 	label.text = t
 	call_deferred("_center_vertically", label)
 	MipmapThread.get_viewport_texture_with_mipmaps.call_deferred($SubViewport, func(texture):
@@ -22,7 +22,7 @@ func _center_vertically(label):
 	if content_height > viewport_size.y - 2 * margin_top:
 		var text_len = len(label.text)
 		var new_len = text_len * (float(content_height - 2 * margin_top) / float(content_height))
-		label.text = Util.trim_to_length_sentence(label.text, min(text_len - 1, new_len))
+		label.text = TextUtils.trim_to_length_sentence(label.text, min(text_len - 1, new_len))
 		call_deferred("_center_vertically", label)
 		return
 

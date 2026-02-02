@@ -55,7 +55,7 @@ func _ready():
 	image_name_re.compile("^([iI]mage:|[fF]ile:)")
 	exclude_image_re.compile("\\bicon\\b|\\blogo\\b|blue pencil")
 
-	if Util.is_using_threads():
+	if Platform.is_using_threads():
 		processor_thread = Thread.new()
 		processor_thread.start(_processor_thread_loop)
 
@@ -69,7 +69,7 @@ func _processor_thread_loop():
 		_processor_thread_item()
 
 func _process(delta: float) -> void:
-	if not Util.is_using_threads():
+	if not Platform.is_using_threads():
 		_processor_thread_item()
 
 func _processor_thread_item():
@@ -81,9 +81,9 @@ func _seeded_shuffle(seed, arr, bias=false):
 	var rng = RandomNumberGenerator.new()
 	rng.seed = hash(seed)
 	if not bias:
-		Util.shuffle(rng, arr)
+		CollectionUtils.shuffle(rng, arr)
 	else:
-		Util.biased_shuffle(rng, arr, 2.0)
+		CollectionUtils.biased_shuffle(rng, arr, 2.0)
 
 func _to_link_case(s):
 	if len(s) > 0:
@@ -242,8 +242,8 @@ func _parse_wikitext(wikitext):
 func commons_images_to_items(title, images, extra_text):
 	var items = []
 	var rng = RandomNumberGenerator.new()
-	var material = Util.gen_item_material(title)
-	var plate = Util.gen_plate_style(title)
+	var material = ExhibitStyle.gen_item_material(title)
+	var plate = ExhibitStyle.gen_plate_style(title)
 
 	rng.seed = hash(title + ":commons_shuffler")
 	_seeded_shuffle(title + ":commons_images", images)
@@ -273,8 +273,8 @@ func _create_items(title, result, prev_title):
 	var image_items = []
 	var doors = []
 	var doors_used = {}
-	var material = Util.gen_item_material(title)
-	var plate = Util.gen_plate_style(title)
+	var material = ExhibitStyle.gen_item_material(title)
+	var plate = ExhibitStyle.gen_plate_style(title)
 
 	if result and result.has("wikitext") and result.has("extract"):
 		var wikitext = result.wikitext

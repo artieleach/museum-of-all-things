@@ -12,10 +12,10 @@ var _last_stat_time = 0
 var _max_stat_age = 2000
 
 func _ready():
-	if Util.is_using_threads():
+	if Platform.is_using_threads():
 		_cache_stat_thread = Thread.new()
 		_cache_stat_thread.start(_cache_stat_loop)
-	elif not Util.is_web():
+	elif not Platform.is_web():
 		_cache_stat_timer = Timer.new()
 		add_child(_cache_stat_timer)
 		_cache_stat_timer.timeout.connect(_cache_stat_item)
@@ -61,11 +61,11 @@ func clear_cache():
 		dir.remove(file)
 
 func calculate_cache_size():
-	if not Util.is_web():
+	if not Platform.is_web():
 		WorkQueue.add_item(CACHE_STAT_QUEUE, ["size"])
 
 func _get_cache_size():
-	if Util.is_web():
+	if Platform.is_web():
 		return -1
 	elif OS.get_name() == "Windows":
 		return _get_cache_size_windows()

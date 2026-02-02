@@ -54,7 +54,7 @@ func _init():
 	RenderingServer.set_debug_generate_wireframes(true)
 
 func _ready() -> void:
-	_xr = Util.is_xr()
+	_xr = Platform.is_xr()
 	$WorldEnvironment.environment.ssr_enabled = not _xr
 
 	_grid = $Lobby/GridMap
@@ -74,8 +74,8 @@ func init(player):
 # LOBBY MANAGEMENT
 # =============================================================================
 func _get_lobby_exit_zone(exit):
-	var ex = Util.gridToWorld(exit.from_pos).x
-	var ez = Util.gridToWorld(exit.from_pos).z
+	var ex = GridUtils.grid_to_world(exit.from_pos).x
+	var ez = GridUtils.grid_to_world(exit.from_pos).z
 	for w in StaticData.wings:
 		var c1 = w.corner_1
 		var c2 = w.corner_2
@@ -154,7 +154,7 @@ func _set_current_room_title(title):
 	if RaceManager.is_race_active() and title == RaceManager.get_target_article():
 		RaceManager.notify_article_reached(NetworkManager.get_unique_id(), title)
 
-	var fog_color = Util.gen_fog(_current_room_title)
+	var fog_color = ExhibitStyle.gen_fog(_current_room_title)
 	var environment = $WorldEnvironment.environment
 
 	if environment.fog_light_color != fog_color:
@@ -224,7 +224,7 @@ func _teleport_player(from_hall, to_hall, entry_to_exit=false):
 		var distance = (from_hall.position - pos).length()
 		if distance > max_teleport_distance:
 			return
-		var rot_diff = Util.vecToRot(to_hall.to_dir) - Util.vecToRot(from_hall.to_dir)
+		var rot_diff = GridUtils.vec_to_rot(to_hall.to_dir) - GridUtils.vec_to_rot(from_hall.to_dir)
 
 		# Teleport the local player
 		_teleport_single_player(_player, from_hall, to_hall, rot_diff)
@@ -575,8 +575,8 @@ func _add_item(exhibit, item_data):
 		return
 
 	var item = WallItem.instantiate()
-	item.position = Util.gridToWorld(slot[0]) - slot[1] * 0.01
-	item.rotation.y = Util.vecToRot(slot[1])
+	item.position = GridUtils.grid_to_world(slot[0]) - slot[1] * 0.01
+	item.rotation.y = GridUtils.vec_to_rot(slot[1])
 
 	# we use a delay to stop there from being a frame drop when a bunch of items are added at once
 	# get_tree().create_timer(delay).timeout.connect(_init_item.bind(exhibit, item, item_data))

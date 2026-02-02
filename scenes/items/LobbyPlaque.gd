@@ -30,4 +30,4 @@ func _ready() -> void:
 
 func _resize_text(_lang: String = "") -> void:
 	$Title.font_size = start_font_size_title
-	Util.resizeTextToPx($Title, max_title_length_px)
+	TextUtils.resize_text_to_px($Title, max_title_length_px)

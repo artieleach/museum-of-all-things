@@ -117,7 +117,7 @@ func generate(
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = hash(title)
 	_prev_title = prev_title
-	_floor = Util.gen_floor(title)
+	_floor = ExhibitStyle.gen_floor(title)
 
 	# init starting hall
 	var starting_hall = hall.instantiate()
@@ -165,7 +165,7 @@ func _create_next_room_candidate(last_room):
 
 	# prepare directions to try
 	var try_dirs = DIRECTIONS.duplicate()
-	Util.shuffle(_rng, try_dirs)
+	CollectionUtils.shuffle(_rng, try_dirs)
 
 	var failed = true
 	for dir in try_dirs:
@@ -214,7 +214,7 @@ func add_room():
 	if len(_next_room_candidates) == 0:
 		push_error("no room candidate to create")
 		return
-	if _item_slots.size() > Util.get_max_slots_per_exhibit():
+	if _item_slots.size() > Platform.get_max_slots_per_exhibit():
 		return
 
 	var idx = _rng.randi() % len(_next_room_candidates)
@@ -234,8 +234,8 @@ func add_room():
 	decorate_room(room)
 
 func _clear_scenery_in_area(h1, h2):
-	var wh1 = Util.gridToWorld(h1)
-	var wh2 = Util.gridToWorld(h2)
+	var wh1 = GridUtils.grid_to_world(h1)
+	var wh2 = GridUtils.grid_to_world(h2)
 	for c in get_children():
 		if c.is_in_group("Scenery"):
 			var p = c.global_position
@@ -260,7 +260,7 @@ func _create_hall_bounds(last_room, next_room):
 
 func decorate_entry(starting_hall, room_obj):
 	var free_wall_pos = starting_hall.to_pos + 2 * starting_hall.to_dir
-	var free_wall_ori = Util.vecToOrientation(_grid, starting_hall.to_dir.rotated(Vector3.UP, PI / 2))
+	var free_wall_ori = GridUtils.vec_to_orientation(_grid, starting_hall.to_dir.rotated(Vector3.UP, PI / 2))
 	_grid.set_cell_item(free_wall_pos, FREE_WALL, free_wall_ori)
 	add_item_slot([free_wall_pos - starting_hall.to_dir * 0.075, starting_hall.to_dir])
 	add_item_slot([free_wall_pos + starting_hall.to_dir * 0.075, -starting_hall.to_dir])
@@ -312,7 +312,7 @@ func decorate_reserved_walls(last_room, hall_bounds, dir):
 
 	var planter = small_planter_scene.instantiate()
 	planter.rotation = planter_rot
-	planter.position = Util.gridToWorld(planter_pos) + dir
+	planter.position = GridUtils.grid_to_world(planter_pos) + dir
 	add_child(planter)
 
 func decorate_room_center(center, width, length):
@@ -322,12 +322,12 @@ func decorate_room_center(center, width, length):
 		var roll = _rng.randi_range(0, 3)
 		if roll == 0:
 			var pool = pool_scene.instantiate()
-			pool.position = Util.gridToWorld(true_center)
+			pool.position = GridUtils.grid_to_world(true_center)
 			add_child(pool)
 			return
 		elif roll == 1:
 			var planter = planter_scene.instantiate()
-			planter.position = Util.gridToWorld(true_center)
+			planter.position = GridUtils.grid_to_world(true_center)
 			planter.rotation.y = PI / 2 if length > width else 0
 			add_child(planter)
 			return
@@ -338,7 +338,7 @@ func decorate_room_center(center, width, length):
 	if width > length and width > 2:
 		bench_area_bounds = room_to_bounds(center, width - 2, 1)
 	elif length > width and length > 2:
-		bench_area_ori = Util.vecToOrientation(_grid, Vector3(1, 0, 0))
+		bench_area_ori = GridUtils.vec_to_orientation(_grid, Vector3(1, 0, 0))
 		bench_area_bounds = room_to_bounds(center, 1, length - 2)
 	if bench_area_bounds:
 		var bench_slots = []
@@ -352,15 +352,15 @@ func decorate_room_center(center, width, length):
 					continue
 
 				var free_wall = _rng.randi_range(0, 1) == 0
-				var valid_bench = len(Util.cell_neighbors(_raw_grid, pos, INTERNAL_HALL)) == 0 and\
-						len(Util.cell_neighbors(_raw_grid, pos, HALL_STAIRS_UP)) == 0 and\
-						len(Util.cell_neighbors(_raw_grid, pos, HALL_STAIRS_DOWN)) == 0
-				var valid_free_wall = valid_bench and len(Util.cell_neighbors(_raw_grid, pos, WALL)) == 0
+				var valid_bench = len(GridUtils.cell_neighbors(_raw_grid, pos, INTERNAL_HALL)) == 0 and\
+						len(GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_UP)) == 0 and\
+						len(GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_DOWN)) == 0
+				var valid_free_wall = valid_bench and len(GridUtils.cell_neighbors(_raw_grid, pos, WALL)) == 0
 
 				if width > 3 or length > 3 and free_wall and valid_free_wall and _room_count > 2:
 					var dir = Vector3.RIGHT if width > length else Vector3.FORWARD
 					var item_dir = Vector3.FORWARD if width > length else Vector3.RIGHT
-					var ori = Util.vecToOrientation(_grid, dir)
+					var ori = GridUtils.vec_to_orientation(_grid, dir)
 					_grid.set_cell_item(pos, FREE_WALL, ori)
 					bench_slots.push_front([pos - item_dir * 0.075, item_dir])
 					bench_slots.append([pos + item_dir * 0.075, -item_dir])
@@ -374,7 +374,7 @@ func decorate_wall_tile(pos):
 	if _raw_grid.get_cell_item(pos) == FREE_WALL:
 		return
 
-	var wall_neighbors = Util.cell_neighbors(_grid, pos, WALL)
+	var wall_neighbors = GridUtils.cell_neighbors(_grid, pos, WALL)
 	for wall in wall_neighbors:
 		var slot = (wall + pos) / 2
 		var hall_dir = wall - pos
@@ -436,6 +436,6 @@ func carve_room(corner1, corner2, y):
 func overlaps_room(corner1, corner2, y):
 	for x in range(corner1.x - 1, corner2.x + 2):
 		for z in range(corner1.z - 1, corner2.z + 2):
-			if not Util.safe_overwrite(_grid, Vector3(x, y, z)):
+			if not GridUtils.safe_overwrite(_grid, Vector3(x, y, z)):
 				return true
 	return false

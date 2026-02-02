@@ -44,7 +44,7 @@ func _start_animate() -> void:
 		tween_time
 	)
 
-	if Util.is_compatibility_renderer():
+	if Platform.is_compatibility_renderer():
 		light_tween.kill()
 		_light.visible = false
 	else:

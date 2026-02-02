@@ -61,14 +61,14 @@ func request_async(url, headers=COMMON_HEADERS, verbose=true):
 	if OS.is_debug_build() and verbose:
 		print("fetching url ", url)
 
-	if Util.is_web():
+	if Platform.is_web():
 		# Headers don't always work from the web, let's just not send any.
 		headers = []
 
 	var resp = ResponseAsync.new()
 
 	var req = HTTPRequest.new()
-	req.use_threads = Util.is_using_threads() and not Util.is_web()
+	req.use_threads = Platform.is_using_threads() and not Platform.is_web()
 	req.request_completed.connect(_on_async_request_completed.bind(req, resp))
 
 	var do_request = func(parent):

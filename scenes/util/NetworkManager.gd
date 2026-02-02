@@ -7,8 +7,9 @@ signal connection_succeeded
 signal server_disconnected
 signal player_info_updated(id: int)
 
-const DEFAULT_PORT = 7777
-const MAX_PLAYERS = 8
+# Deprecated: use Constants.DEFAULT_PORT and Constants.MAX_PLAYERS instead
+const DEFAULT_PORT := Constants.DEFAULT_PORT
+const MAX_PLAYERS := Constants.MAX_PLAYERS
 
 var peer: ENetMultiplayerPeer = null
 var player_info: Dictionary = {}  # peer_id -> { name: String, color: Color, skin_url: String }

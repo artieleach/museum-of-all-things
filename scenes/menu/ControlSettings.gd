@@ -23,7 +23,7 @@ var current_joypad_id := 0
 
 func _ready() -> void:
 	_settings_namespace = "control"
-	if Util.is_web():
+	if Platform.is_web():
 		_update_web_default_controls()
 	populate_map_buttons()
 	super._ready()
@@ -137,7 +137,7 @@ func _apply_settings(settings: Dictionary) -> void:
 
 func _on_restore_defaults_button_pressed() -> void:
 	InputMap.load_from_project_settings()
-	if Util.is_web():
+	if Platform.is_web():
 		_update_web_default_controls()
 	update_all_maps_label()
 	invert_y.button_pressed = false

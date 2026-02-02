@@ -8,7 +8,7 @@ signal start_race
 
 @onready var vbox = $MarginContainer/VBoxContainer
 @onready var race_button = $MarginContainer/VBoxContainer/Race
-@onready var _xr = Util.is_xr()
+@onready var _xr = Platform.is_xr()
 
 func _on_visibility_changed():
 	if visible and vbox:
@@ -29,7 +29,7 @@ func _ready():
 	if _xr:
 		$MarginContainer/VBoxContainer/Open.visible = false
 
-	if Util.is_web():
+	if Platform.is_web():
 		%AskQuit.visible = false
 
 	_update_race_button_visibility()

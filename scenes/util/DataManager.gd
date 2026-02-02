@@ -1,32 +1,36 @@
 extends Node
 
 signal loaded_image(url: String, image: Image)
+signal image_load_error(url: String, error: String)
 
-@onready var COMMON_HEADERS = [ "accept: image/png, image/jpeg; charset=utf-8" ]
-@onready var _in_flight = {}
-@onready var _xr = Util.is_xr()
+const COMMON_HEADERS: Array[String] = ["accept: image/png, image/jpeg; charset=utf-8"]
+const TEXTURE_QUEUE: String = "Textures"
+const TEXTURE_FRAME_PACING: int = 6
+const SUPPORTED_IMAGE_FORMATS: Array[String] = ["PNG", "JPEG", "SVG", "WebP"]
 
-var TEXTURE_QUEUE = "Textures"
-var TEXTURE_FRAME_PACING = 6
-var _fs_lock = Mutex.new()
-var _texture_load_thread_pool_size = 5
-var _texture_load_thread_pool = []
+var _in_flight: Dictionary = {}
+var _xr: bool = false
+var _fs_lock := Mutex.new()
+var _texture_load_thread_pool_size: int = 5
+var _texture_load_thread_pool: Array[Thread] = []
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
+func _ready() -> void:
+	_xr = Platform.is_xr()
 	WorkQueue.setup_queue(TEXTURE_QUEUE, TEXTURE_FRAME_PACING)
 
-	if not Util.is_web():
-		var cache_dir = CacheControl.cache_dir
-		var dir = DirAccess.open(cache_dir)
+	if not Platform.is_web():
+		var cache_dir: String = CacheControl.cache_dir
+		var dir := DirAccess.open(cache_dir)
 		if not dir:
-			DirAccess.make_dir_recursive_absolute(cache_dir)
-			if OS.is_debug_build():
-				print("cache directory created at '%s'" + cache_dir)
+			var err := DirAccess.make_dir_recursive_absolute(cache_dir)
+			if err != OK:
+				push_error("DataManager: Failed to create cache directory '%s': %s" % [cache_dir, error_string(err)])
+			elif OS.is_debug_build():
+				print("cache directory created at '%s'" % cache_dir)
 
-	if Util.is_using_threads():
+	if Platform.is_using_threads():
 		for _i in range(_texture_load_thread_pool_size):
-			var thread = Thread.new()
+			var thread := Thread.new()
 			thread.start(_texture_load_thread_loop)
 			_texture_load_thread_pool.append(thread)
 
@@ -40,7 +44,7 @@ func _texture_load_thread_loop():
 		_texture_load_item()
 
 func _process(_delta: float) -> void:
-	if not Util.is_using_threads():
+	if not Platform.is_using_threads():
 		_texture_load_item()
 
 func _texture_load_item():
@@ -66,28 +70,37 @@ func _texture_load_item():
 							_write_url(item.url, data)
 							_load_image(item.url, data, item.ctx)
 
-					if Util.is_web():
+					if Platform.is_web():
 						RequestSync.request_async(request_url, COMMON_HEADERS).completed.connect(handle_result)
 					else:
 						handle_result.call(RequestSync.request(request_url, COMMON_HEADERS))
 
 		"load":
-			var data = item.data
+			var data: PackedByteArray = item.data
 
-			var fmt = _detect_image_type(data)
-			var image = Image.new()
-			if fmt == "PNG":
-				image.load_png_from_buffer(data)
-			elif fmt == "JPEG":
-				image.load_jpg_from_buffer(data)
-			elif fmt == "SVG":
-				image.load_svg_from_buffer(data)
-			elif fmt == "WebP":
-				image.load_webp_from_buffer(data)
-			else:
+			var fmt := _detect_image_type(data)
+			if fmt not in SUPPORTED_IMAGE_FORMATS:
+				_emit_error(item.url, "Unsupported image format: %s" % fmt)
+				return
+
+			var image := Image.new()
+			var err: Error = OK
+			match fmt:
+				"PNG":
+					err = image.load_png_from_buffer(data)
+				"JPEG":
+					err = image.load_jpg_from_buffer(data)
+				"SVG":
+					err = image.load_svg_from_buffer(data)
+				"WebP":
+					err = image.load_webp_from_buffer(data)
+
+			if err != OK:
+				_emit_error(item.url, "Failed to load %s image: %s" % [fmt, error_string(err)])
 				return
 
 			if image.get_width() == 0:
+				_emit_error(item.url, "Image has zero width")
 				return
 
 			_generate_mipmaps(item.url, image, item.ctx)
@@ -140,71 +153,79 @@ func _detect_image_type(data: PackedByteArray) -> String:
 			return "SVG"
 	return "Unknown"
 
-func _write_url(url: String, data: PackedByteArray) -> void:
-	if Util.is_web():
-		return
+func _write_url(url: String, data: PackedByteArray) -> Error:
+	if Platform.is_web():
+		return ERR_UNAVAILABLE
 	_fs_lock.lock()
-	var filename = _get_hash(url)
-	var f = FileAccess.open(CacheControl.cache_dir + filename, FileAccess.WRITE)
-	if f:
-		f.store_buffer(data)
-		f.close()
-	else:
-		push_error("failed to write file ", url)
+	var filename := _get_hash(url)
+	var file_path: String = CacheControl.cache_dir + filename
+	var f := FileAccess.open(file_path, FileAccess.WRITE)
+	if not f:
+		var err := FileAccess.get_open_error()
+		push_error("DataManager: Failed to write file '%s': %s" % [file_path, error_string(err)])
+		_fs_lock.unlock()
+		return err
+	f.store_buffer(data)
+	f.close()
 	_fs_lock.unlock()
+	return OK
 
-func _read_url(url: String):
-	if Util.is_web():
+func _read_url(url: String) -> Variant:
+	if Platform.is_web():
 		return null
 	_fs_lock.lock()
-	var filename = _get_hash(url)
-	var file_path = CacheControl.cache_dir + filename
-	var f = FileAccess.open(file_path, FileAccess.READ)
-	if f:
-		var data = f.get_buffer(f.get_length())
-		f.close()
-		_fs_lock.unlock()
-		return data
-	else:
+	var filename := _get_hash(url)
+	var file_path : String = CacheControl.cache_dir + filename
+	var f := FileAccess.open(file_path, FileAccess.READ)
+	if not f:
 		_fs_lock.unlock()
 		return null
+	var data := f.get_buffer(f.get_length())
+	f.close()
+	_fs_lock.unlock()
+	return data
 
-func _url_exists(url: String):
-	if Util.is_web():
+func _url_exists(url: String) -> bool:
+	if Platform.is_web():
 		return false
 	_fs_lock.lock()
-	var filename = _get_hash(url)
-	var res = FileAccess.file_exists(CacheControl.cache_dir + filename)
+	var filename := _get_hash(url)
+	var res := FileAccess.file_exists(CacheControl.cache_dir + filename)
 	_fs_lock.unlock()
 	return res
 
-func load_json_data(url: String):
-	var data = _read_url(url)
-	if data:
-		var json = data.get_string_from_utf8()
-		return JSON.parse_string(json)
-	else:
+func load_json_data(url: String) -> Variant:
+	var data: Variant = _read_url(url)
+	if not data:
 		return null
+	var json_str: String = data.get_string_from_utf8()
+	var parsed: Variant = JSON.parse_string(json_str)
+	if parsed == null and not json_str.is_empty():
+		push_error("DataManager: Failed to parse JSON from cache for '%s'" % url)
+	return parsed
 
-func save_json_data(url: String, json: Dictionary):
-	if Util.is_web():
-		return
-	var data = JSON.stringify(json).to_utf8_buffer()
-	_write_url(url, data)
+func save_json_data(url: String, json: Dictionary) -> Error:
+	if Platform.is_web():
+		return ERR_UNAVAILABLE
+	var data := JSON.stringify(json).to_utf8_buffer()
+	return _write_url(url, data)
 
-func _emit_image(url, texture, ctx):
+func _emit_image(url: String, texture: ImageTexture, ctx: Variant) -> void:
 	if texture == null:
 		return
 	call_deferred("emit_signal", "loaded_image", url, texture, ctx)
 
-func request_image(url, ctx=null):
+func _emit_error(url: String, error_msg: String) -> void:
+	call_deferred("emit_signal", "image_load_error", url, error_msg)
+
+func request_image(url: String, ctx: Variant = null) -> void:
 	WorkQueue.add_item(TEXTURE_QUEUE, {
 		"type": "request",
 		"url": url,
 		"ctx": ctx
 	})
 
-func _load_image(url, data, ctx=null):
+func _load_image(url: String, data: PackedByteArray, ctx: Variant = null) -> void:
 	WorkQueue.add_item(TEXTURE_QUEUE, {
 		"type": "load",
 		"url": url,
@@ -212,7 +233,7 @@ func _load_image(url, data, ctx=null):
 		"ctx": ctx,
 	}, null, true)
 
-func _generate_mipmaps(url, image, ctx=null):
+func _generate_mipmaps(url: String, image: Image, ctx: Variant = null) -> void:
 	WorkQueue.add_item(TEXTURE_QUEUE, {
 		"type": "generate_mipmaps",
 		"url": url,
@@ -220,7 +241,7 @@ func _generate_mipmaps(url, image, ctx=null):
 		"ctx": ctx,
 	}, null, true)
 
-func _create_and_emit_texture(url, image, ctx=null):
+func _create_and_emit_texture(url: String, image: Image, ctx: Variant = null) -> void:
 	WorkQueue.add_item(TEXTURE_QUEUE, {
 		"type": "create_and_emit_texture",
 		"url": url,

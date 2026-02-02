@@ -66,10 +66,10 @@ static func valid_hall_types(grid, hall_start, hall_dir):
 	var past_hall_exit_left = hall_corner + 2 * hall_dir_left
 
 	var corner_cell_down = grid.get_cell_item(hall_corner - Vector3.UP)
-	var corner_empty_neighbors = Util.cell_neighbors(grid, hall_corner - Vector3.UP, -1)
+	var corner_empty_neighbors = GridUtils.cell_neighbors(grid, hall_corner - Vector3.UP, -1)
 
 	if (
-		not Util.safe_overwrite(grid, hall_corner) or
+		not GridUtils.safe_overwrite(grid, hall_corner) or
 		len(corner_empty_neighbors) != 4
 	):
 		return []
@@ -85,7 +85,7 @@ static func valid_hall_types(grid, hall_start, hall_dir):
 			grid.get_cell_item(past_hall_exit_right - Vector3.UP) == 1 and
 			grid.get_cell_item(past_hall_exit_right) == 1
 		) and
-		Util.safe_overwrite(grid, hall_exit_right)
+		GridUtils.safe_overwrite(grid, hall_exit_right)
 	):
 		valid_halls.append([true, FLAT])
 		valid_halls.append([true, UP])
@@ -94,8 +94,8 @@ static func valid_hall_types(grid, hall_start, hall_dir):
 	return valid_halls
 
 func create_curve_hall(hall_start, hall_dir, is_right=true, level=FLAT):
-	var ori = Util.vecToOrientation(_grid, hall_dir)
-	var ori_turn = Util.vecToOrientation(_grid, hall_dir.rotated(Vector3.UP, 3 * PI / 2))
+	var ori = GridUtils.vec_to_orientation(_grid, hall_dir)
+	var ori_turn = GridUtils.vec_to_orientation(_grid, hall_dir.rotated(Vector3.UP, 3 * PI / 2))
 	var corner_ori = ori if is_right else ori_turn
 	var hall_corner = hall_start + hall_dir
 
@@ -106,24 +106,24 @@ func create_curve_hall(hall_start, hall_dir, is_right=true, level=FLAT):
 		_grid.set_cell_item(hall_corner, INTERNAL_HALL_TURN, corner_ori)
 		_grid.set_cell_item(hall_corner - Vector3.UP, floor_type, 0)
 		_grid.set_cell_item(hall_corner + Vector3.UP, WALL, 0)
-		$Light.global_position = Util.gridToWorld(hall_corner) + Vector3.UP * 2
+		$Light.global_position = GridUtils.grid_to_world(hall_corner) + Vector3.UP * 2
 	elif level == UP:
 		_grid.set_cell_item(hall_start, HALL_STAIRS_UP, ori)
 		_grid.set_cell_item(hall_start + Vector3.UP, -1, ori)
 		_grid.set_cell_item(hall_corner + Vector3.UP, -1, ori)
 		_grid.set_cell_item(hall_corner, HALL_STAIRS_TURN, corner_ori)
-		$Light.global_position = Util.gridToWorld(hall_corner) + Vector3.UP * 4
+		$Light.global_position = GridUtils.grid_to_world(hall_corner) + Vector3.UP * 4
 	elif level == DOWN:
 		_grid.set_cell_item(hall_start, HALL_STAIRS_DOWN, ori)
 		_grid.set_cell_item(hall_start + Vector3.UP, -1, ori)
 		_grid.set_cell_item(hall_corner, -1, ori)
 		_grid.set_cell_item(hall_corner - Vector3.UP, HALL_STAIRS_TURN, corner_ori)
-		$Light.global_position = Util.gridToWorld(hall_corner)
+		$Light.global_position = GridUtils.grid_to_world(hall_corner)
 
 	var exit_hall_dir = hall_dir.rotated(Vector3.UP, (3 if is_right else 1) * PI / 2)
 	var exit_hall = hall_corner + exit_hall_dir
-	var exit_ori = Util.vecToOrientation(_grid, exit_hall_dir)
-	var exit_ori_neg = Util.vecToOrientation(_grid, -exit_hall_dir)
+	var exit_ori = GridUtils.vec_to_orientation(_grid, exit_hall_dir)
+	var exit_ori_neg = GridUtils.vec_to_orientation(_grid, -exit_hall_dir)
 
 	to_dir = exit_hall_dir
 
@@ -146,8 +146,8 @@ func create_curve_hall(hall_start, hall_dir, is_right=true, level=FLAT):
 		to_pos = exit_hall - Vector3.UP
 
 func init(grid, from_title, to_title, hall_start, hall_dir, _hall_type=[true, FLAT]):
-	floor_type = Util.gen_floor(from_title)
-	position = Util.gridToWorld(hall_start)
+	floor_type = ExhibitStyle.gen_floor(from_title)
+	position = GridUtils.grid_to_world(hall_start)
 	loader.monitoring = true
 
 	if grid is GridMap:
@@ -163,30 +163,30 @@ func init(grid, from_title, to_title, hall_start, hall_dir, _hall_type=[true, FL
 	from_dir = hall_dir
 	from_pos = hall_start
 
-	from_sign.position = Util.gridToWorld(to_pos + to_dir * 0.65) - position
+	from_sign.position = GridUtils.grid_to_world(to_pos + to_dir * 0.65) - position
 	from_sign.position += to_dir.rotated(Vector3.UP, PI / 2).normalized() * 1.5
-	from_sign.rotation.y = Util.vecToRot(to_dir) + PI
+	from_sign.rotation.y = GridUtils.vec_to_rot(to_dir) + PI
 	from_sign.text = from_title
 	from_sign.visible = false
 
-	to_sign.position = Util.gridToWorld(hall_start - hall_dir * 0.60) - position
+	to_sign.position = GridUtils.grid_to_world(hall_start - hall_dir * 0.60) - position
 	to_sign.position -= hall_dir.rotated(Vector3.UP, PI / 2).normalized() * 1.5
-	to_sign.rotation.y = Util.vecToRot(hall_dir)
+	to_sign.rotation.y = GridUtils.vec_to_rot(hall_dir)
 	to_sign.text = to_title
 
-	entry_door.position = Util.gridToWorld(from_pos) - 1.9 * from_dir - position
-	entry_door.rotation.y = Util.vecToRot(from_dir) + PI
-	exit_door.position = Util.gridToWorld(to_pos) + 1.9 * to_dir - position
-	exit_door.rotation.y = Util.vecToRot(to_dir)
+	entry_door.position = GridUtils.grid_to_world(from_pos) - 1.9 * from_dir - position
+	entry_door.rotation.y = GridUtils.vec_to_rot(from_dir) + PI
+	exit_door.position = GridUtils.grid_to_world(to_pos) + 1.9 * to_dir - position
+	exit_door.rotation.y = GridUtils.vec_to_rot(to_dir)
 	entry_door.set_open(true, true)
 	exit_door.set_open(false, true)
 
-	var center_pos = Util.gridToWorld((from_pos + to_pos) / 2) + Vector3(0, 4, 0) - position
+	var center_pos = GridUtils.grid_to_world((from_pos + to_pos) / 2) + Vector3(0, 4, 0) - position
 
 	_detector.position = center_pos
 	_detector.monitoring = true
 	_detector.direction_changed.connect(_on_direction_changed)
-	_detector.init(Util.gridToWorld(from_pos), Util.gridToWorld(to_pos))
+	_detector.init(GridUtils.grid_to_world(from_pos), GridUtils.grid_to_world(to_pos))
 
 	loader.position = center_pos
 
