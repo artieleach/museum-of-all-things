@@ -6,6 +6,7 @@ signal connection_failed
 signal connection_succeeded
 signal server_disconnected
 signal player_info_updated(id: int)
+signal player_room_changed(id: int, room: String)
 
 # Deprecated: use Constants.DEFAULT_PORT and Constants.MAX_PLAYERS instead
 const DEFAULT_PORT := Constants.DEFAULT_PORT
@@ -39,7 +40,7 @@ func host_game(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 
 	# Register host player (skip for dedicated servers)
 	if not dedicated:
-		player_info[1] = { "name": local_player_name, "color": local_player_color, "skin_url": local_player_skin }
+		player_info[1] = { "name": local_player_name, "color": local_player_color, "skin_url": local_player_skin, "current_room": "$Lobby" }
 
 	if OS.is_debug_build():
 		print("NetworkManager: Hosting game on port ", port, " (dedicated: ", dedicated, ")")
@@ -103,6 +104,24 @@ func get_player_skin(peer_id: int) -> String:
 		return player_info[peer_id].skin_url
 	return ""
 
+func set_local_player_room(room: String) -> void:
+	var my_id = get_unique_id()
+	if player_info.has(my_id):
+		player_info[my_id].current_room = room
+		if is_multiplayer_active():
+			_broadcast_player_room.rpc(my_id, room)
+
+func get_player_room(peer_id: int) -> String:
+	if player_info.has(peer_id) and player_info[peer_id].has("current_room"):
+		return player_info[peer_id].current_room
+	return "$Lobby"
+
+@rpc("any_peer", "call_local", "reliable")
+func _broadcast_player_room(peer_id: int, room: String) -> void:
+	if player_info.has(peer_id):
+		player_info[peer_id].current_room = room
+	emit_signal("player_room_changed", peer_id, room)
+
 func set_local_player_name(player_name: String) -> void:
 	local_player_name = player_name
 	var my_id = get_unique_id()
@@ -132,7 +151,10 @@ func set_local_player_skin(skin_url: String) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _broadcast_player_info(peer_id: int, player_name: String, color_html: String, skin_url: String = "") -> void:
-	player_info[peer_id] = { "name": player_name, "color": Color.html(color_html), "skin_url": skin_url }
+	var current_room: String = "$Lobby"
+	if player_info.has(peer_id) and player_info[peer_id].has("current_room"):
+		current_room = player_info[peer_id].current_room
+	player_info[peer_id] = { "name": player_name, "color": Color.html(color_html), "skin_url": skin_url, "current_room": current_room }
 	emit_signal("player_info_updated", peer_id)
 
 @rpc("any_peer", "reliable")
@@ -142,7 +164,10 @@ func _request_player_info(from_peer: int) -> void:
 
 @rpc("any_peer", "reliable")
 func _receive_player_info(peer_id: int, player_name: String, color_html: String, skin_url: String = "") -> void:
-	player_info[peer_id] = { "name": player_name, "color": Color.html(color_html), "skin_url": skin_url }
+	var current_room: String = "$Lobby"
+	if player_info.has(peer_id) and player_info[peer_id].has("current_room"):
+		current_room = player_info[peer_id].current_room
+	player_info[peer_id] = { "name": player_name, "color": Color.html(color_html), "skin_url": skin_url, "current_room": current_room }
 	emit_signal("player_info_updated", peer_id)
 
 func _on_peer_connected(id: int) -> void:
@@ -180,7 +205,7 @@ func _on_connected_to_server() -> void:
 
 	# Register ourselves
 	var my_id = multiplayer.get_unique_id()
-	player_info[my_id] = { "name": local_player_name, "color": local_player_color, "skin_url": local_player_skin }
+	player_info[my_id] = { "name": local_player_name, "color": local_player_color, "skin_url": local_player_skin, "current_room": "$Lobby" }
 
 	emit_signal("connection_succeeded")
 

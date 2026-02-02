@@ -161,12 +161,10 @@ func get_current_room() -> String:
 
 func reset_to_lobby() -> void:
 	_set_current_room_title("$Lobby")
+	# All exhibits stay visible - room filtering is handled by player visibility instead
 	var exhibits: Dictionary = _exhibit_loader.get_exhibits()
 	for exhibit_key: String in exhibits:
-		if exhibit_key == "$Lobby":
-			exhibits[exhibit_key]['exhibit'].visible = true
-		else:
-			exhibits[exhibit_key]['exhibit'].visible = false
+		exhibits[exhibit_key]['exhibit'].visible = true
 
 
 func _set_current_room_title(title: String) -> void:
@@ -177,6 +175,14 @@ func _set_current_room_title(title: String) -> void:
 	WorkQueue.set_current_exhibit(title)
 	GlobalMenuEvents.emit_set_current_room(title)
 	_start_queue()
+
+	# Update local player's room BEFORE broadcasting (so visibility checks use the new value)
+	if _player and "current_room" in _player:
+		_player.current_room = title
+
+	# Broadcast room change to network
+	if NetworkManager.is_multiplayer_active():
+		NetworkManager.set_local_player_room(title)
 
 	# Race win detection
 	if RaceManager.is_race_active() and title == RaceManager.get_target_article():

@@ -51,14 +51,7 @@ func toggle_exhibit_visibility(hide_title: String, show_title: String, exhibits:
 
 
 func _teleport_player(from_hall: Hall, to_hall: Hall, entry_to_exit: bool = false) -> void:
-	var exhibits: Dictionary = _museum._exhibits
-
-	var valid_hall: Hall = from_hall if is_instance_valid(from_hall) else (to_hall if is_instance_valid(to_hall) else null)
-	if valid_hall:
-		if entry_to_exit:
-			toggle_exhibit_visibility(valid_hall.to_title, valid_hall.from_title, exhibits)
-		else:
-			toggle_exhibit_visibility(valid_hall.from_title, valid_hall.to_title, exhibits)
+	# Exhibits stay visible - room filtering is handled by player visibility instead
 
 	if is_instance_valid(from_hall) and is_instance_valid(to_hall):
 		var pos: Vector3 = _player.global_position if not _xr else _player.get_node("XRCamera3D").global_position

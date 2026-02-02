@@ -22,6 +22,7 @@ func init(main: Node, network_player_scene: PackedScene, starting_point: Vector3
 	_main = main
 	NetworkPlayer = network_player_scene
 	_starting_point = starting_point
+	NetworkManager.player_room_changed.connect(_on_player_room_changed)
 
 
 func set_server_mode(enabled: bool, port: int = 7777) -> void:
@@ -160,12 +161,63 @@ func process_position_sync(delta: float, local_player: Node) -> bool:
 	return false
 
 
-func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node) -> void:
+func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node, current_room: String = "$Lobby") -> void:
+	# Update room in player_info
+	if NetworkManager.player_info.has(peer_id):
+		NetworkManager.player_info[peer_id].current_room = current_room
+
 	if _network_players.has(peer_id):
 		var net_player: Node = _network_players[peer_id]
 		if is_instance_valid(net_player):
+			# Check if player is in the same room before showing
+			var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "$Lobby"
+
+			if current_room != local_room:
+				net_player.set_body_visible(false)
+				return
+
+			net_player.set_body_visible(true)
+
 			if net_player.has_method("apply_network_position"):
 				net_player.apply_network_position(pos, rot_y, pivot_rot_x, pivot_pos_y)
 			if net_player.has_method("apply_network_mount_state"):
 				var mount_node: Node = get_player_by_peer_id(mounted_peer_id, local_player) if is_mounted else null
 				net_player.apply_network_mount_state(is_mounted, mounted_peer_id, mount_node)
+
+
+func _on_player_room_changed(peer_id: int, _room: String) -> void:
+	# If the local player changed rooms, update visibility of all remote players
+	if peer_id == NetworkManager.get_unique_id():
+		if _main and _main.has_method("get_local_player"):
+			var local_player: Node = _main.get_local_player()
+			if local_player:
+				update_all_player_visibility(local_player)
+	else:
+		# A remote player changed rooms, update just their visibility
+		_update_player_visibility(peer_id)
+
+
+func _update_player_visibility(peer_id: int) -> void:
+	if not _network_players.has(peer_id):
+		return
+	var net_player: Node = _network_players[peer_id]
+	if not is_instance_valid(net_player):
+		return
+
+	var remote_room: String = NetworkManager.get_player_room(peer_id)
+	var local_room: String = "$Lobby"
+	if _main and _main.has_method("get_local_player"):
+		var local_player: Node = _main.get_local_player()
+		if local_player and "current_room" in local_player:
+			local_room = local_player.current_room
+
+	net_player.set_body_visible(remote_room == local_room)
+
+
+func update_all_player_visibility(local_player: Node) -> void:
+	var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "$Lobby"
+	for peer_id: int in _network_players:
+		var net_player: Node = _network_players[peer_id]
+		if is_instance_valid(net_player):
+			var remote_room: String = NetworkManager.get_player_room(peer_id)
+			net_player.set_body_visible(remote_room == local_room)

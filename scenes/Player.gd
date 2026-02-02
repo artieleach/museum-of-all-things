@@ -19,6 +19,7 @@ var _joy_deadzone: float = 0.05
 @export var max_speed: float = 5.0
 
 var player_name: String = "Player"
+var current_room: String = "$Lobby"
 var _enabled: bool = false
 var _invert_y: bool = false
 var _mouse_sensitivity_factor: float = 1.0
@@ -207,7 +208,7 @@ func _physics_process(delta: float) -> void:
 			elif collider.get_parent() and collider.get_parent().has_method("interact"):
 				collider.get_parent().interact()
 
-	if Input.is_action_just_pressed("reset_skin"):
+	if Input.is_action_just_pressed("reset_skin"): 
 		GlobalMenuEvents.emit_skin_reset()
 
 

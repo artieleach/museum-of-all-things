@@ -25,13 +25,8 @@ func request_multiplayer_transition(hall: Hall, backlink: bool) -> void:
 		"from_title": hall.from_title,
 		"backlink": backlink
 	}
-
-	if NetworkManager.is_server():
-		# Host authorizes immediately
-		_execute_multiplayer_transition(hall.to_title, hall.from_title, hall_info)
-	else:
-		# Client requests from host
-		_museum.request_transition.rpc_id(1, hall.to_title, hall_info)
+	# Execute locally - don't broadcast to other clients
+	_execute_multiplayer_transition(hall.to_title, hall.from_title, hall_info)
 
 
 func handle_transition_request(to_title: String, hall_info: Dictionary) -> void:

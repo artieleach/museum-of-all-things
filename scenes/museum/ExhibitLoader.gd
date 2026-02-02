@@ -14,7 +14,7 @@ var _height_increment: int = 20
 # Configuration
 var _items_per_room_estimate: int = 7
 var _min_rooms_per_exhibit: int = 2
-var _max_exhibits_loaded: int = 2
+var _max_exhibits_loaded: int = 999  # Effectively unlimited - exhibits persist for multiplayer room tracking
 var _min_room_dimension: int = 2
 var _max_room_dimension: int = 5
 

@@ -272,6 +272,7 @@ func _process(delta: float) -> void:
 			pivot_pos_y = _player.get_node("Pivot").position.y
 		var is_mounted: bool = _player._is_mounted if _player.has_method("execute_mount") else false
 		var mounted_peer_id: int = _player.mount_peer_id if _player.has_method("execute_mount") else -1
+		var current_room: String = _player.current_room if "current_room" in _player else "$Lobby"
 		_sync_player_position.rpc(
 			NetworkManager.get_unique_id(),
 			_player.global_position,
@@ -279,7 +280,8 @@ func _process(delta: float) -> void:
 			pivot_rot_x,
 			pivot_pos_y,
 			is_mounted,
-			mounted_peer_id
+			mounted_peer_id,
+			current_room
 		)
 
 
@@ -444,8 +446,8 @@ func _on_network_peer_connected(peer_id: int) -> void:
 		# If we're the server, tell the new player the game has already started
 		if NetworkManager.is_server():
 			_notify_game_started.rpc_id(peer_id)
-			var current_room: String = $Museum.get_current_room()
-			_sync_exhibit_to_peer.rpc_id(peer_id, current_room)
+			# Don't sync exhibit - late joiners start in lobby and navigate naturally
+			# Room-based visibility will correctly show/hide players based on their actual room
 
 
 func _on_network_peer_disconnected(peer_id: int) -> void:
@@ -515,8 +517,8 @@ func _sync_exhibit_to_peer(exhibit_title: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1) -> void:
-	_multiplayer_controller.apply_network_position(peer_id, pos, rot_y, pivot_rot_x, pivot_pos_y, is_mounted, mounted_peer_id, _player)
+func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1, current_room: String = "$Lobby") -> void:
+	_multiplayer_controller.apply_network_position(peer_id, pos, rot_y, pivot_rot_x, pivot_pos_y, is_mounted, mounted_peer_id, _player, current_room)
 
 
 @rpc("any_peer", "call_remote", "reliable")
