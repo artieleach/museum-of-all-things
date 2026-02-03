@@ -42,34 +42,39 @@ func process_mount(_delta: float) -> void:
 
 	# Follow mount's position
 	if is_instance_valid(mounted_on):
-		# Check if we can safely follow mount to their room
-		var can_follow: bool = true
+		# Calculate height offset accounting for mount's crouch state
+		var height_offset: float = MOUNT_HEIGHT_OFFSET
+		if "_crouch_system" in mounted_on and mounted_on._crouch_system:
+			var mount_crouch: PlayerCrouchSystem = mounted_on._crouch_system
+			var crouch_factor: float = mount_crouch.get_crouch_factor()
+			# Reduce height when mount crouches (pivot moves from 1.35 to 0.45 = 0.9 delta)
+			var crouch_adjustment: float = crouch_factor * (mount_crouch.get_starting_height() - mount_crouch.get_crouching_height())
+			height_offset -= crouch_adjustment
+
+		# Always follow mount position regardless of room sync state
+		_player.global_position = mounted_on.global_position + Vector3(0, height_offset, 0)
+
+		# Check if we can safely sync room state
 		if "current_room" in _player and "current_room" in mounted_on:
 			if _player.current_room != mounted_on.current_room:
-				# Only follow if the exhibit exists on this client (or it's the lobby)
 				var target_room: String = mounted_on.current_room
-				can_follow = target_room == "$Lobby"
+				var can_sync: bool = target_room == "$Lobby"
 				var museum: Node = null
-				if not can_follow:
+				if not can_sync:
 					var main_node: Node = _player.get_tree().current_scene
 					if main_node and main_node.has_node("Museum"):
 						museum = main_node.get_node("Museum")
 						if museum.has_method("has_exhibit"):
-							can_follow = museum.has_exhibit(target_room)
+							can_sync = museum.has_exhibit(target_room)
 
-						# If exhibit doesn't exist, trigger loading so we can follow next frame
-						if not can_follow and museum.has_method("load_exhibit_for_rider"):
+						# Trigger loading if exhibit doesn't exist
+						if not can_sync and museum.has_method("load_exhibit_for_rider"):
 							museum.load_exhibit_for_rider(_player.current_room, target_room)
 
-				if can_follow:
+				if can_sync:
 					_player.current_room = target_room
-					# Sync museum state for rider's client (updates fog, events, etc.)
 					if museum and museum.has_method("sync_rider_to_room"):
 						museum.sync_rider_to_room(target_room)
-
-		# Only update position if we can safely follow
-		if can_follow:
-			_player.global_position = mounted_on.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
 	else:
 		# Mount became invalid, force dismount
 		execute_dismount()
@@ -119,6 +124,7 @@ func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 
 	# Remove from Player group to prevent triggering area detections
 	if _player.is_in_group("Player"):
+		
 		_player.remove_from_group("Player")
 
 	# Force rider to crouched position immediately

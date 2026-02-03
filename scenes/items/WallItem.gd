@@ -18,13 +18,15 @@ const BlackMaterial: Material = preload("res://assets/textures/black.tres")
 @onready var _animate_ceiling_target: Vector3 = _ceiling.position - Vector3(0, 2, 0)
 
 func _start_animate() -> void:
-	var player: Node3D = get_tree().get_first_node_in_group("Player")
-	var tween_time: float = 0.5
+	var tween_time: float = 0.0
+	var visibility_range: float = $Item/Plaque.visibility_range_end
 
-	if not player or position.distance_to(player.global_position) > $Item/Plaque.visibility_range_end:
-		tween_time = 0
-	else:
-		$SlideSound.play()
+	# Check if any player is close enough to see/hear the animation
+	for player in get_tree().get_nodes_in_group("Player"):
+		if position.distance_to(player.global_position) <= visibility_range:
+			tween_time = 0.5
+			$SlideSound.play()
+			break
 
 	var tween: Tween = create_tween()
 	var light_tween: Tween = create_tween()
