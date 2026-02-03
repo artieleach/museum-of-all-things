@@ -58,6 +58,19 @@ func sync_rider_to_room(room_title: String) -> void:
 	if room_title == _current_room_title:
 		return
 
+	# Open doors for the rider (mimics _teleport_player door handling)
+	# 1. Open the exit door in the source hall (door rider passes through)
+	var from_hall: Hall = _find_hall_for_room_transition(_current_room_title, room_title)
+	if from_hall:
+		from_hall.exit_door.set_open(true)
+		from_hall.entry_door.set_open(true)
+
+	# 2. Open the exit door in the destination entry hall (door ahead in new room)
+	if _exhibits.has(room_title):
+		var dest_exhibit: Node = _exhibits[room_title].get("exhibit")
+		if is_instance_valid(dest_exhibit) and "entry" in dest_exhibit:
+			dest_exhibit.entry.exit_door.set_open(true)
+
 	_current_room_title = room_title
 	WorkQueue.set_current_exhibit(room_title)
 	GlobalMenuEvents.emit_set_current_room(room_title)
