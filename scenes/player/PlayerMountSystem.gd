@@ -122,8 +122,6 @@ func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	if _player.has_node("Feet"):
 		_player.get_node("Feet").disabled = true
 
-	# Remove from Player group to prevent triggering area detections
-
 	# Force rider to crouched position immediately
 	if _crouch_system:
 		_crouch_system.force_crouched_position()
@@ -171,10 +169,6 @@ func _restore_collision() -> void:
 	# Re-enable collision
 	_player.collision_layer = _original_collision_layer
 	_player.collision_mask = _original_collision_mask
-
-	# Re-add to Player group
-	if not _player.is_in_group("Player"):
-		_player.add_to_group("Player")
 
 
 func accept_rider(rider: Node) -> void:

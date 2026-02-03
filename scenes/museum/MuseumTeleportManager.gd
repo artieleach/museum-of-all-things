@@ -1,20 +1,38 @@
 extends Node
 class_name MuseumTeleportManager
-## Handles teleporting player between halls and managing hall door states.
+## Handles teleporting players between halls and managing hall door states.
 
 var _museum: Node3D = null
-var _player: Node = null
+var _players: Array[Node] = []
 var _max_teleport_distance: float = 10.0
 
 
 func init(museum: Node3D, player: Node, max_teleport_distance: float) -> void:
 	_museum = museum
-	_player = player
+	_players.clear()
+	if player:
+		_players.append(player)
 	_max_teleport_distance = max_teleport_distance
 
 
 func set_player(player: Node) -> void:
-	_player = player
+	## Backwards compatibility - sets the first player
+	_players.clear()
+	if player:
+		_players.append(player)
+
+
+func add_player(player: Node) -> void:
+	if player and player not in _players:
+		_players.append(player)
+
+
+func remove_player(player: Node) -> void:
+	_players.erase(player)
+
+
+func get_players() -> Array[Node]:
+	return _players
 
 
 func teleport(from_hall: Hall, to_hall: Hall, entry_to_exit: bool = false) -> void:
@@ -52,18 +70,27 @@ func _teleport_player(from_hall: Hall, to_hall: Hall, entry_to_exit: bool = fals
 	# Exhibits stay visible - room filtering is handled by player visibility instead
 
 	if is_instance_valid(from_hall) and is_instance_valid(to_hall):
-		var pos: Vector3 = _player.global_position
-		var distance: float = (from_hall.position - pos).length()
-		if distance > _max_teleport_distance:
-			return
 		var rot_diff: float = GridUtils.vec_to_rot(to_hall.to_dir) - GridUtils.vec_to_rot(from_hall.to_dir)
+		var any_player_teleported: bool = false
 
-		# Teleport the local player
-		_teleport_single_player(_player, from_hall, to_hall, rot_diff)
+		# Teleport all tracked players that are within range
+		for player: Node in _players:
+			if not is_instance_valid(player):
+				continue
+			# Skip mounted players - they follow their mount
+			if "_is_mounted" in player and player._is_mounted:
+				continue
+			var distance: float = (from_hall.position - player.global_position).length()
+			if distance <= _max_teleport_distance:
+				_teleport_single_player(player, from_hall, to_hall, rot_diff)
+				any_player_teleported = true
 
-		# In multiplayer, teleport all network players too
-		if _is_multiplayer_active():
-			_teleport_all_network_players(to_hall, rot_diff)
+		# In multiplayer, also teleport network players not in our tracked list
+		if NetworkManager.is_multiplayer_active():
+			_teleport_network_players_in_range(from_hall, to_hall, rot_diff)
+
+		if not any_player_teleported:
+			return
 
 		if entry_to_exit:
 			to_hall.entry_door.set_open(true)
@@ -90,19 +117,17 @@ func _teleport_single_player(player: Node, from_hall: Hall, to_hall: Hall, rot_d
 	player.global_rotation.y += rot_diff
 
 
-func _teleport_all_network_players(to_hall: Hall, rot_diff: float) -> void:
+func _teleport_network_players_in_range(from_hall: Hall, to_hall: Hall, rot_diff: float) -> void:
 	var main_node: Node = _museum.get_parent()
 	if main_node and main_node.has_method("get_all_players"):
 		var all_players: Array = main_node.get_all_players()
 		for player: Node in all_players:
-			if player != _player and is_instance_valid(player):
-				# Skip mounted players - they follow their mount
-				if "_is_mounted" in player and player._is_mounted:
-					continue
-				# Teleport network players to the destination
-				player.global_position = to_hall.position
-				player.global_rotation.y += rot_diff
-
-
-func _is_multiplayer_active() -> bool:
-	return NetworkManager.is_multiplayer_active()
+			if player in _players or not is_instance_valid(player):
+				continue
+			# Skip mounted players - they follow their mount
+			if "_is_mounted" in player and player._is_mounted:
+				continue
+			# Only teleport if within range
+			var distance: float = (from_hall.position - player.global_position).length()
+			if distance <= _max_teleport_distance:
+				_teleport_single_player(player, from_hall, to_hall, rot_diff)
