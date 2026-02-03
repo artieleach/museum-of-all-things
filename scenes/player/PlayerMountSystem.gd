@@ -5,7 +5,7 @@ class_name PlayerMountSystem
 signal mount_requested(target: Node)
 signal dismount_requested
 
-const MOUNT_HEIGHT_OFFSET: float = 1.7
+const MOUNT_HEIGHT_OFFSET: float = 1.5
 
 var _player: CharacterBody3D = null
 var _crouch_system: PlayerCrouchSystem = null
@@ -205,9 +205,6 @@ func apply_network_mount_state(is_mounted_state: bool, peer_id: int, mount_node:
 			_player.get_node("CollisionShape2").disabled = true
 		if _player.has_node("Feet"):
 			_player.get_node("Feet").disabled = true
-		# Remove from Player group to prevent triggering area detections
-		if _player.is_in_group("Player"):
-			_player.remove_from_group("Player")
 		# Force crouched position
 		if _crouch_system:
 			_crouch_system.force_crouched_position()

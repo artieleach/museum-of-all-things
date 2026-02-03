@@ -1,16 +1,6 @@
 class_name Platform
 extends RefCounted
 
-static func is_openxr() -> bool:
-	return ProjectSettings.get_setting_with_override("xr/openxr/enabled")
-
-static func is_webxr() -> bool:
-	var webxr_interface: WebXRInterface = XRServer.find_interface("WebXR")
-	return webxr_interface != null and webxr_interface.is_initialized()
-
-static func is_xr() -> bool:
-	return is_openxr() or is_webxr()
-
 static func is_web() -> bool:
 	return OS.get_name() == "Web"
 
@@ -22,6 +12,9 @@ static func is_using_threads() -> bool:
 
 static func is_compatibility_renderer() -> bool:
 	return RenderingServer.get_current_rendering_method() == "gl_compatibility"
+
+static func has_rendering_device() -> bool:
+	return RenderingServer.get_rendering_device() != null
 
 static func is_meta_quest() -> bool:
 	return OS.has_feature("meta_quest")

@@ -4,14 +4,12 @@ class_name MuseumTeleportManager
 
 var _museum: Node3D = null
 var _player: Node = null
-var _xr: bool = false
 var _max_teleport_distance: float = 10.0
 
 
-func init(museum: Node3D, player: Node, xr: bool, max_teleport_distance: float) -> void:
+func init(museum: Node3D, player: Node, max_teleport_distance: float) -> void:
 	_museum = museum
 	_player = player
-	_xr = xr
 	_max_teleport_distance = max_teleport_distance
 
 
@@ -54,7 +52,7 @@ func _teleport_player(from_hall: Hall, to_hall: Hall, entry_to_exit: bool = fals
 	# Exhibits stay visible - room filtering is handled by player visibility instead
 
 	if is_instance_valid(from_hall) and is_instance_valid(to_hall):
-		var pos: Vector3 = _player.global_position if not _xr else _player.get_node("XRCamera3D").global_position
+		var pos: Vector3 = _player.global_position
 		var distance: float = (from_hall.position - pos).length()
 		if distance > _max_teleport_distance:
 			return
@@ -89,11 +87,7 @@ func _teleport_player(from_hall: Hall, to_hall: Hall, entry_to_exit: bool = fals
 func _teleport_single_player(player: Node, from_hall: Hall, to_hall: Hall, rot_diff: float) -> void:
 	var diff_from: Vector3 = player.global_position - from_hall.position
 	player.global_position = to_hall.position + diff_from.rotated(Vector3(0, 1, 0), rot_diff)
-	if not _xr:
-		player.global_rotation.y += rot_diff
-	else:
-		if player.has_node("XRToolsPlayerBody"):
-			player.get_node("XRToolsPlayerBody").rotate_player(-rot_diff)
+	player.global_rotation.y += rot_diff
 
 
 func _teleport_all_network_players(to_hall: Hall, rot_diff: float) -> void:

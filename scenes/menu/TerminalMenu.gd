@@ -4,10 +4,10 @@ signal resume
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	GlobalMenuEvents.open_terminal_menu.connect(reset)
-	GlobalMenuEvents.terminal_result_ready.connect(_on_terminal_result_ready)
-	GlobalMenuEvents.ui_cancel_pressed.connect(_resume)
-	GlobalMenuEvents.ui_accept_pressed.connect(_handle_accept)
+	UIEvents.open_terminal_menu.connect(reset)
+	UIEvents.terminal_result_ready.connect(_on_terminal_result_ready)
+	UIEvents.ui_cancel_pressed.connect(_resume)
+	UIEvents.ui_accept_pressed.connect(_handle_accept)
 	ExhibitFetcher.search_complete.connect(_show_page_result)
 	ExhibitFetcher.random_complete.connect(_show_page_result)
 	reset()
@@ -28,12 +28,12 @@ func _switch_to_page(page):
 
 func _go_to_search_page():
 	_switch_to_page("SearchPage")
-	GlobalMenuEvents.emit_reset_custom_door()
+	UIEvents.emit_reset_custom_door()
 	$MarginContainer/SearchPage/ExhibitTitle.grab_focus()
 
 func _get_random_page():
 	$MarginContainer/StartPage/RandomExhibit.disabled = true
-	GlobalMenuEvents.emit_reset_custom_door()
+	UIEvents.emit_reset_custom_door()
 	ExhibitFetcher.fetch_random(null)
 
 func _handle_accept():
@@ -56,7 +56,7 @@ func _on_terminal_result_ready(error: bool, page: String):
 		$MarginContainer/ErrorPage/Reset.grab_focus()
 	else:
 		_switch_to_page("ResultPage")
-		GlobalMenuEvents.emit_set_custom_door(page)
+		UIEvents.emit_set_custom_door(page)
 		$MarginContainer/ResultPage/ResultLabel.text = "Exhibit Found: \"%s\"" % page
 		$MarginContainer/ResultPage/Reset.grab_focus()
 

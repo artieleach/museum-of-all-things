@@ -1,4 +1,3 @@
-class_name UIEvents
 extends Node
 
 signal ui_cancel_pressed
@@ -9,6 +8,7 @@ signal terminal_result_ready(error: bool, page: String)
 signal set_custom_door(title: String)
 signal reset_custom_door
 signal quit_requested
+signal fullscreen_toggled(fullscreen_state: bool)
 
 func emit_ui_cancel_pressed() -> void:
 	ui_cancel_pressed.emit()

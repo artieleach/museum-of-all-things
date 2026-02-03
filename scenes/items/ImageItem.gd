@@ -80,7 +80,7 @@ func _update_collision_shape(width: float, height: float) -> void:
 
 func interact() -> void:
 	if _image and image_url:
-		GlobalMenuEvents.emit_skin_selected(image_url, _image)
+		MultiplayerEvents.emit_skin_selected(image_url, _image)
 
 func _on_pointer_event(event: Variant) -> void:
 	if event.event_type == "click" or (event.has("pressed") and event.pressed):

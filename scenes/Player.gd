@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## Uses subsystems for crouch, mount, and skin functionality.
 
 const INTERPOLATION_SPEED: float = 15.0
+const TELEPORT_SNAP_THRESHOLD: float = 5.0
 
 var _gravity: float = -30.0
 var _crouch_move_speed: float = 4.0
@@ -50,9 +51,9 @@ var _skin_system: PlayerSkinSystem = null
 
 
 func _ready() -> void:
-	GlobalMenuEvents.set_invert_y.connect(_set_invert_y)
-	GlobalMenuEvents.set_mouse_sensitivity.connect(_set_mouse_sensitivity)
-	GlobalMenuEvents.set_joypad_deadzone.connect(_set_joy_deadzone)
+	SettingsEvents.set_invert_y.connect(_set_invert_y)
+	SettingsEvents.set_mouse_sensitivity.connect(_set_mouse_sensitivity)
+	SettingsEvents.set_joypad_deadzone.connect(_set_joy_deadzone)
 
 	# Initialize subsystems
 	_crouch_system = PlayerCrouchSystem.new()
@@ -209,7 +210,7 @@ func _physics_process(delta: float) -> void:
 				collider.get_parent().interact()
 
 	if Input.is_action_just_pressed("reset_skin"): 
-		GlobalMenuEvents.emit_skin_reset()
+		MultiplayerEvents.emit_skin_reset()
 
 
 # =============================================================================
@@ -311,12 +312,22 @@ func set_player_color(color: Color) -> void:
 
 
 func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35) -> void:
+	var should_snap: bool = false
+
 	if not _has_network_target:
+		should_snap = true
+	else:
+		# Detect teleport (large position change) and snap instead of interpolate
+		var delta_distance: float = global_position.distance_to(pos)
+		if delta_distance > TELEPORT_SNAP_THRESHOLD:
+			should_snap = true
+
+	if should_snap:
 		global_position = pos
-		rotation.y = rot_y
-		_pivot.rotation.x = pivot_rot_x
 		_pivot.position.y = pivot_pos_y
-		_has_network_target = true
+		_pivot.position.y = pivot_pos_y
+
+	_has_network_target = true
 	_target_position = pos
 	_target_rotation_y = rot_y
 	_target_pivot_rot_x = pivot_rot_x
@@ -329,10 +340,6 @@ func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivo
 
 func _get_crouch_factor() -> float:
 	return _crouch_system.get_crouch_factor() if _crouch_system else 0.0
-
-
-func _can_uncrouch() -> bool:
-	return _crouch_system.can_uncrouch() if _crouch_system else true
 
 
 func _update_crouch_body() -> void:

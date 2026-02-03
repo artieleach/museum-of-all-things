@@ -4,11 +4,8 @@ extends ScrollContainer
 @export var scroll_speed: float = 500.0
 @export var joystick_axis: int = JOY_AXIS_RIGHT_Y
 
-var enabled = false
+var enabled = true
 
-func _ready():
-	if not Platform.is_xr():
-		enabled = true
 
 func _process(delta: float) -> void:
 	if not enabled:

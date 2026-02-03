@@ -3,7 +3,7 @@ extends Control
 signal back
 signal start_game
 
-const DEFAULT_SERVER_ADDRESS := "frogwizard.online"
+const DEFAULT_SERVER_ADDRESS := "localhost" #frogwizard.online
 const DEFAULT_HOST_NAME := "Host"
 const DEFAULT_PLAYER_NAME := "Player"
 
@@ -173,5 +173,5 @@ func _on_server_disconnected() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _start_multiplayer_game() -> void:
-	GlobalMenuEvents.emit_multiplayer_started()
+	MultiplayerEvents.emit_multiplayer_started()
 	start_game.emit()

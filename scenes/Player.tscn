@@ -13,9 +13,7 @@ radius = 0.3
 collision_layer = 524288
 collision_mask = 524289
 script = ExtResource("1")
-jump_impulse = 12
 smooth_movement = true
-max_speed_walk = 6
 
 [node name="Pivot" type="Node3D" parent="." unique_id=1864029238]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)

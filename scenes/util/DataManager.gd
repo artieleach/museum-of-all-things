@@ -9,13 +9,11 @@ const TEXTURE_FRAME_PACING: int = 6
 const SUPPORTED_IMAGE_FORMATS: Array[String] = ["PNG", "JPEG", "SVG", "WebP"]
 
 var _in_flight: Dictionary = {}
-var _xr: bool = false
 var _fs_lock := Mutex.new()
 var _texture_load_thread_pool_size: int = 5
 var _texture_load_thread_pool: Array[Thread] = []
 
 func _ready() -> void:
-	_xr = Platform.is_xr()
 	WorkQueue.setup_queue(TEXTURE_QUEUE, TEXTURE_FRAME_PACING)
 
 	if not Platform.is_web():

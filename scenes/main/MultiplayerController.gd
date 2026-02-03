@@ -68,7 +68,7 @@ func spawn_network_player(peer_id: int) -> Node:
 	net_player.position = _starting_point
 
 	_network_players[peer_id] = net_player
-	GlobalMenuEvents.emit_player_joined(peer_id, NetworkManager.get_player_name(peer_id))
+	MultiplayerEvents.emit_player_joined(peer_id, NetworkManager.get_player_name(peer_id))
 
 	if OS.is_debug_build():
 		print("MultiplayerController: Spawned network player for peer %d" % peer_id)
@@ -101,7 +101,7 @@ func remove_network_player(peer_id: int, local_player: Node, mount_state: Dictio
 		if mount_state.has(peer_id):
 			mount_state.erase(peer_id)
 
-		GlobalMenuEvents.emit_player_left(peer_id)
+		MultiplayerEvents.emit_player_left(peer_id)
 		emit_signal("player_removed", peer_id)
 
 		if OS.is_debug_build():
@@ -131,7 +131,7 @@ func end_multiplayer_session() -> void:
 			player_node.queue_free()
 	_network_players.clear()
 
-	GlobalMenuEvents.emit_multiplayer_ended()
+	MultiplayerEvents.emit_multiplayer_ended()
 
 
 func get_player_by_peer_id(peer_id: int, local_player: Node) -> Node:

@@ -5,8 +5,6 @@ signal direction_changed(direction: String)
 
 @export var project_dir: float = 2.0
 
-@onready var _xr: bool = Platform.is_xr()
-
 var _point_a: Vector3 = Vector3.ZERO
 var _point_b: Vector3 = Vector3.ZERO
 var _previous_direction: String = ""
@@ -23,7 +21,7 @@ func init(entry: Vector3, exit: Vector3) -> void:
 
 func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("Player") and _is_local_player(body):
-		player = body if not _xr else body.get_parent().get_node("XRCamera3D")
+		player = body
 
 
 func _on_body_exited(body: Node) -> void:

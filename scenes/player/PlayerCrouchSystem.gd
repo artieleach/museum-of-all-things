@@ -75,29 +75,9 @@ func process_crouch(delta: float) -> void:
 	if Input.is_action_pressed("crouch") and not fully_crouched:
 		pivot.global_translate(Vector3(0, -_crouch_speed * delta, 0))
 	elif not Input.is_action_pressed("crouch") and not fully_standing:
-		if can_uncrouch():
-			pivot.global_translate(Vector3(0, _crouch_speed * delta, 0))
+		pivot.global_translate(Vector3(0, _crouch_speed * delta, 0))
 
 	update_crouch_body()
-
-
-func can_uncrouch() -> bool:
-	if not _player or not _player.has_node("CeilingRayCast"):
-		return true
-
-	var ceiling_ray: RayCast3D = _player.get_node("CeilingRayCast")
-
-	var current_height: float = lerpf(STANDING_BODY_HEIGHT, CROUCHING_BODY_HEIGHT, get_crouch_factor())
-	var target_height: float = STANDING_BODY_HEIGHT
-
-	var clearance_needed: float = target_height - current_height + 0.1
-	if clearance_needed <= 0:
-		return true
-
-	ceiling_ray.target_position = Vector3(0, current_height + clearance_needed, 0)
-	ceiling_ray.force_raycast_update()
-
-	return not ceiling_ray.is_colliding()
 
 
 func get_crouch_factor() -> float:

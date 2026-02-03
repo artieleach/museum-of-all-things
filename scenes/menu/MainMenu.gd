@@ -1,7 +1,6 @@
 extends Control
 
 signal start
-signal start_webxr
 signal settings
 signal start_multiplayer
 
@@ -20,9 +19,6 @@ func _on_visibility_changed():
 	if visible and is_inside_tree():
 		$MarginContainer/VBoxContainer/Start.call_deferred("grab_focus")
 
-func set_webxr_enabled(p_enabled):
-	%StartWebXR.visible = p_enabled
-
 func _start_fade_in():
 	$FadeIn.color = fade_in_start
 	$FadeInStage2.color = fade_in_start
@@ -34,9 +30,6 @@ func _start_fade_in():
 
 func _on_start_pressed():
 	start.emit()
-
-func _on_start_web_xr_pressed() -> void:
-	start_webxr.emit()
 
 func _on_settings_pressed():
 	settings.emit()

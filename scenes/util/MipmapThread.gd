@@ -61,6 +61,11 @@ func _get_texture_data_rd(texture: Texture2D, callback: Callable):
 	)
 
 func get_viewport_texture_with_mipmaps(subviewport: SubViewport, callback: Callable):
+	# Skip texture generation on headless servers (no rendering device available)
+	if not Platform.has_rendering_device():
+		callback.call_deferred(null)
+		return
+
 	await RenderingServer.frame_post_draw
 	if Platform.is_compatibility_renderer():
 		WorkQueue.add_item(MIPMAP_QUEUE, {

@@ -2,19 +2,16 @@ extends Control
 
 signal resume
 
-@onready var _xr = Platform.is_xr()
 @onready var _vbox = $ScrollContainer/MarginContainer/VBoxContainer/MarginContainer
 @onready var _tab_bar = $ScrollContainer/MarginContainer/VBoxContainer/TabBar
 @onready var _tab_scenes = [
 	_vbox.get_node("GraphicsSettings"),
 	_vbox.get_node("AudioSettings"),
-	_vbox.get_node("XRControlsMenu") if _xr else null,
-	_vbox.get_node("ControlSettings") if not _xr else null,
 	_vbox.get_node("DataSettings") if not Platform.is_web() else null,
 ]
 
 func _ready():
-	GlobalMenuEvents.ui_cancel_pressed.connect(_on_resume)
+	UIEvents.ui_cancel_pressed.connect(_on_resume)
 	for i in range(_tab_scenes.size()):
 		if _tab_scenes[i] == null:
 			_tab_bar.set_tab_disabled(i, true)

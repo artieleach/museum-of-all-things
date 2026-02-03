@@ -91,7 +91,6 @@ visible = false
 [connection signal="settings" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_settings"]
 [connection signal="start" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_start_pressed"]
 [connection signal="start_multiplayer" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_multiplayer"]
-[connection signal="start_webxr" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_start_webxr"]
 [connection signal="resume" from="CanvasLayer/PauseMenu" to="." method="_on_main_menu_start_pressed"]
 [connection signal="return_to_lobby" from="CanvasLayer/PauseMenu" to="." method="_on_pause_menu_return_to_lobby"]
 [connection signal="settings" from="CanvasLayer/PauseMenu" to="." method="_on_pause_menu_settings"]

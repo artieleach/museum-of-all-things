@@ -6,7 +6,7 @@ var start_font_size: int
 
 func _ready() -> void:
 	start_font_size = $Search.font_size
-	GlobalMenuEvents.set_language.connect(_resize_text)
+	SettingsEvents.set_language.connect(_resize_text)
 	_resize_text()
 
 func _resize_text(_lang: String = "") -> void:

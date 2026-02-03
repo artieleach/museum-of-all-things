@@ -24,7 +24,6 @@ var StaticData: Resource = preload("res://assets/resources/lobby_data.tres")
 # =============================================================================
 # PRIVATE STATE VARIABLES
 # =============================================================================
-var _xr: bool = false
 var _current_room_title: String = "$Lobby"
 var _grid: GridMap = null
 var _player: Node = null
@@ -73,7 +72,7 @@ func sync_rider_to_room(room_title: String) -> void:
 
 	_current_room_title = room_title
 	WorkQueue.set_current_exhibit(room_title)
-	GlobalMenuEvents.emit_set_current_room(room_title)
+	SettingsEvents.emit_set_current_room(room_title)
 	_start_queue()
 
 	# Update fog color
@@ -130,8 +129,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	_xr = Platform.is_xr()
-	$WorldEnvironment.environment.ssr_enabled = not _xr
+	$WorldEnvironment.environment.ssr_enabled = true
 
 	_grid = $Lobby/GridMap
 
@@ -156,14 +154,14 @@ func _ready() -> void:
 	ExhibitFetcher.wikitext_complete.connect(_on_fetch_complete)
 	ExhibitFetcher.wikidata_complete.connect(_on_wikidata_complete)
 	ExhibitFetcher.commons_images_complete.connect(_on_commons_images_complete)
-	GlobalMenuEvents.reset_custom_door.connect(_reset_custom_door)
-	GlobalMenuEvents.set_custom_door.connect(_set_custom_door)
-	GlobalMenuEvents.set_language.connect(_on_change_language)
+	UIEvents.reset_custom_door.connect(_reset_custom_door)
+	UIEvents.set_custom_door.connect(_set_custom_door)
+	SettingsEvents.set_language.connect(_on_change_language)
 
 
 func init(player: Node) -> void:
 	_player = player
-	_teleport_manager.init(self, player, _xr, max_teleport_distance)
+	_teleport_manager.init(self, player, max_teleport_distance)
 	_set_up_lobby($Lobby)
 	reset_to_lobby()
 
@@ -250,7 +248,7 @@ func _set_current_room_title(title: String) -> void:
 
 	_current_room_title = title
 	WorkQueue.set_current_exhibit(title)
-	GlobalMenuEvents.emit_set_current_room(title)
+	SettingsEvents.emit_set_current_room(title)
 	_start_queue()
 
 	# Update local player's room BEFORE broadcasting (so visibility checks use the new value)
@@ -302,7 +300,7 @@ func _on_fetch_complete(titles: Array, context: Dictionary) -> void:
 
 
 func _on_wikidata_complete(entity: String, ctx: Dictionary) -> void:
-	var result: Dictionary = ExhibitFetcher.get_result(entity)
+	var result: Variant = ExhibitFetcher.get_result(entity)
 	if result and (result.has("commons_category") or result.has("commons_gallery")):
 		if result.has("commons_category"):
 			ExhibitFetcher.fetch_commons_images(result.commons_category, ctx)

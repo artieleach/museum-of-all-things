@@ -113,22 +113,19 @@ func _apply_settings(s: Dictionary, default: Dictionary = {}) -> void:
 	var e: Environment = _env.environment
 	for field in ["ssr_enabled", "ssr_max_steps", "fog_enabled", "ssil_enabled", "ambient_light_energy"]:
 		e[field] = s[field] if s.has(field) else default[field]
-	if Platform.is_xr():
-		e["ssr_enabled"] = false
-	else:
-		set_vsync_enabled(s["vsync_enabled"] if s.has("vsync_enabled") else default["vsync_enabled"])
-		set_fps_limit(s["fps_limit"] if s.has("fps_limit") else default["fps_limit"])
-		enable_fps_limit(s["limit_fps"] if s.has("limit_fps") else default["limit_fps"])
-		set_fullscreen(s["fullscreen"] if s.has("fullscreen") else default["fullscreen"])
-		set_fsr_sharpness(s["fsr_sharpness"] if s.has("fsr_sharpness") else default["fsr_sharpness"])
-		set_post_processing(s["post_processing"] if s.has("post_processing") else default["post_processing"])
+	set_vsync_enabled(s["vsync_enabled"] if s.has("vsync_enabled") else default["vsync_enabled"])
+	set_fps_limit(s["fps_limit"] if s.has("fps_limit") else default["fps_limit"])
+	enable_fps_limit(s["limit_fps"] if s.has("limit_fps") else default["limit_fps"])
+	set_fullscreen(s["fullscreen"] if s.has("fullscreen") else default["fullscreen"])
+	set_fsr_sharpness(s["fsr_sharpness"] if s.has("fsr_sharpness") else default["fsr_sharpness"])
+	set_post_processing(s["post_processing"] if s.has("post_processing") else default["post_processing"])
 
-		var mode: int = s["scale_mode"] if s.has("scale_mode") else default["scale_mode"]
-		set_scale_mode(mode)
-		if mode > 0:
-			set_fsr_quality(s["fsr_quality"] if s.has("fsr_quality") else default["fsr_quality"])
-		else:
-			set_render_scale(s["render_scale"] if s.has("render_scale") else default["render_scale"])
+	var mode: int = s["scale_mode"] if s.has("scale_mode") else default["scale_mode"]
+	set_scale_mode(mode)
+	if mode > 0:
+		set_fsr_quality(s["fsr_quality"] if s.has("fsr_quality") else default["fsr_quality"])
+	else:
+		set_render_scale(s["render_scale"] if s.has("render_scale") else default["render_scale"])
 
 	set_render_distance_multiplier(s["render_distance_multiplier"] if s.has("render_distance_multiplier") else default["render_distance_multiplier"])
 

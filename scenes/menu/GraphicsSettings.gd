@@ -2,19 +2,13 @@ extends VBoxContainer
 
 signal resume
 @onready var _vbox = self
-@onready var _xr = Platform.is_xr()
 @onready var post_processing_options = ["none", "crt"]
 var _loaded_settings = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	GlobalMenuEvents._on_fullscreen_toggled.connect(_on_fullscreen_toggled)
+	UIEvents.fullscreen_toggled.connect(_on_fullscreen_toggled)
 	_load_settings()
-	if _xr:
-		_vbox.get_node("FPSOptions").visible = false
-		_vbox.get_node("ReflectionOptions").visible = false
-		_vbox.get_node("DisplayOptions").visible = false
-		_vbox.get_node("PostProcessingOptions").visible = false
 
 	if _vbox.get_node("DisplayOptions/ScaleMode").selected == 0:
 		get_tree().set_group("fsr_options", "visible", false)

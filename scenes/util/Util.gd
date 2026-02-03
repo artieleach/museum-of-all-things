@@ -4,7 +4,6 @@ extends Node
 ##
 ## This autoload exists for backwards compatibility. Prefer using the focused
 ## utility classes directly:
-## - Platform: is_xr, is_web, is_mobile, is_using_threads, etc.
 ## - GridUtils: vecToRot, gridToWorld, worldToGrid, cell_neighbors, etc.
 ## - TextUtils: strip_markup, strip_html, trim_to_length_sentence, resizeTextToPx
 ## - ExhibitStyle: gen_floor, gen_fog, gen_item_material, gen_plate_style
@@ -63,15 +62,6 @@ func trim_to_length_sentence(s: String, lim: int) -> String:
 # =============================================================================
 # LEGACY PLATFORM FUNCTIONS - Deprecated, use Platform class
 # =============================================================================
-
-func is_openxr() -> bool:
-	return Platform.is_openxr()
-
-func is_webxr() -> bool:
-	return Platform.is_webxr()
-
-func is_xr() -> bool:
-	return Platform.is_xr()
 
 func is_web() -> bool:
 	return Platform.is_web()

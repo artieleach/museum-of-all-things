@@ -1,4 +1,3 @@
-class_name GameplayEvents
 extends Node
 
 signal return_to_lobby

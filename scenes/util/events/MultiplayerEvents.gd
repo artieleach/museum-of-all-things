@@ -1,4 +1,3 @@
-class_name MultiplayerEvents
 extends Node
 
 signal player_joined(peer_id: int, player_name: String)

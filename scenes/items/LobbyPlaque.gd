@@ -25,7 +25,7 @@ func _ready() -> void:
 		$Subtitle.modulate = title_color
 		$Subtitle.text = subtitle_text
 		if not Engine.is_editor_hint():
-			GlobalMenuEvents.set_language.connect(_resize_text)
+			SettingsEvents.set_language.connect(_resize_text)
 			_resize_text()
 
 func _resize_text(_lang: String = "") -> void:

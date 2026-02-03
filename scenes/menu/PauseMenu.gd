@@ -8,7 +8,6 @@ signal start_race
 
 @onready var vbox = $MarginContainer/VBoxContainer
 @onready var race_button = $MarginContainer/VBoxContainer/Race
-@onready var _xr = Platform.is_xr()
 
 func _on_visibility_changed():
 	if visible and vbox:
@@ -16,18 +15,16 @@ func _on_visibility_changed():
 		_update_race_button_visibility()
 
 func _ready():
-	GlobalMenuEvents.set_current_room.connect(set_current_room)
-	GlobalMenuEvents.ui_cancel_pressed.connect(ui_cancel_pressed)
-	GlobalMenuEvents.multiplayer_started.connect(_update_race_button_visibility)
-	GlobalMenuEvents.multiplayer_ended.connect(_update_race_button_visibility)
+	SettingsEvents.set_current_room.connect(set_current_room)
+	UIEvents.ui_cancel_pressed.connect(ui_cancel_pressed)
+	MultiplayerEvents.multiplayer_started.connect(_update_race_button_visibility)
+	MultiplayerEvents.multiplayer_ended.connect(_update_race_button_visibility)
 	RaceManager.race_started.connect(_on_race_state_changed)
 	RaceManager.race_ended.connect(_on_race_state_changed)
 	RaceManager.race_cancelled.connect(_update_race_button_visibility)
 	set_current_room(current_room)
 
 	# opening page in a browser outside VR is confusing
-	if _xr:
-		$MarginContainer/VBoxContainer/Open.visible = false
 
 	if Platform.is_web():
 		%AskQuit.visible = false
@@ -41,7 +38,7 @@ func ui_cancel_pressed():
 var current_room = "$Lobby"
 func set_current_room(room):
 	current_room = room
-	vbox.get_node("Title").text = current_room.replace("$", "") + ((" - " + tr("Paused")) if not _xr else "")
+	vbox.get_node("Title").text = current_room.replace("$", "") + (" - " + tr("Paused"))
 	vbox.get_node("Open").disabled = current_room.begins_with("$")
 	$MarginContainer/VBoxContainer/Language.visible = current_room == "$Lobby"
 
@@ -59,15 +56,10 @@ func _on_open_pressed():
 	OS.shell_open("https://" + lang + ".wikipedia.org/wiki/" + current_room)
 
 func _on_quit_pressed():
-	GlobalMenuEvents.emit_quit_requested()
+	UIEvents.emit_quit_requested()
 
 func _on_ask_quit_pressed():
-	if not _xr:
-		_on_quit_pressed()
-	else:
-		$MarginContainer/VBoxContainer.visible = false
-		$MarginContainer/QuitContainer.visible = true
-		$MarginContainer/QuitContainer/Quit.grab_focus()
+	_on_quit_pressed()
 
 func _on_cancel_quit_pressed():
 	$MarginContainer/QuitContainer.visible = false

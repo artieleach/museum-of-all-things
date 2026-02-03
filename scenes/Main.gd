@@ -1,7 +1,6 @@
 extends Node
-## Main game controller handling initialization, WebXR, and delegating to subsystems.
+## Main game controller handling initialization and delegating to subsystems.
 
-@export var XrRoot: PackedScene = preload("res://scenes/XRRoot.tscn")
 @export var Player: PackedScene = preload("res://scenes/Player.tscn")
 @export var NetworkPlayer: PackedScene = preload("res://scenes/NetworkPlayer.tscn")
 @export var smooth_movement: bool = false
@@ -11,8 +10,6 @@ extends Node
 @export var starting_rotation: float = 0
 
 var _player: Node = null
-var webxr_interface: XRInterface = null
-var webxr_is_starting: bool = false
 
 # Subsystems
 var _menu_controller: MainMenuController = null
@@ -69,17 +66,14 @@ func _ready() -> void:
 
 	_recreate_player()
 
-	if Platform.is_xr():
-		_start_game()
-	else:
-		GraphicsManager.change_post_processing.connect(_change_post_processing)
-		GraphicsManager.init()
+	GraphicsManager.change_post_processing.connect(_change_post_processing)
+	GraphicsManager.init()
 
-	GlobalMenuEvents.return_to_lobby.connect(_on_pause_menu_return_to_lobby)
-	GlobalMenuEvents.open_terminal_menu.connect(_use_terminal)
-	GlobalMenuEvents.skin_selected.connect(_on_skin_selected)
-	GlobalMenuEvents.skin_reset.connect(_on_skin_reset)
-	GlobalMenuEvents.quit_requested.connect(_on_quit_requested)
+	GameplayEvents.return_to_lobby.connect(_on_pause_menu_return_to_lobby)
+	MultiplayerEvents.skin_selected.connect(_on_skin_selected)
+	MultiplayerEvents.skin_reset.connect(_on_skin_reset)
+	UIEvents.open_terminal_menu.connect(_use_terminal)
+	UIEvents.quit_requested.connect(_on_quit_requested)
 
 	# Race signals
 	$CanvasLayer/PauseMenu.start_race.connect(_on_start_race_pressed)
@@ -99,18 +93,7 @@ func _ready() -> void:
 
 	$DirectionalLight3D.visible = Platform.is_compatibility_renderer()
 
-	if not Platform.is_xr():
-		_pause_game()
-
-	if Platform.is_web():
-		webxr_interface = XRServer.find_interface("WebXR")
-		if webxr_interface:
-			webxr_interface.session_supported.connect(_webxr_session_supported)
-			webxr_interface.session_started.connect(_webxr_session_started)
-			webxr_interface.session_ended.connect(_webxr_session_ended)
-			webxr_interface.session_failed.connect(_webxr_session_failed)
-
-		webxr_interface.is_session_supported("immersive-vr")
+	_pause_game()
 
 
 func _play_sting() -> void:
@@ -119,24 +102,17 @@ func _play_sting() -> void:
 
 func _recreate_player() -> void:
 	if _player:
-		if _player is XROrigin3D:
-			_player = _player.get_parent()
 		remove_child(_player)
 		_player.queue_free()
 
-	_player = XrRoot.instantiate() if Platform.is_xr() else Player.instantiate()
+	_player = Player.instantiate()
 	add_child(_player)
-
-	if Platform.is_xr():
-		_player = _player.get_node("XROrigin3D")
-		_player.get_node("XRToolsPlayerBody").rotate_player(-starting_rotation)
-	else:
-		_player.get_node("Pivot/Camera3D").make_current()
-		_player.rotation.y = starting_rotation
-		_player.max_speed = player_speed
-		_player.smooth_movement = smooth_movement
-		_player.dampening = smooth_movement_dampening
-		_player.position = starting_point
+	_player.get_node("Pivot/Camera3D").make_current()
+	_player.rotation.y = starting_rotation
+	_player.max_speed = player_speed
+	_player.smooth_movement = smooth_movement
+	_player.dampening = smooth_movement_dampening
+	_player.position = starting_point
 
 
 func _change_post_processing(post_processing: String) -> void:
@@ -144,10 +120,9 @@ func _change_post_processing(post_processing: String) -> void:
 
 
 func _start_game() -> void:
-	if not Platform.is_xr():
-		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-		_player.start()
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	_player.start()
 	_menu_controller.close_menus()
 	if not game_started:
 		game_started = true
@@ -173,19 +148,6 @@ func _use_terminal() -> void:
 # =============================================================================
 # MENU CALLBACKS
 # =============================================================================
-func _on_main_menu_start_webxr() -> void:
-	if webxr_is_starting:
-		return
-
-	if webxr_interface:
-		webxr_is_starting = true
-		webxr_interface.session_mode = "immersive-vr"
-		webxr_interface.requested_reference_space_types = "local-floor, local"
-		webxr_interface.optional_features = 'local-floor'
-		if not webxr_interface.initialize():
-			OS.alert("Failed to initialize WebXR")
-			webxr_is_starting = false
-
 
 func _on_main_menu_start_pressed() -> void:
 	_start_game()
@@ -213,8 +175,7 @@ func _on_pause_menu_settings() -> void:
 
 
 func _on_pause_menu_return_to_lobby() -> void:
-	if not Platform.is_xr():
-		_player.rotation.y = starting_rotation
+	_player.rotation.y = starting_rotation
 	_player.position = starting_point
 	$Museum.reset_to_lobby()
 	_start_game()
@@ -229,31 +190,31 @@ func _on_settings_back() -> void:
 # =============================================================================
 func _input(event: InputEvent) -> void:
 	if Input.is_action_pressed("toggle_fullscreen"):
-		GlobalMenuEvents.emit_on_fullscreen_toggled(not GraphicsManager.fullscreen)
+		UIEvents.fullscreen_toggled.emit(not GraphicsManager.fullscreen)
 
 	if not game_started:
 		return
 
 	if Input.is_action_just_pressed("ui_accept"):
-		GlobalMenuEvents.emit_ui_accept_pressed()
+		UIEvents.emit_ui_accept_pressed()
 
 	if Input.is_action_just_pressed("ui_cancel") and $CanvasLayer.visible:
-		GlobalMenuEvents.emit_ui_cancel_pressed()
+		UIEvents.emit_ui_cancel_pressed()
 
 	if Input.is_action_just_pressed("show_fps"):
 		$FpsLabel.visible = not $FpsLabel.visible
 
-	if event.is_action_pressed("pause") and not Platform.is_xr():
+	if event.is_action_pressed("pause"):
 		_pause_game()
 
-	if event.is_action_pressed("free_pointer") and not Platform.is_xr():
+	if event.is_action_pressed("free_pointer"):
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if event.is_action_pressed("click") and not Platform.is_xr() and not $CanvasLayer.visible:
+	if event.is_action_pressed("click") and not $CanvasLayer.visible:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 	# Tab key for player list overlay
-	if _multiplayer_controller.is_multiplayer_game() and not Platform.is_xr() and not $CanvasLayer.visible:
+	if _multiplayer_controller.is_multiplayer_game() and not $CanvasLayer.visible:
 		if event.is_action_pressed("show_player_list"):
 			player_list_overlay.visible = true
 		elif event.is_action_released("show_player_list"):
@@ -288,35 +249,6 @@ func _process(delta: float) -> void:
 			mounted_peer_id,
 			current_room
 		)
-
-
-# =============================================================================
-# WEBXR
-# =============================================================================
-func _webxr_session_supported(session_mode: String, supported: bool) -> void:
-	if session_mode == 'immersive-vr' and supported:
-		%MainMenu.set_webxr_enabled(true)
-
-
-func _webxr_session_started() -> void:
-	webxr_is_starting = false
-	_recreate_player()
-	$CanvasLayer.visible = false
-	get_viewport().use_xr = true
-	_start_game()
-
-
-func _webxr_session_ended() -> void:
-	webxr_is_starting = false
-	_recreate_player()
-	$CanvasLayer.visible = true
-	get_viewport().use_xr = false
-	_menu_controller.open_main_menu()
-
-
-func _webxr_session_failed(message: String) -> void:
-	webxr_is_starting = false
-	OS.alert("Failed to initialize WebXR: " + message)
 
 
 # =============================================================================
@@ -390,11 +322,11 @@ func _on_random_article_complete(title: String, context: Dictionary) -> void:
 
 func _on_race_started(target_article: String) -> void:
 	_debug_log("Main: Race started, teleporting to lobby")
+	if _player == null:
+		return
 	_menu_controller.close_menus()
 
 	# Teleport local player to starting point
-	if not Platform.is_xr():
-		_player.rotation.y = starting_rotation
 	_player.position = starting_point
 
 	# Reset to lobby
@@ -403,7 +335,7 @@ func _on_race_started(target_article: String) -> void:
 	# Start game (close menus, capture mouse)
 	_start_game()
 
-	GlobalMenuEvents.emit_race_started(target_article)
+	GameplayEvents.emit_race_started(target_article)
 
 
 # =============================================================================
