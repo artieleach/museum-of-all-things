@@ -123,9 +123,6 @@ func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 		_player.get_node("Feet").disabled = true
 
 	# Remove from Player group to prevent triggering area detections
-	if _player.is_in_group("Player"):
-		
-		_player.remove_from_group("Player")
 
 	# Force rider to crouched position immediately
 	if _crouch_system:
