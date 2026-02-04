@@ -37,6 +37,9 @@ func _parse_command_line() -> void:
 						_multiplayer_controller.is_server_mode(),
 						int(args[i + 1])
 					)
+			"--server-ip":
+				if i + 1 < args.size():
+					MultiplayerMenu.default_server_address = args[i + 1]
 
 
 func _ready() -> void:

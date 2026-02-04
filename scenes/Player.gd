@@ -20,6 +20,7 @@ var _joy_deadzone: float = 0.05
 @export var max_speed: float = 5.0
 
 var player_name: String = "Player"
+var _original_name: String = ""  # Stored when mounting to restore later
 var current_room: String = "$Lobby"
 var _enabled: bool = false
 var _invert_y: bool = false
@@ -240,24 +241,67 @@ func request_dismount() -> void:
 func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	_mount_system.execute_mount(target, target_peer_id)
 	_enabled = false
+	# Update rider's name to show "hat" format
+	_original_name = player_name
+	if _name_label and "player_name" in target:
+		_name_label.text = target.player_name + " wearing\n" + player_name + " as a hat"
 
 
 func execute_dismount() -> void:
 	_mount_system.execute_dismount()
 	if is_local:
 		_enabled = true
+	# Restore rider's original name
+	if _original_name != "" and _name_label:
+		_name_label.text = _original_name
+		_original_name = ""
 
 
 func _accept_rider(rider: Node) -> void:
 	_mount_system.accept_rider(rider)
+	# Hide mount's name when ridden
+	if _name_label:
+		_name_label.visible = false
 
 
 func _remove_rider(rider: Node) -> void:
 	_mount_system.remove_rider(rider)
+	# Restore mount's name visibility when rider leaves
+	if _name_label:
+		_name_label.visible = true
 
 
 func apply_network_mount_state(is_mounted_state: bool, peer_id: int, mount_node: Node) -> void:
+	# Track previous mount before updating state
+	var previous_mount: Node = _mount_system.mounted_on if _mount_system else null
+
 	_mount_system.apply_network_mount_state(is_mounted_state, peer_id, mount_node)
+
+	# Handle name changes for network-synced mount state
+	if is_mounted_state and is_instance_valid(mount_node):
+		if _original_name == "":  # Only save if not already mounted
+			_original_name = player_name
+		if _name_label and "player_name" in mount_node:
+			_name_label.text = mount_node.player_name + " wearing\n" + player_name + " as a hat"
+		# Set mount's rider state so visibility checks work correctly
+		if "_mount_system" in mount_node and mount_node._mount_system:
+			mount_node._mount_system._has_rider = true
+			mount_node._mount_system.mounted_by = self
+		# Hide mount's name when ridden
+		if "_name_label" in mount_node and mount_node._name_label:
+			mount_node._name_label.visible = false
+	elif not is_mounted_state:
+		# Restore rider's name
+		if _original_name != "" and _name_label:
+			_name_label.text = _original_name
+			_original_name = ""
+		# Clear previous mount's rider state
+		if is_instance_valid(previous_mount) and "_mount_system" in previous_mount and previous_mount._mount_system:
+			previous_mount._mount_system._has_rider = false
+			previous_mount._mount_system.mounted_by = null
+		# Restore previous mount's name visibility
+		if is_instance_valid(previous_mount) and "_name_label" in previous_mount and previous_mount._name_label:
+			previous_mount._name_label.visible = true
 
 
 # =============================================================================
@@ -294,7 +338,11 @@ func set_body_visible(is_visible: bool) -> void:
 	if _body_mesh:
 		_body_mesh.visible = is_visible
 	if _name_label:
-		_name_label.visible = is_visible
+		# Keep nameplate hidden if being ridden by another player
+		if is_visible and _has_rider:
+			_name_label.visible = false
+		else:
+			_name_label.visible = is_visible
 
 
 func set_player_color(color: Color) -> void:

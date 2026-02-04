@@ -1,9 +1,10 @@
 extends Control
+class_name MultiplayerMenu
 
 signal back
 signal start_game
 
-const DEFAULT_SERVER_ADDRESS := "localhost" #frogwizard.online
+static var default_server_address := "frogwizard.online"
 const DEFAULT_HOST_NAME := "Host"
 const DEFAULT_PLAYER_NAME := "Player"
 
@@ -84,7 +85,7 @@ func _on_host_pressed() -> void:
 
 func _on_join_pressed() -> void:
 	_show_state(MenuState.JOIN)
-	join_address_input.text = DEFAULT_SERVER_ADDRESS
+	join_address_input.text = default_server_address
 	join_port_input.text = str(NetworkManager.DEFAULT_PORT)
 	join_name_input.text = DEFAULT_PLAYER_NAME
 
