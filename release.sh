@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Build artifacts to upload
+# Build artifacts to upload (server PCK is embedded in binary)
 declare -A ARTIFACTS=(
     ["Linux"]="dist/Linux/MOATMPLinux.x86_64"
     ["Windows"]="dist/Windows/MOATMPWindows.exe"
@@ -23,7 +23,6 @@ declare -A ARTIFACTS=(
     ["Quest"]="dist/MuseumOfAllThings_Quest.apk"
     ["Web"]="dist/web"
     ["Server"]="dist/Server/MuseumOfAllThings_Server.x86_64"
-    ["Server-PCK"]="dist/Server/MuseumOfAllThings_Server.pck"
 )
 
 print_usage() {
@@ -93,18 +92,18 @@ validate_version() {
 
     # Validate format (semver with optional prerelease)
     if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-        echo -e "${RED}Error: Invalid version format '$version'${NC}"
-        echo "Expected format: v1.2.3 or v1.2.3-beta.1"
-        exit 1
+        echo -e "${RED}Error: Invalid version format '$version'${NC}" >&2
+        echo "Expected format: v1.2.3 or v1.2.3-beta.1" >&2
+        return 1
     fi
 
     # Check if tag already exists
     if git tag --list | grep -q "^${version}$"; then
-        echo -e "${RED}Error: Tag '$version' already exists${NC}"
-        echo "Use a different version or delete the existing tag:"
-        echo "  git tag -d $version"
-        echo "  git push origin :refs/tags/$version"
-        exit 1
+        echo -e "${RED}Error: Tag '$version' already exists${NC}" >&2
+        echo "Use a different version or delete the existing tag:" >&2
+        echo "  git tag -d $version" >&2
+        echo "  git push origin :refs/tags/$version" >&2
+        return 1
     fi
 
     echo "$version"
@@ -276,7 +275,9 @@ fi
 check_prerequisites
 
 # Validate and normalize version
-VERSION=$(validate_version "$VERSION")
+if ! VERSION=$(validate_version "$VERSION"); then
+    exit 1
+fi
 echo -e "${CYAN}Preparing release: ${VERSION}${NC}"
 echo ""
 
@@ -358,7 +359,7 @@ fi
 # Add artifacts
 UPLOAD_FILES=()
 for name in "${!ARTIFACTS[@]}"; do
-    local path="${ARTIFACTS[$name]}"
+    path="${ARTIFACTS[$name]}"
 
     # Skip web directory, use zip instead
     if [[ "$name" == "Web" ]]; then
@@ -375,20 +376,26 @@ done
 
 echo -e "${BLUE}Files to upload:${NC}"
 for file in "${UPLOAD_FILES[@]}"; do
-    local size
     size=$(du -h "$file" | cut -f1)
     echo "  • $file ($size)"
 done
 echo ""
 
 # Create release
+# Get the repo from origin remote (not upstream)
+ORIGIN_URL=$(git remote get-url origin)
+# Extract owner/repo from URL (handles both https and ssh formats)
+REPO=$(echo "$ORIGIN_URL" | sed -E 's|.*github\.com[:/]||; s|\.git$||')
+
 echo -e "${BLUE}Creating GitHub release...${NC}"
+echo "Target repository: $REPO"
+echo ""
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo -e "${YELLOW}[DRY RUN]${NC} Would execute:"
     echo "  git tag $VERSION"
     echo "  git push origin $VERSION"
-    echo "  $GH_CMD --notes \"...\""
+    echo "  gh release create $VERSION --repo $REPO --title \"$VERSION\" --notes \"...\""
     echo ""
     echo "Would upload files:"
     for file in "${UPLOAD_FILES[@]}"; do
@@ -401,17 +408,46 @@ fi
 
 # Create and push tag
 echo "Creating tag $VERSION..."
-git tag "$VERSION"
-git push origin "$VERSION"
+if ! git tag "$VERSION"; then
+    echo -e "${RED}Error: Failed to create tag${NC}"
+    exit 1
+fi
+
+echo "Pushing tag to origin..."
+if ! git push origin "$VERSION"; then
+    echo -e "${RED}Error: Failed to push tag${NC}"
+    echo "You may need to delete the local tag: git tag -d $VERSION"
+    exit 1
+fi
+
+# Build gh command arguments
+GH_ARGS=("$VERSION" --repo "$REPO" --title "$TITLE" --notes "$RELEASE_NOTES")
+
+if [[ "$DRAFT" == "true" ]]; then
+    GH_ARGS+=(--draft)
+fi
+
+if [[ "$PRERELEASE" == "true" ]]; then
+    GH_ARGS+=(--prerelease)
+fi
+
+# Add files to upload
+GH_ARGS+=("${UPLOAD_FILES[@]}")
 
 # Create release with notes
-echo "Creating release..."
-RELEASE_URL=$(gh release create "$VERSION" \
-    --title "$TITLE" \
-    ${DRAFT:+--draft} \
-    ${PRERELEASE:+--prerelease} \
-    --notes "$RELEASE_NOTES" \
-    "${UPLOAD_FILES[@]}" 2>&1)
+echo "Creating release and uploading files..."
+echo "This may take a while for large files..."
+echo ""
+
+if ! RELEASE_URL=$(gh release create "${GH_ARGS[@]}" 2>&1); then
+    echo -e "${RED}Error: Failed to create release${NC}"
+    echo "$RELEASE_URL"
+    echo ""
+    echo "The tag was pushed. You may want to delete it:"
+    echo "  git tag -d $VERSION"
+    echo "  git push origin :refs/tags/$VERSION"
+    exit 1
+fi
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
