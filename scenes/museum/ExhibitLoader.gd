@@ -106,6 +106,23 @@ func load_exhibit_from_exit(exit: Hall) -> void:
 	})
 
 
+func load_exhibit_for_rider_without_hall(to_room: String, from_room: String) -> void:
+	## Last resort loading for riders when no hall can be found.
+	## Creates exhibit without hall linking (rider will be teleported by mount sync).
+	if _exhibits.has(to_room):
+		return
+
+	if _loading_exhibits.has(to_room):
+		return
+	_loading_exhibits[to_room] = true
+
+	ExhibitFetcher.fetch([to_room], {
+		"title": to_room,
+		"rider_load": true,
+		"from_room": from_room
+	})
+
+
 func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 	# we don't need to do anything to handle a prefetch
 	if context.has("prefetch"):
@@ -113,15 +130,20 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 		return
 
 	var backlink: bool = context.has("backlink") and context.backlink
-	var hall: Hall = context.entry if backlink else context.exit
+	var rider_load: bool = context.has("rider_load") and context.rider_load
+	var hall: Hall = context.entry if backlink else context.get("exit")
 	var result: Dictionary = ExhibitFetcher.get_result(context.title)
-	if not result or not is_instance_valid(hall):
+
+	# For rider_load, we don't require a hall - we'll use defaults
+	if not result or (not rider_load and not is_instance_valid(hall)):
 		_loading_exhibits.erase(context.get("title", ""))
 		return
 
 	var prev_title: String
 	if backlink:
 		prev_title = _backlink_map[context.title]
+	elif rider_load:
+		prev_title = context.get("from_room", "")
 	else:
 		prev_title = hall.from_title
 
@@ -141,7 +163,13 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 	var new_exhibit: Node3D = TiledExhibitGenerator.instantiate()
 	_museum.add_child(new_exhibit)
 
-	new_exhibit.exit_added.connect(_on_exit_added.bind(doors, backlink, new_exhibit, hall))
+	# For rider_load without hall, use default hall_type; don't connect exit_added
+	var hall_type: Array = hall.hall_type if is_instance_valid(hall) else [0, 0]
+	if is_instance_valid(hall):
+		new_exhibit.exit_added.connect(_on_exit_added.bind(doors, backlink, new_exhibit, hall))
+	else:
+		new_exhibit.exit_added.connect(_on_exit_added_no_hall.bind(doors, new_exhibit))
+
 	new_exhibit.generate({
 		"start_pos": Vector3.UP * exhibit_height,
 		"min_room_dimension": _min_room_dimension,
@@ -153,7 +181,7 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 		"title": context.title,
 		"prev_title": prev_title,
 		"no_props": items.size() < 10,
-		"hall_type": hall.hall_type,
+		"hall_type": hall_type,
 		"exit_limit": doors.size(),
 	})
 
@@ -198,8 +226,18 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 
 	if backlink:
 		new_exhibit.entry.loader.body_entered.connect(_museum._on_loader_body_entered.bind(new_exhibit.entry, true))
+	elif rider_load:
+		# For rider_load, just connect the entry loader without linking to a source hall
+		new_exhibit.entry.loader.body_entered.connect(_museum._on_loader_body_entered.bind(new_exhibit.entry, true))
 	else:
 		link_halls(new_exhibit.entry, hall)
+
+
+func _on_exit_added_no_hall(exit: Hall, doors: Array, new_exhibit: Node3D) -> void:
+	## Simplified exit handler for rider_load case without a source hall.
+	var linked_exhibit: String = Util.coalesce(doors.pop_front(), "")
+	exit.to_title = linked_exhibit
+	exit.loader.body_entered.connect(_museum._on_loader_body_entered.bind(exit))
 
 
 func _on_exit_added(exit: Hall, doors: Array, backlink: bool, new_exhibit: Node3D, hall: Hall) -> void:

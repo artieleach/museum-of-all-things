@@ -102,10 +102,20 @@ func load_exhibit_for_rider(from_room: String, to_room: String) -> void:
 	if _rider_loading_exhibits.has(to_room):
 		return
 
+	# Try finding hall in from_room first
 	var hall: Hall = _find_hall_for_room_transition(from_room, to_room)
+
+	# Fallback: search all loaded exhibits for any hall that leads to to_room
+	if not hall:
+		hall = _find_any_hall_to_room(to_room)
+
 	if hall:
 		_rider_loading_exhibits[to_room] = true
 		_exhibit_loader.load_exhibit_from_exit(hall)
+	else:
+		# Last resort: load without hall context (uses default hall styling)
+		_rider_loading_exhibits[to_room] = true
+		_exhibit_loader.load_exhibit_for_rider_without_hall(to_room, from_room)
 
 
 func _find_hall_for_room_transition(from_room: String, to_room: String) -> Hall:
@@ -122,6 +132,19 @@ func _find_hall_for_room_transition(from_room: String, to_room: String) -> Hall:
 			if exit.to_title == to_room:
 				return exit
 
+	return null
+
+
+func _find_any_hall_to_room(to_room: String) -> Hall:
+	## Fallback: search ALL loaded exhibits for any hall that leads to to_room.
+	## Used when the rider's from_room exhibit was unloaded.
+	for exhibit_key: String in _exhibits:
+		var exhibit_data: Dictionary = _exhibits[exhibit_key]
+		var exhibit: Node = exhibit_data.get("exhibit")
+		if is_instance_valid(exhibit) and "exits" in exhibit:
+			for exit: Hall in exhibit.exits:
+				if exit.to_title == to_room:
+					return exit
 	return null
 
 
