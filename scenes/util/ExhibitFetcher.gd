@@ -22,6 +22,8 @@ var wikipedia_prefix: String = "https://" + lang + ".wikipedia.org/wiki/"
 var search_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&list=search&srprop=title&origin=*&srsearch="
 var random_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=0&prop=info&origin=*"
 
+const RANDOM_LEVEL4_ENDPOINT: String = "https://randomincategory.toolforge.org/?category=A-Class%20level-3%20vital%20articles&category2=B-Class%20level-3%20vital%20articles&category3=C-Class%20level-3%20vital%20articles&category4=FA-Class%20level-3%20vital%20articles&category5=FL-Class%20level-3%20vital%20articles&category6=GA-Class%20level-3%20vital%20articles&category7=List-Class%20level-3%20vital%20articles&category8=Start-Class%20level-3%20vital%20articles&category9=Stub-Class%20level-3%20vital%20articles&server=en.wikipedia.org&cmnamespace=&cmtype=&returntype=subject"
+
 var wikitext_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops&ppprop=wikibase_item&explaintext=true&rvprop=content&format=json&redirects=1&origin=*&titles="
 var images_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|url&iiurlwidth=640&iiextmetadatafilter=LicenseShortName|Artist&format=json&redirects=1&origin=*&titles="
 var wikidata_endpoint: String = "https://www.wikidata.org/w/api.php?action=wbgetclaims&uselang=" + lang + "&format=json&origin=*&entity="
@@ -67,6 +69,8 @@ func _network_request_item() -> void:
 		_fetch_search(item[1], item[2])
 	elif item[0] == "fetch_random":
 		_fetch_random(item[1])
+	elif item[0] == "fetch_random_level4":
+		_fetch_random_level4(item[1])
 	elif item[0] == "fetch_images":
 		_fetch_images(item[1], item[2])
 	elif item[0] == "fetch_commons_images":
@@ -96,6 +100,9 @@ func fetch_search(title: String, ctx: Variant) -> void:
 func fetch_random(ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_random", ctx], null, true)
 
+func fetch_random_level4(ctx: Variant) -> void:
+	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_random_level4", ctx], null, true)
+
 func fetch_images(titles: Array, ctx: Variant) -> void:
 	WorkQueue.add_item(NETWORK_QUEUE, ["fetch_images", titles, ctx])
 
@@ -115,6 +122,15 @@ func _get_location_header(headers: PackedStringArray) -> Variant:
 		if header.begins_with(LOCATION_STR):
 			return header.substr(LOCATION_STR.length())
 	return null
+
+func _extract_title_from_wiki_url(url: String) -> String:
+	# URL format: https://en.wikipedia.org/wiki/Article_Title
+	var wiki_marker := "/wiki/"
+	var idx := url.find(wiki_marker)
+	if idx == -1:
+		return ""
+	var title := url.substr(idx + wiki_marker.length())
+	return title.uri_decode().replace("_", " ")
 
 func _join_titles(titles: Array) -> String:
 	return "|".join(titles.map(func(t): return t.uri_encode()))
@@ -216,6 +232,11 @@ func _fetch_random(context: Variant) -> void:
 	var ctx := {}
 	_dispatch_request(url, ctx, context)
 
+func _fetch_random_level4(context: Variant) -> void:
+	var url := RANDOM_LEVEL4_ENDPOINT
+	var ctx := {"random_level4": true}
+	_dispatch_request(url, ctx, context)
+
 func _fetch_wikitext(titles: Array, context: Variant) -> void:
 	var new_titles := _get_uncached_titles(titles)
 
@@ -305,6 +326,17 @@ func _on_request_completed_wrapper(result: int, response_code: int, headers: Pac
 		_delayed_advance_queue()
 
 func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, ctx: Dictionary, caller_ctx: Variant) -> bool:
+	# Handle Toolforge API redirect response for random_level4 requests
+	if ctx.get("random_level4", false):
+		if response_code == 302:
+			var location = _get_location_header(headers)
+			if location:
+				var title := _extract_title_from_wiki_url(location)
+				call_deferred("emit_signal", "random_complete", title, caller_ctx)
+				return true
+		call_deferred("emit_signal", "random_complete", null, caller_ctx)
+		return true
+
 	if result != 0 or response_code != 200:
 		if response_code != 404:
 			push_error("error in request ", result, " ", response_code, " ", ctx.url)

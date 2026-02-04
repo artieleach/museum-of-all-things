@@ -292,7 +292,7 @@ func _on_start_race_pressed() -> void:
 
 	if NetworkManager.is_server():
 		_debug_log("Main: Fetching random article for race...")
-		ExhibitFetcher.fetch_random({ "race": true })
+		ExhibitFetcher.fetch_random_level4({ "race": true })
 	else:
 		_debug_log("Main: Sending _request_race_start RPC to server (my id: %d, multiplayer active: %s)" % [multiplayer.get_unique_id(), NetworkManager.is_multiplayer_active()])
 		_request_race_start.rpc_id(1)
@@ -306,7 +306,7 @@ func _request_race_start() -> void:
 	if RaceManager.is_race_active():
 		return
 	_debug_log("Main: Race start requested by peer, fetching random article...")
-	ExhibitFetcher.fetch_random({ "race": true })
+	ExhibitFetcher.fetch_random_level4({ "race": true })
 
 
 func _on_random_article_complete(title: String, context: Dictionary) -> void:

@@ -7,6 +7,7 @@ signal resume
 @onready var _tab_scenes = [
 	_vbox.get_node("GraphicsSettings"),
 	_vbox.get_node("AudioSettings"),
+	_vbox.get_node("ControlSettings"),
 	_vbox.get_node("DataSettings") if not Platform.is_web() else null,
 ]
 
@@ -23,6 +24,7 @@ func _on_visibility_changed():
 		_tab_bar.grab_focus()
 
 func _on_tab_bar_tab_changed(tab: int):
+	print(tab)
 	for i in range(_tab_scenes.size()):
 		if _tab_scenes[i] == null:
 			continue

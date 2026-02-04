@@ -7,6 +7,7 @@ var _exhibits: Dictionary = {}
 var _backlink_map: Dictionary = {}
 var _exhibit_hist: Array = []
 var _used_exhibit_heights: Dictionary = {}
+var _loading_exhibits: Dictionary = {}  # Track in-flight fetches to prevent duplicates
 
 var _starting_height: int = 40
 var _height_increment: int = 20
@@ -94,6 +95,11 @@ func load_exhibit_from_exit(exit: Hall) -> void:
 		else:
 			erase_exhibit(next_article)
 
+	# Prevent duplicate fetches while one is in progress
+	if _loading_exhibits.has(next_article):
+		return
+	_loading_exhibits[next_article] = true
+
 	ExhibitFetcher.fetch([next_article], {
 		"title": next_article,
 		"exit": exit
@@ -103,12 +109,14 @@ func load_exhibit_from_exit(exit: Hall) -> void:
 func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 	# we don't need to do anything to handle a prefetch
 	if context.has("prefetch"):
+		_loading_exhibits.erase(context.get("title", ""))
 		return
 
 	var backlink: bool = context.has("backlink") and context.backlink
 	var hall: Hall = context.entry if backlink else context.exit
 	var result: Dictionary = ExhibitFetcher.get_result(context.title)
 	if not result or not is_instance_valid(hall):
+		_loading_exhibits.erase(context.get("title", ""))
 		return
 
 	var prev_title: String
@@ -164,6 +172,9 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 						continue
 					erase_exhibit(key)
 					break
+
+	# Clear loading flag after exhibit exists (handles both new and duplicate fetch cases)
+	_loading_exhibits.erase(context.title)
 
 	var image_titles: Array = []
 	var item_queue: Array = []

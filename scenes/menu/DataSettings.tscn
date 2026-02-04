@@ -30,7 +30,7 @@ text = "Back"
 [node name="CacheOptions" type="VBoxContainer" parent="." unique_id=130181127]
 layout_mode = 2
 
-[node name="Spacer5" type="Label" parent="CacheOptions" unique_id=897711968]
+[node name="Spacer1" type="Label" parent="CacheOptions" unique_id=897711968]
 layout_mode = 2
 text = "
 "
@@ -43,7 +43,7 @@ text = "Cache"
 layout_mode = 2
 text = "Clear Cache"
 
-[node name="Spacer6" type="Label" parent="CacheOptions" unique_id=191321210]
+[node name="Spacer2" type="Label" parent="CacheOptions" unique_id=191321210]
 layout_mode = 2
 text = "
 "

@@ -51,6 +51,10 @@ func has_exhibit(title: String) -> bool:
 	return _exhibits.has(title)
 
 
+func clear_rider_loading(title: String) -> void:
+	_rider_loading_exhibits.erase(title)
+
+
 func sync_rider_to_room(room_title: String) -> void:
 	## Called when a rider follows their mount to a new room.
 	## Updates museum state locally without broadcasting to network.
@@ -296,6 +300,7 @@ func _load_exhibit_from_exit(exit: Hall) -> void:
 
 
 func _on_fetch_complete(titles: Array, context: Dictionary) -> void:
+	clear_rider_loading(context.get("title", ""))
 	_exhibit_loader.on_fetch_complete(titles, context)
 
 
