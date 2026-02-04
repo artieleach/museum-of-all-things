@@ -130,6 +130,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_mount_system.try_mount_target()
 
+	# Interact handling (equip skin, etc.)
+	if event.is_action_pressed("interact") and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		var collider: Node = _raycast.get_collider()
+		if collider:
+			if collider.has_method("interact"):
+				collider.interact()
+			elif collider.get_parent() and collider.get_parent().has_method("interact"):
+				collider.get_parent().interact()
+
 	var is_mouse: bool = event is InputEventMouseMotion
 	if is_mouse and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var delta_x: float = -event.relative.x * _mouse_sensitivity * _mouse_sensitivity_factor
@@ -202,14 +211,6 @@ func _physics_process(delta: float) -> void:
 	# Process crouch input
 	_crouch_system.process_crouch(delta)
 
-	if Input.is_action_pressed("interact"):
-		var collider: Node = _raycast.get_collider()
-		if collider:
-			if collider.has_method("interact"):
-				collider.interact()
-			elif collider.get_parent() and collider.get_parent().has_method("interact"):
-				collider.get_parent().interact()
-
 	if Input.is_action_just_pressed("reset_skin"): 
 		MultiplayerEvents.emit_skin_reset()
 
@@ -240,7 +241,8 @@ func request_dismount() -> void:
 
 func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	_mount_system.execute_mount(target, target_peer_id)
-	_enabled = false
+	# Note: Don't set _enabled = false here - camera control should remain active while mounted
+	# Movement is already disabled by _physics_process returning early when mounted
 	# Update rider's name to show "hat" format
 	_original_name = player_name
 	if _name_label and "player_name" in target:

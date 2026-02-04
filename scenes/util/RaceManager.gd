@@ -74,15 +74,15 @@ func cancel_race() -> void:
 	if _state != State.ACTIVE:
 		return
 
-	_state = State.IDLE
-	_target_article = ""
-	_winner_peer_id = -1
-	_winner_name = ""
-
 	if NetworkManager.is_server():
+		_state = State.IDLE
+		_target_article = ""
+		_winner_peer_id = -1
+		_winner_name = ""
 		_sync_race_cancel.rpc()
-
-	emit_signal("race_cancelled")
+		emit_signal("race_cancelled")
+	else:
+		_request_race_cancel.rpc_id(1)
 
 func _on_server_disconnected() -> void:
 	if _state == State.ACTIVE:
@@ -151,3 +151,10 @@ func _request_win_validation(peer_id: int, article_title: String) -> void:
 		return
 
 	_handle_win(peer_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_race_cancel() -> void:
+	if not NetworkManager.is_server():
+		return
+
+	cancel_race()

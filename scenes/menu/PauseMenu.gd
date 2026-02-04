@@ -8,6 +8,7 @@ signal start_race
 
 @onready var vbox = $MarginContainer/VBoxContainer
 @onready var race_button = $MarginContainer/VBoxContainer/Race
+@onready var cancel_race_button = $MarginContainer/VBoxContainer/CancelRace
 
 func _on_visibility_changed():
 	if visible and vbox:
@@ -72,6 +73,9 @@ func _on_vr_controls_pressed() -> void:
 func _on_race_pressed() -> void:
 	start_race.emit()
 
+func _on_cancel_race_pressed() -> void:
+	RaceManager.cancel_race()
+
 func _on_race_state_changed(_arg1 = null, _arg2 = null) -> void:
 	_update_race_button_visibility()
 
@@ -81,3 +85,7 @@ func _update_race_button_visibility() -> void:
 	# Show race button if: multiplayer active and no race is active (any player can start)
 	var should_show = NetworkManager.is_multiplayer_active() and not RaceManager.is_race_active()
 	race_button.visible = should_show
+	# Show cancel button if: multiplayer active and race is active
+	if cancel_race_button:
+		var should_show_cancel = NetworkManager.is_multiplayer_active() and RaceManager.is_race_active()
+		cancel_race_button.visible = should_show_cancel

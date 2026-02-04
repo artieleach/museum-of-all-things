@@ -84,6 +84,10 @@ layout_mode = 2
 layout_mode = 2
 text = "Start Race"
 
+[node name="CancelRace" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Cancel Race"
+
 [node name="Spacer" type="Label" parent="MarginContainer/VBoxContainer" unique_id=2079965831]
 layout_mode = 2
 
@@ -112,6 +116,7 @@ text = "Quit"
 [connection signal="pressed" from="MarginContainer/VBoxContainer/Resume" to="." method="_on_resume_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/Open" to="." method="_on_open_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/Race" to="." method="_on_race_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/CancelRace" to="." method="_on_cancel_race_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/Lobby" to="." method="_on_lobby_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/Settings" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/AskQuit" to="." method="_on_ask_quit_pressed"]

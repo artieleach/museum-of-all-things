@@ -16,6 +16,11 @@ var _is_mounted: bool = false
 var _has_rider: bool = false
 var mount_peer_id: int = -1
 
+# Mount position lerp variables - offset shrinks to zero during initial mount
+var _mount_lerp_time: float = 0.0
+var _mount_lerp_duration: float = 0.3
+var _mount_initial_offset: Vector3 = Vector3.ZERO
+
 # Store original collision settings
 var _original_collision_layer: int = 524288
 var _original_collision_mask: int = 524289
@@ -36,7 +41,7 @@ func has_rider() -> bool:
 	return _has_rider
 
 
-func process_mount(_delta: float) -> void:
+func process_mount(delta: float) -> void:
 	if not _is_mounted:
 		return
 
@@ -51,8 +56,20 @@ func process_mount(_delta: float) -> void:
 			var crouch_adjustment: float = crouch_factor * (mount_crouch.get_starting_height() - mount_crouch.get_crouching_height())
 			height_offset -= crouch_adjustment
 
-		# Always follow mount position regardless of room sync state
-		_player.global_position = mounted_on.global_position + Vector3(0, height_offset, 0)
+		# Calculate target position (where rider should be on mount)
+		var target_position: Vector3 = mounted_on.global_position + Vector3(0, height_offset, 0)
+
+		# During initial mount, smoothly reduce offset to zero while tracking mount
+		if _mount_lerp_time < _mount_lerp_duration:
+			_mount_lerp_time += delta
+			var t: float = clamp(_mount_lerp_time / _mount_lerp_duration, 0.0, 1.0)
+			# Smooth ease-out for natural landing feel
+			t = 1.0 - pow(1.0 - t, 2.0)
+			# Apply shrinking offset - rider tracks mount instantly but offset fades out
+			_player.global_position = target_position + _mount_initial_offset * (1.0 - t)
+		else:
+			# After lerp complete, follow mount instantly
+			_player.global_position = target_position
 
 		# Check if we can safely sync room state
 		if "current_room" in _player and "current_room" in mounted_on:
@@ -111,6 +128,11 @@ func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	mount_peer_id = target_peer_id
 	_is_mounted = true
 
+	# Initialize lerp transition - calculate offset from target mount position
+	_mount_lerp_time = 0.0
+	var initial_target: Vector3 = target.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
+	_mount_initial_offset = _player.global_position - initial_target
+
 	# Clear velocity and disable all collision while mounted
 	_player.velocity = Vector3.ZERO
 	_player.collision_layer = 0
@@ -157,6 +179,8 @@ func execute_dismount() -> void:
 	_is_mounted = false
 	mounted_on = null
 	mount_peer_id = -1
+	_mount_lerp_time = _mount_lerp_duration  # Reset to prevent stale state
+	_mount_initial_offset = Vector3.ZERO
 
 
 func _restore_collision() -> void:
@@ -188,6 +212,11 @@ func apply_network_mount_state(is_mounted_state: bool, peer_id: int, mount_node:
 	mounted_on = mount_node
 
 	if is_mounted_state and is_instance_valid(mount_node):
+		# Initialize lerp transition for network mount
+		_mount_lerp_time = 0.0
+		var initial_target: Vector3 = mount_node.global_position + Vector3(0, MOUNT_HEIGHT_OFFSET, 0)
+		_mount_initial_offset = _player.global_position - initial_target
+
 		# Disable all collision while mounted
 		_player.velocity = Vector3.ZERO
 		_player.collision_layer = 0
