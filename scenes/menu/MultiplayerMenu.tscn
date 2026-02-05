@@ -23,12 +23,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 100
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 100
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
 [node name="MainContainer" type="VBoxContainer" parent="MarginContainer" unique_id=829787403]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
 alignment = 1
 
@@ -40,22 +42,26 @@ label_settings = SubResource("LabelSettings_title")
 [node name="Spacer" type="Label" parent="MarginContainer/MainContainer" unique_id=1267130512]
 layout_mode = 2
 
-[node name="Host" type="Button" parent="MarginContainer/MainContainer" unique_id=183695012]
+[node name="HostButton" type="Button" parent="MarginContainer/MainContainer" unique_id=183695012]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Host Game"
 
-[node name="Join" type="Button" parent="MarginContainer/MainContainer" unique_id=812488022]
+[node name="JoinButton" type="Button" parent="MarginContainer/MainContainer" unique_id=812488022]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Join Game"
 
 [node name="Spacer2" type="Label" parent="MarginContainer/MainContainer" unique_id=424503189]
 layout_mode = 2
 
-[node name="Back" type="Button" parent="MarginContainer/MainContainer" unique_id=2003298568]
+[node name="MainBackButton" type="Button" parent="MarginContainer/MainContainer" unique_id=2003298568]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Back"
 
 [node name="HostContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1367530733]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 alignment = 1
@@ -68,30 +74,51 @@ label_settings = SubResource("LabelSettings_title")
 [node name="Spacer" type="Label" parent="MarginContainer/HostContainer" unique_id=1498886589]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="MarginContainer/HostContainer" unique_id=41550843]
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/HostContainer" unique_id=642455613]
 layout_mode = 2
-text = "Your Name:"
 
-[node name="NameInput" type="LineEdit" parent="MarginContainer/HostContainer" unique_id=1951023156]
+[node name="NameLabel" type="Label" parent="MarginContainer/HostContainer/HBoxContainer2" unique_id=41550843]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Your Name:"
+horizontal_alignment = 2
+
+[node name="HostNameInput" type="LineEdit" parent="MarginContainer/HostContainer/HBoxContainer2" unique_id=1951023156]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Host"
 placeholder_text = "Enter your name"
 
-[node name="PortLabel" type="Label" parent="MarginContainer/HostContainer" unique_id=215690886]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HostContainer" unique_id=755854637]
 layout_mode = 2
-text = "Port:"
 
-[node name="PortInput" type="LineEdit" parent="MarginContainer/HostContainer" unique_id=448244751]
+[node name="PortLabel" type="Label" parent="MarginContainer/HostContainer/HBoxContainer" unique_id=215690886]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Port:"
+horizontal_alignment = 2
+
+[node name="HostPortInput" type="LineEdit" parent="MarginContainer/HostContainer/HBoxContainer" unique_id=448244751]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "7777"
 placeholder_text = "7777"
 
-[node name="ColorLabel" type="Label" parent="MarginContainer/HostContainer" unique_id=1773023852]
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/HostContainer" unique_id=1039700129]
 layout_mode = 2
-text = "Your Color:"
 
-[node name="ColorPicker" type="ColorPickerButton" parent="MarginContainer/HostContainer" unique_id=2060893129]
+[node name="ColorLabel" type="Label" parent="MarginContainer/HostContainer/HBoxContainer3" unique_id=1773023852]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Your Color:"
+horizontal_alignment = 2
+
+[node name="HostColorPicker" type="ColorPickerButton" parent="MarginContainer/HostContainer/HBoxContainer3" unique_id=2060893129]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = " "
 color = Color(0.2, 0.5, 0.8, 1)
 edit_alpha = false
@@ -99,16 +126,18 @@ edit_alpha = false
 [node name="Spacer2" type="Label" parent="MarginContainer/HostContainer" unique_id=1259164680]
 layout_mode = 2
 
-[node name="Start" type="Button" parent="MarginContainer/HostContainer" unique_id=2091882583]
+[node name="HostStartButton" type="Button" parent="MarginContainer/HostContainer" unique_id=2091882583]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Start Hosting"
 
-[node name="Back" type="Button" parent="MarginContainer/HostContainer" unique_id=1493123142]
+[node name="HostBackButton" type="Button" parent="MarginContainer/HostContainer" unique_id=1493123142]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Back"
 
 [node name="JoinContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1968891817]
-visible = false
+unique_name_in_owner = true
 layout_mode = 2
 alignment = 1
 
@@ -120,39 +149,67 @@ label_settings = SubResource("LabelSettings_title")
 [node name="Spacer" type="Label" parent="MarginContainer/JoinContainer" unique_id=428817811]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="MarginContainer/JoinContainer" unique_id=930580052]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/JoinContainer" unique_id=1911990155]
 layout_mode = 2
-text = "Your Name:"
 
-[node name="NameInput" type="LineEdit" parent="MarginContainer/JoinContainer" unique_id=1136501165]
+[node name="NameLabel" type="Label" parent="MarginContainer/JoinContainer/HBoxContainer" unique_id=930580052]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Your Name:"
+horizontal_alignment = 2
+
+[node name="JoinNameInput" type="LineEdit" parent="MarginContainer/JoinContainer/HBoxContainer" unique_id=1136501165]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Player"
 placeholder_text = "Enter your name"
 
-[node name="AddressLabel" type="Label" parent="MarginContainer/JoinContainer" unique_id=1334098381]
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/JoinContainer" unique_id=760355311]
 layout_mode = 2
-text = "Server Address:"
 
-[node name="AddressInput" type="LineEdit" parent="MarginContainer/JoinContainer" unique_id=1955405439]
+[node name="AddressLabel" type="Label" parent="MarginContainer/JoinContainer/HBoxContainer2" unique_id=1334098381]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Server Address:"
+horizontal_alignment = 2
+
+[node name="JoinAddressInput" type="LineEdit" parent="MarginContainer/JoinContainer/HBoxContainer2" unique_id=1955405439]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "localhost"
 placeholder_text = "localhost or IP address"
 
-[node name="PortLabel" type="Label" parent="MarginContainer/JoinContainer" unique_id=1579090998]
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/JoinContainer" unique_id=22861470]
 layout_mode = 2
-text = "Port:"
 
-[node name="PortInput" type="LineEdit" parent="MarginContainer/JoinContainer" unique_id=425876229]
+[node name="PortLabel" type="Label" parent="MarginContainer/JoinContainer/HBoxContainer3" unique_id=1579090998]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Port:"
+horizontal_alignment = 2
+
+[node name="JoinPortInput" type="LineEdit" parent="MarginContainer/JoinContainer/HBoxContainer3" unique_id=425876229]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = "7777"
 placeholder_text = "7777"
 
-[node name="ColorLabel" type="Label" parent="MarginContainer/JoinContainer" unique_id=355267925]
+[node name="HBoxContainer4" type="HBoxContainer" parent="MarginContainer/JoinContainer" unique_id=267847540]
 layout_mode = 2
-text = "Your Color:"
 
-[node name="ColorPicker" type="ColorPickerButton" parent="MarginContainer/JoinContainer" unique_id=1981996504]
+[node name="ColorLabel" type="Label" parent="MarginContainer/JoinContainer/HBoxContainer4" unique_id=355267925]
 layout_mode = 2
+size_flags_horizontal = 3
+text = "Your Color:"
+horizontal_alignment = 2
+
+[node name="JoinColorPicker" type="ColorPickerButton" parent="MarginContainer/JoinContainer/HBoxContainer4" unique_id=1981996504]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 text = " "
 color = Color(0.2, 0.5, 0.8, 1)
 edit_alpha = false
@@ -160,20 +217,27 @@ edit_alpha = false
 [node name="Spacer2" type="Label" parent="MarginContainer/JoinContainer" unique_id=824696133]
 layout_mode = 2
 
-[node name="Connect" type="Button" parent="MarginContainer/JoinContainer" unique_id=2004345636]
+[node name="JoinConnectButton" type="Button" parent="MarginContainer/JoinContainer" unique_id=2004345636]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Connect"
 
-[node name="Back" type="Button" parent="MarginContainer/JoinContainer" unique_id=1525545779]
+[node name="JoinBackButton" type="Button" parent="MarginContainer/JoinContainer" unique_id=1525545779]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Back"
 
+[node name="HBoxContainer5" type="HBoxContainer" parent="MarginContainer/JoinContainer" unique_id=365730334]
+layout_mode = 2
+
 [node name="LobbyContainer" type="VBoxContainer" parent="MarginContainer" unique_id=533440287]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="MarginContainer/LobbyContainer" unique_id=2053853452]
+[node name="LobbyTitle" type="Label" parent="MarginContainer/LobbyContainer" unique_id=2053853452]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Lobby"
 label_settings = SubResource("LabelSettings_title")
@@ -186,6 +250,7 @@ layout_mode = 2
 text = "Connected Players:"
 
 [node name="PlayerList" type="ItemList" parent="MarginContainer/LobbyContainer" unique_id=1748532462]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 allow_reselect = true
@@ -194,15 +259,18 @@ auto_height = true
 [node name="Spacer2" type="Label" parent="MarginContainer/LobbyContainer" unique_id=1463693181]
 layout_mode = 2
 
-[node name="Start" type="Button" parent="MarginContainer/LobbyContainer" unique_id=1268442635]
+[node name="LobbyStartButton" type="Button" parent="MarginContainer/LobbyContainer" unique_id=1268442635]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Start Game"
 
-[node name="Leave" type="Button" parent="MarginContainer/LobbyContainer" unique_id=304673803]
+[node name="LobbyLeaveButton" type="Button" parent="MarginContainer/LobbyContainer" unique_id=304673803]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Leave"
 
 [node name="ErrorLabel" type="Label" parent="MarginContainer" unique_id=150230516]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 8
@@ -210,12 +278,12 @@ theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 text = "Error message"
 
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
-[connection signal="pressed" from="MarginContainer/MainContainer/Host" to="." method="_on_host_pressed"]
-[connection signal="pressed" from="MarginContainer/MainContainer/Join" to="." method="_on_join_pressed"]
-[connection signal="pressed" from="MarginContainer/MainContainer/Back" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="MarginContainer/HostContainer/Start" to="." method="_on_host_start_pressed"]
-[connection signal="pressed" from="MarginContainer/HostContainer/Back" to="." method="_on_host_back_pressed"]
-[connection signal="pressed" from="MarginContainer/JoinContainer/Connect" to="." method="_on_join_connect_pressed"]
-[connection signal="pressed" from="MarginContainer/JoinContainer/Back" to="." method="_on_join_back_pressed"]
-[connection signal="pressed" from="MarginContainer/LobbyContainer/Start" to="." method="_on_lobby_start_pressed"]
-[connection signal="pressed" from="MarginContainer/LobbyContainer/Leave" to="." method="_on_lobby_leave_pressed"]
+[connection signal="pressed" from="MarginContainer/MainContainer/HostButton" to="." method="_on_host_pressed"]
+[connection signal="pressed" from="MarginContainer/MainContainer/JoinButton" to="." method="_on_join_pressed"]
+[connection signal="pressed" from="MarginContainer/MainContainer/MainBackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="MarginContainer/HostContainer/HostStartButton" to="." method="_on_host_start_pressed"]
+[connection signal="pressed" from="MarginContainer/HostContainer/HostBackButton" to="." method="_on_host_back_pressed"]
+[connection signal="pressed" from="MarginContainer/JoinContainer/JoinConnectButton" to="." method="_on_join_connect_pressed"]
+[connection signal="pressed" from="MarginContainer/JoinContainer/JoinBackButton" to="." method="_on_join_back_pressed"]
+[connection signal="pressed" from="MarginContainer/LobbyContainer/LobbyStartButton" to="." method="_on_lobby_start_pressed"]
+[connection signal="pressed" from="MarginContainer/LobbyContainer/LobbyLeaveButton" to="." method="_on_lobby_leave_pressed"]

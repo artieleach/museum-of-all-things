@@ -30,7 +30,6 @@ multiplayer for up to 16 players.
 - **Explore Together**: See other players in real-time as you walk through exhibits
 - **Player Mounting**: Climb on top of other players and ride around the museum together
 - **Room-Based Visibility**: Players are only visible when in the same exhibit, keeping things focused
-- **Synchronized Transitions**: When the host enters a new exhibit, everyone follows along
 
 ### Hosting a Game
 
