@@ -18,6 +18,40 @@ pulled from wikimedia commons in the category corresponding to the article.
 Every exhibit is filled with hallways to other exhibits, based on the links in the
 current exhibit's wikipedia page. You'll never run out of things to explore!
 
+## Multiplayer
+
+Explore the museum with friends! The Museum of All Things now supports online
+multiplayer for up to 16 players.
+
+### Features
+
+- **Host or Join**: Start your own server or connect to a friend's game
+- **Player Customization**: Set your name, choose a color, or use a custom skin from any Wikimedia image URL
+- **Explore Together**: See other players in real-time as you walk through exhibits
+- **Player Mounting**: Climb on top of other players and ride around the museum together
+- **Room-Based Visibility**: Players are only visible when in the same exhibit, keeping things focused
+- **Synchronized Transitions**: When the host enters a new exhibit, everyone follows along
+
+### Hosting a Game
+
+1. Select **Host** from the multiplayer menu
+2. Set your port (default: 7777)
+3. Enter your name and pick a color
+4. Share your IP address with friends
+5. Click **Start** when everyone has joined
+
+### Joining a Game
+
+1. Select **Join** from the multiplayer menu
+2. Enter the host's address and port
+3. Set your name and pick a color
+4. Click **Join**
+
+### Dedicated Server
+
+For headless server hosting, launch with the `--server` command-line argument.
+The server will manage all players without creating its own player character.
+
 ## Contributing
 
 If you encounter bugs in the museum, file them on the [issues
@@ -55,10 +89,10 @@ an issue and we can discuss it before you put too much work in.
 
 ## Roadmap for Future Updates (Not in any order)
 
-- Multiplayer (this one is big; don't expect it anytime soon)
 - Greater variety in theming and exhibit layouts
 - Support for more media types, such as audio or 3d models
 - ~~Support for more Wikipedia languages other than English~~ [Thank you so much to daviirodrig and all others who helped!](https://github.com/m4ym4y/museum-of-all-things/pull/59)
+- ~~Multiplayer~~ Done!
 
 ## Credits
 
