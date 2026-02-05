@@ -12,9 +12,12 @@ func _read_settings() -> Error:
 	var file := FileAccess.open(_settings_file, FileAccess.READ)
 	if not file:
 		var err := FileAccess.get_open_error()
-		if err != ERR_FILE_NOT_FOUND:
-			push_error("SettingsManager: Failed to open settings file: %s" % error_string(err))
-			settings_load_error.emit(err)
+		if err == ERR_FILE_NOT_FOUND:
+			# No settings file yet - this is fine, use empty settings
+			_is_loaded = true
+			return OK
+		push_error("SettingsManager: Failed to open settings file: %s" % error_string(err))
+		settings_load_error.emit(err)
 		return err
 
 	var json_text := file.get_as_text()

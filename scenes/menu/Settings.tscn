@@ -43,8 +43,17 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="TabBar" type="TabBar" parent="ScrollContainer/MarginContainer/VBoxContainer" unique_id=2047580119]
+[node name="HBoxContainer" type="HBoxContainer" parent="ScrollContainer/MarginContainer/VBoxContainer" unique_id=823048372]
 layout_mode = 2
+
+[node name="BackButton" type="Button" parent="ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1907148584]
+layout_mode = 2
+text = "Back"
+
+[node name="SettingsTabs" type="TabBar" parent="ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=2047580119]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 current_tab = 0
 tab_alignment = 1
 tab_count = 4
@@ -55,10 +64,10 @@ tab_3/title = "Data"
 
 [node name="MarginContainer" type="MarginContainer" parent="ScrollContainer/MarginContainer/VBoxContainer" unique_id=1002156988]
 layout_mode = 2
-theme_override_constants/margin_left = 75
-theme_override_constants/margin_top = 75
-theme_override_constants/margin_right = 75
-theme_override_constants/margin_bottom = 75
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
 [node name="GraphicsSettings" parent="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer" unique_id=1096218754 instance=ExtResource("2_whl1p")]
 layout_mode = 2
@@ -76,8 +85,9 @@ visible = false
 layout_mode = 2
 
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
-[connection signal="tab_changed" from="ScrollContainer/MarginContainer/VBoxContainer/TabBar" to="." method="_on_tab_bar_tab_changed"]
-[connection signal="tab_clicked" from="ScrollContainer/MarginContainer/VBoxContainer/TabBar" to="." method="_on_tab_bar_tab_clicked"]
+[connection signal="pressed" from="ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer/BackButton" to="." method="_on_resume"]
+[connection signal="tab_changed" from="ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer/SettingsTabs" to="." method="_on_tab_bar_tab_changed"]
+[connection signal="tab_clicked" from="ScrollContainer/MarginContainer/VBoxContainer/HBoxContainer/SettingsTabs" to="." method="_on_tab_bar_tab_clicked"]
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/GraphicsSettings" to="." method="_on_resume"]
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/AudioSettings" to="." method="_on_resume"]
 [connection signal="resume" from="ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/ControlSettings" to="." method="_on_resume"]

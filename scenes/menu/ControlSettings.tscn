@@ -1,97 +1,107 @@
-[gd_scene load_steps=3 format=3 uid="uid://ychsh5rigt5i"]
+[gd_scene format=3 uid="uid://ychsh5rigt5i"]
 
+[ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_3stxh"]
 [ext_resource type="Script" uid="uid://cxehe8cfw3mam" path="res://scenes/menu/ControlSettings.gd" id="1_od8gn"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_kfvnr"]
 font_size = 64
 
-[node name="ControlSettings" type="VBoxContainer"]
+[node name="ControlSettings" type="VBoxContainer" unique_id=773576803]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_3stxh")
 script = ExtResource("1_od8gn")
 
-[node name="MainOptions" type="VBoxContainer" parent="."]
+[node name="MainOptions" type="VBoxContainer" parent="." unique_id=1453121337]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MainOptions"]
+[node name="Label" type="Label" parent="MainOptions" unique_id=246062182]
 layout_mode = 2
 text = "Control Settings"
 label_settings = SubResource("LabelSettings_kfvnr")
 
-[node name="Back" type="Button" parent="MainOptions"]
-layout_mode = 2
-text = "Back"
-
-[node name="RestoreDefaultsButton" type="Button" parent="MainOptions"]
-layout_mode = 2
-text = "Restore Default Settings"
-
-[node name="MouseOptions" type="VBoxContainer" parent="."]
+[node name="MouseOptions" type="VBoxContainer" parent="." unique_id=2087898941]
 layout_mode = 2
 
-[node name="Spacer" type="Label" parent="MouseOptions"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MouseOptions" unique_id=1730989229]
 layout_mode = 2
-text = " "
 
-[node name="Label" type="Label" parent="MouseOptions"]
+[node name="Label" type="Label" parent="MouseOptions/HBoxContainer" unique_id=1800742638]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
 text = "Mouse Sensitivity"
+horizontal_alignment = 1
 
-[node name="Sensitivity" type="HSlider" parent="MouseOptions"]
+[node name="Sensitivity" type="HSlider" parent="MouseOptions/HBoxContainer" unique_id=1999961124]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 min_value = 0.1
 max_value = 3.0
 step = 0.05
 value = 1.0
 
-[node name="SensitivityValue" type="Label" parent="MouseOptions"]
+[node name="SensitivityValue" type="Label" parent="MouseOptions/HBoxContainer" unique_id=815902169]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
 text = "100%"
 horizontal_alignment = 1
 
-[node name="InvertY" type="CheckBox" parent="MouseOptions"]
+[node name="InvertY" type="CheckBox" parent="MouseOptions" unique_id=1918157127]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Invert Y-axis"
 
-[node name="Spacer" type="Label" parent="."]
-layout_mode = 2
-text = " "
-
-[node name="ControlsLabel" type="Label" parent="."]
-layout_mode = 2
-text = "Remap Inputs"
-
-[node name="MappingContainer" type="VBoxContainer" parent="."]
+[node name="MappingContainer" type="VBoxContainer" parent="." unique_id=1628515420]
+unique_name_in_owner = true
 layout_mode = 2
 
-[node name="JoyOptions" type="VBoxContainer" parent="."]
+[node name="JoyOptions" type="VBoxContainer" parent="." unique_id=1535957024]
 layout_mode = 2
 
-[node name="Spacer" type="Label" parent="JoyOptions"]
+[node name="HBoxContainer" type="HBoxContainer" parent="JoyOptions" unique_id=1898132973]
 layout_mode = 2
-text = " "
 
-[node name="Label" type="Label" parent="JoyOptions"]
+[node name="Label" type="Label" parent="JoyOptions/HBoxContainer" unique_id=1625113603]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
 text = "Joypad Camera Deadzone"
+horizontal_alignment = 1
 
-[node name="Deadzone" type="HSlider" parent="JoyOptions"]
+[node name="Deadzone" type="HSlider" parent="JoyOptions/HBoxContainer" unique_id=1227592560]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 max_value = 0.9
 step = 0.01
 value = 0.05
 
-[node name="DeadzoneValue" type="Label" parent="JoyOptions"]
+[node name="DeadzoneValue" type="Label" parent="JoyOptions/HBoxContainer" unique_id=2028863206]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
 text = "5%"
 horizontal_alignment = 1
 
+[node name="RestoreSettings" type="VBoxContainer" parent="." unique_id=57714642]
+layout_mode = 2
+
+[node name="RestoreDefaultsButton" type="Button" parent="RestoreSettings" unique_id=553504581]
+layout_mode = 2
+text = "Restore Default Settings"
+
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
-[connection signal="pressed" from="MainOptions/Back" to="." method="_on_resume"]
-[connection signal="pressed" from="MainOptions/RestoreDefaultsButton" to="." method="_on_restore_defaults_button_pressed"]
-[connection signal="value_changed" from="MouseOptions/Sensitivity" to="." method="_on_sensitivity_value_changed"]
+[connection signal="value_changed" from="MouseOptions/HBoxContainer/Sensitivity" to="." method="_on_sensitivity_value_changed"]
 [connection signal="toggled" from="MouseOptions/InvertY" to="." method="_on_invert_y_toggled"]
-[connection signal="value_changed" from="JoyOptions/Deadzone" to="." method="_on_deadzone_value_changed"]
+[connection signal="value_changed" from="JoyOptions/HBoxContainer/Deadzone" to="." method="_on_deadzone_value_changed"]
+[connection signal="pressed" from="RestoreSettings/RestoreDefaultsButton" to="." method="_on_restore_defaults_button_pressed"]

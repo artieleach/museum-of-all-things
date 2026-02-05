@@ -258,8 +258,8 @@ func _process(delta: float) -> void:
 # SKIN FUNCTIONS
 # =============================================================================
 func _save_skin_preference(url: String) -> void:
-	var player_settings: Dictionary = SettingsManager.get_settings("player")
-	if player_settings == null:
+	var player_settings = SettingsManager.get_settings("player")
+	if not player_settings:
 		player_settings = {}
 	player_settings["skin_url"] = url
 	SettingsManager.save_settings("player", player_settings)
@@ -278,7 +278,7 @@ func _on_skin_reset() -> void:
 
 
 func _load_saved_skin() -> void:
-	var player_settings: Dictionary = SettingsManager.get_settings("player")
+	var player_settings = SettingsManager.get_settings("player")
 	if player_settings and player_settings.has("skin_url"):
 		var skin_url: String = player_settings["skin_url"]
 		if skin_url != "":

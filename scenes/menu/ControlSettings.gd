@@ -3,12 +3,12 @@ extends "res://scenes/menu/BaseSettingsPanel.gd"
 
 const ACTION_PANEL = preload("res://scenes/menu/ActionPanel.tscn")
 
-@onready var mapping_container: VBoxContainer = $MappingContainer
-@onready var sensitivity_slider: HSlider = $MouseOptions/Sensitivity
-@onready var sensitivity_value: Label = $MouseOptions/SensitivityValue
-@onready var invert_y: CheckBox = $MouseOptions/InvertY
-@onready var deadzone_slider: HSlider = $JoyOptions/Deadzone
-@onready var deadzone_value: Label = $JoyOptions/DeadzoneValue
+@onready var mapping_container: VBoxContainer = %MappingContainer
+@onready var sensitivity_slider: HSlider = %Sensitivity
+@onready var sensitivity_value: Label = %SensitivityValue
+@onready var invert_y: CheckBox = %InvertY
+@onready var deadzone_slider: HSlider = %Deadzone
+@onready var deadzone_value: Label = %DeadzoneValue
 
 var remappable_actions_str := [
 	"move_forward",

@@ -1,13 +1,13 @@
 extends "res://scenes/menu/BaseSettingsPanel.gd"
 
-@onready var global_volume: HSlider = $VolumeOptions/GlobalVolume
-@onready var sound_volume: HSlider = $VolumeOptions/SoundVolume
-@onready var ambience_volume: HSlider = $VolumeOptions/AmbienceVolume
-@onready var music_volume: HSlider = $VolumeOptions/MusicVolume
-@onready var global_value: Label = $VolumeOptions/GlobalValue
-@onready var sound_value: Label = $VolumeOptions/SoundValue
-@onready var ambience_value: Label = $VolumeOptions/AmbienceValue
-@onready var music_value: Label = $VolumeOptions/MusicValue
+@onready var global_volume: HSlider = %GlobalVolume
+@onready var sound_volume: HSlider = %SoundVolume
+@onready var ambience_volume: HSlider = %AmbienceVolume
+@onready var music_volume: HSlider = %MusicVolume
+@onready var global_value: Label = %GlobalValue
+@onready var sound_value: Label = %SoundValue
+@onready var ambience_value: Label = %AmbienceValue
+@onready var music_value: Label = %MusicValue
 
 var global_bus_name: String = "Master"
 var global_bus_idx: int

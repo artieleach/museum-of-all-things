@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://bbp0v2aoglhrr"]
+[gd_scene format=3 uid="uid://bbp0v2aoglhrr"]
 
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_1c701"]
 [ext_resource type="Script" uid="uid://dtoqm3qrwbc3f" path="res://scenes/menu/GraphicsSettings.gd" id="2_lsij7"]
@@ -6,46 +6,53 @@
 [sub_resource type="LabelSettings" id="LabelSettings_2yad8"]
 font_size = 64
 
-[node name="GraphicsSettings" type="VBoxContainer"]
+[node name="GraphicsSettings" type="VBoxContainer" unique_id=1115014493]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_bottom = 349.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_1c701")
 script = ExtResource("2_lsij7")
 
-[node name="MainOptions" type="VBoxContainer" parent="."]
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1602059271]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MainOptions"]
+[node name="GraphicsSettingsLabel" type="Label" parent="HBoxContainer" unique_id=2044787162]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Graphics Settings"
 label_settings = SubResource("LabelSettings_2yad8")
 
-[node name="Back" type="Button" parent="MainOptions"]
+[node name="Fullscreen" type="Button" parent="HBoxContainer" unique_id=1349368431]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Back"
+size_flags_horizontal = 8
+toggle_mode = true
+text = "Fullscreen"
 
-[node name="Restore" type="Button" parent="MainOptions"]
-layout_mode = 2
-text = "Restore Default Settings"
-
-[node name="DisplayOptions" type="VBoxContainer" parent="."]
+[node name="Settings" type="HBoxContainer" parent="." unique_id=233052165]
 layout_mode = 2
 
-[node name="Spacer4" type="Label" parent="DisplayOptions"]
+[node name="LCol" type="VBoxContainer" parent="Settings" unique_id=1004793985]
 layout_mode = 2
-text = "
-"
+size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="DisplayOptions"]
+[node name="DisplayOptions" type="VBoxContainer" parent="Settings/LCol" unique_id=892541514]
 layout_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Settings/LCol/DisplayOptions" unique_id=981961701]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Settings/LCol/DisplayOptions/HBoxContainer2" unique_id=1245173994]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Scaling mode"
 
-[node name="ScaleMode" type="OptionButton" parent="DisplayOptions"]
+[node name="ScaleMode" type="OptionButton" parent="Settings/LCol/DisplayOptions/HBoxContainer2" unique_id=1754320178]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 selected = 0
 item_count = 3
 popup/item_0/text = "Bilinear"
@@ -55,12 +62,18 @@ popup/item_1/id = 1
 popup/item_2/text = "AMD FSR 2"
 popup/item_2/id = 2
 
-[node name="Label2" type="Label" parent="DisplayOptions" groups=["fsr_options"]]
+[node name="HBoxContainer3" type="HBoxContainer" parent="Settings/LCol/DisplayOptions" unique_id=1924110638]
 layout_mode = 2
+
+[node name="Label2" type="Label" parent="Settings/LCol/DisplayOptions/HBoxContainer3" unique_id=690892930 groups=["fsr_options"]]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "FSR quality mode"
 
-[node name="FSRQuality" type="OptionButton" parent="DisplayOptions" groups=["fsr_options"]]
+[node name="FSRQuality" type="OptionButton" parent="Settings/LCol/DisplayOptions/HBoxContainer3" unique_id=231564731 groups=["fsr_options"]]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 selected = 0
 item_count = 5
 popup/item_0/text = "Ultra quality"
@@ -74,187 +87,103 @@ popup/item_3/id = 3
 popup/item_4/text = "Ultra performance"
 popup/item_4/id = 4
 
-[node name="Label3" type="Label" parent="DisplayOptions" groups=["fsr_options"]]
+[node name="FSRSharpnessLabel" type="Label" parent="Settings/LCol/DisplayOptions" unique_id=769929057 groups=["fsr_options"]]
 layout_mode = 2
 text = "FSR Sharpness"
 
-[node name="SharpnessScale" type="HSlider" parent="DisplayOptions" groups=["fsr_options"]]
+[node name="FSRSharpnessBox" type="HBoxContainer" parent="Settings/LCol/DisplayOptions" unique_id=62634324]
 layout_mode = 2
+
+[node name="SharpnessScale" type="HSlider" parent="Settings/LCol/DisplayOptions/FSRSharpnessBox" unique_id=903228114 groups=["fsr_options"]]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 max_value = 2.0
 step = 0.05
 value = 0.2
 
-[node name="SharpnessScaleValue" type="Label" parent="DisplayOptions" groups=["fsr_options"]]
+[node name="SharpnessScaleValue" type="Label" parent="Settings/LCol/DisplayOptions/FSRSharpnessBox" unique_id=1422423773 groups=["fsr_options"]]
+unique_name_in_owner = true
 layout_mode = 2
-text = "0.2
-"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+text = "0.2"
+horizontal_alignment = 2
 
-[node name="Label4" type="Label" parent="DisplayOptions"]
+[node name="RenderScaleLabel" type="Label" parent="Settings/LCol/DisplayOptions" unique_id=1508734221]
 layout_mode = 2
 text = "Render Scale"
 
-[node name="RenderScale" type="HSlider" parent="DisplayOptions"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Settings/LCol/DisplayOptions" unique_id=2069134969]
 layout_mode = 2
+size_flags_vertical = 4
+
+[node name="RenderScale" type="HSlider" parent="Settings/LCol/DisplayOptions/HBoxContainer" unique_id=1933540901]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 min_value = 0.1
 max_value = 1.0
 step = 0.05
 value = 1.0
 
-[node name="RenderScaleValue" type="Label" parent="DisplayOptions"]
+[node name="RenderScaleValue" type="Label" parent="Settings/LCol/DisplayOptions/HBoxContainer" unique_id=1158475284]
+unique_name_in_owner = true
 layout_mode = 2
-text = "100 %
-"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 1
+size_flags_stretch_ratio = 0.4
+text = "100 %"
+horizontal_alignment = 2
+vertical_alignment = 1
 
-[node name="Fullscreen" type="CheckBox" parent="DisplayOptions"]
-layout_mode = 2
-text = "Fullscreen"
-
-[node name="ReflectionOptions" type="VBoxContainer" parent="."]
-layout_mode = 2
-
-[node name="Spacer4" type="Label" parent="ReflectionOptions"]
-layout_mode = 2
-text = "
-"
-
-[node name="Label2" type="Label" parent="ReflectionOptions"]
-layout_mode = 2
-text = "Reflection Quality"
-
-[node name="ReflectionQuality" type="HSlider" parent="ReflectionOptions"]
-layout_mode = 2
-max_value = 512.0
-step = 16.0
-value = 256.0
-rounded = true
-
-[node name="ReflectionQualityValue" type="Label" parent="ReflectionOptions"]
-layout_mode = 2
-text = "256"
-horizontal_alignment = 1
-
-[node name="EnableReflections" type="CheckBox" parent="ReflectionOptions"]
-layout_mode = 2
-button_pressed = true
-text = "Enable Reflections"
-
-[node name="LightOptions" type="VBoxContainer" parent="."]
+[node name="LightOptions" type="VBoxContainer" parent="Settings/LCol" unique_id=160370443]
 layout_mode = 2
 
-[node name="Spacer" type="Label" parent="LightOptions"]
-layout_mode = 2
-text = "
-"
-
-[node name="Label2" type="Label" parent="LightOptions"]
+[node name="Label2" type="Label" parent="Settings/LCol/LightOptions" unique_id=266695668]
 layout_mode = 2
 text = "Ambient Light Level"
 
-[node name="AmbientLight" type="HSlider" parent="LightOptions"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Settings/LCol/LightOptions" unique_id=2131917910]
 layout_mode = 2
+
+[node name="AmbientLight" type="HSlider" parent="Settings/LCol/LightOptions/HBoxContainer" unique_id=1284222411]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 max_value = 1.0
 step = 0.05
 value = 0.2
 
-[node name="AmbientLightValue" type="Label" parent="LightOptions"]
+[node name="AmbientLightValue" type="Label" parent="Settings/LCol/LightOptions/HBoxContainer" unique_id=900080304]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
 text = "0.2"
-horizontal_alignment = 1
+horizontal_alignment = 2
+vertical_alignment = 1
 
-[node name="EnableSSIL" type="CheckBox" parent="LightOptions"]
+[node name="EnableSSIL" type="CheckBox" parent="Settings/LCol/LightOptions" unique_id=1618119938]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Enable Indirect Lighting (SSIL)"
 
-[node name="RenderDistanceOptions" type="VBoxContainer" parent="."]
+[node name="PostProcessingOptions" type="HBoxContainer" parent="Settings/LCol" unique_id=583179679]
 layout_mode = 2
 
-[node name="Spacer" type="Label" parent="RenderDistanceOptions"]
+[node name="Label5" type="Label" parent="Settings/LCol/PostProcessingOptions" unique_id=1971064205]
 layout_mode = 2
-text = "
-"
-
-[node name="Label3" type="Label" parent="RenderDistanceOptions"]
-layout_mode = 2
-text = "Render Distance"
-
-[node name="RenderDistance" type="HSlider" parent="RenderDistanceOptions"]
-layout_mode = 2
-min_value = 0.5
-max_value = 5.0
-step = 0.5
-value = 1.5
-
-[node name="RenderDistanceValue" type="Label" parent="RenderDistanceOptions"]
-layout_mode = 2
-text = "x1"
-horizontal_alignment = 1
-
-[node name="FogOptions" type="VBoxContainer" parent="."]
-layout_mode = 2
-
-[node name="Spacer3" type="Label" parent="FogOptions"]
-layout_mode = 2
-text = "
-"
-
-[node name="Label5" type="Label" parent="FogOptions"]
-layout_mode = 2
-text = "Fog"
-
-[node name="EnableFog" type="CheckBox" parent="FogOptions"]
-layout_mode = 2
-button_pressed = true
-text = "Enable Fog"
-
-[node name="FPSOptions" type="VBoxContainer" parent="."]
-layout_mode = 2
-
-[node name="Spacer2" type="Label" parent="FPSOptions"]
-layout_mode = 2
-text = "
-"
-
-[node name="Label4" type="Label" parent="FPSOptions"]
-layout_mode = 2
-text = "Maximum FPS"
-
-[node name="MaxFPS" type="HSlider" parent="FPSOptions"]
-layout_mode = 2
-min_value = 20.0
-max_value = 240.0
-step = 5.0
-value = 60.0
-rounded = true
-
-[node name="MaxFPSValue" type="Label" parent="FPSOptions"]
-layout_mode = 2
-text = "60"
-horizontal_alignment = 1
-
-[node name="VSync" type="CheckBox" parent="FPSOptions"]
-layout_mode = 2
-text = "Enable V-Sync"
-
-[node name="LimitFPS" type="CheckBox" parent="FPSOptions"]
-layout_mode = 2
-text = "Limit FPS"
-
-[node name="PostProcessingOptions" type="VBoxContainer" parent="."]
-layout_mode = 2
-
-[node name="Spacer3" type="Label" parent="PostProcessingOptions"]
-layout_mode = 2
-text = "
-"
-
-[node name="Label5" type="Label" parent="PostProcessingOptions"]
-layout_mode = 2
+size_flags_horizontal = 3
 text = "Post-Processing Effect"
 
-[node name="PostProcessingEffect" type="OptionButton" parent="PostProcessingOptions"]
+[node name="PostProcessingEffect" type="OptionButton" parent="Settings/LCol/PostProcessingOptions" unique_id=1755607238]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 selected = 0
 item_count = 2
 popup/item_0/text = "None"
@@ -262,21 +191,141 @@ popup/item_0/id = 0
 popup/item_1/text = "CRT Filter"
 popup/item_1/id = 1
 
+[node name="VSeparator" type="VSeparator" parent="Settings" unique_id=556445095]
+layout_mode = 2
+theme_override_constants/separation = 64
+
+[node name="RCol" type="VBoxContainer" parent="Settings" unique_id=205396724]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ReflectionOptions" type="VBoxContainer" parent="Settings/RCol" unique_id=15083567]
+layout_mode = 2
+
+[node name="EnableReflections" type="CheckBox" parent="Settings/RCol/ReflectionOptions" unique_id=896959258]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Enable Reflections"
+
+[node name="Label2" type="Label" parent="Settings/RCol/ReflectionOptions" unique_id=75819598]
+layout_mode = 2
+text = "Reflection Quality"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Settings/RCol/ReflectionOptions" unique_id=466500788]
+layout_mode = 2
+
+[node name="ReflectionQuality" type="HSlider" parent="Settings/RCol/ReflectionOptions/HBoxContainer" unique_id=1372259818]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 512.0
+step = 16.0
+value = 256.0
+rounded = true
+
+[node name="ReflectionQualityValue" type="Label" parent="Settings/RCol/ReflectionOptions/HBoxContainer" unique_id=986855163]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+text = "256"
+horizontal_alignment = 1
+
+[node name="FogOptions" type="VBoxContainer" parent="Settings/RCol" unique_id=1178205487]
+layout_mode = 2
+
+[node name="Label5" type="Label" parent="Settings/RCol/FogOptions" unique_id=1686177905]
+layout_mode = 2
+text = "Fog"
+
+[node name="EnableFog" type="CheckBox" parent="Settings/RCol/FogOptions" unique_id=2091674676]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Enable Fog"
+
+[node name="FPSOptions" type="VBoxContainer" parent="Settings/RCol" unique_id=135920329]
+layout_mode = 2
+
+[node name="VSync" type="CheckBox" parent="Settings/RCol/FPSOptions" unique_id=2045419189]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Enable V-Sync"
+
+[node name="Label4" type="Label" parent="Settings/RCol/FPSOptions" unique_id=2020849681]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Maximum FPS"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Settings/RCol/FPSOptions" unique_id=2083029357]
+layout_mode = 2
+
+[node name="MaxFPS" type="HSlider" parent="Settings/RCol/FPSOptions/HBoxContainer2" unique_id=1045277192]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 20.0
+max_value = 240.0
+step = 5.0
+value = 60.0
+rounded = true
+
+[node name="MaxFPSValue" type="Label" parent="Settings/RCol/FPSOptions/HBoxContainer2" unique_id=861147513]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+text = "60"
+horizontal_alignment = 1
+
+[node name="RenderDistanceOptions" type="VBoxContainer" parent="Settings/RCol" unique_id=365461229]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="Settings/RCol/RenderDistanceOptions" unique_id=479149575]
+layout_mode = 2
+text = "Render Distance"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Settings/RCol/RenderDistanceOptions" unique_id=1866670037]
+layout_mode = 2
+
+[node name="RenderDistance" type="HSlider" parent="Settings/RCol/RenderDistanceOptions/HBoxContainer" unique_id=110147749]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.5
+max_value = 5.0
+step = 0.5
+value = 1.5
+
+[node name="RenderDistanceValue" type="Label" parent="Settings/RCol/RenderDistanceOptions/HBoxContainer" unique_id=1535841022]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+text = "x1"
+horizontal_alignment = 1
+
+[node name="Restore" type="Button" parent="." unique_id=1568967485]
+layout_mode = 2
+text = "Restore Default Settings"
+
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
-[connection signal="pressed" from="MainOptions/Back" to="." method="_on_resume_pressed"]
-[connection signal="pressed" from="MainOptions/Restore" to="." method="_on_restore_pressed"]
-[connection signal="item_selected" from="DisplayOptions/ScaleMode" to="." method="_on_scale_mode_value_changed"]
-[connection signal="item_selected" from="DisplayOptions/FSRQuality" to="." method="_on_fsr_quality_item_selected"]
-[connection signal="value_changed" from="DisplayOptions/SharpnessScale" to="." method="_on_sharpness_scale_value_changed"]
-[connection signal="value_changed" from="DisplayOptions/RenderScale" to="." method="_on_render_scale_value_changed"]
-[connection signal="toggled" from="DisplayOptions/Fullscreen" to="." method="_on_fullscreen_toggled"]
-[connection signal="value_changed" from="ReflectionOptions/ReflectionQuality" to="." method="_on_reflection_quality_value_changed"]
-[connection signal="toggled" from="ReflectionOptions/EnableReflections" to="." method="_on_enable_reflections_toggled"]
-[connection signal="value_changed" from="LightOptions/AmbientLight" to="." method="_on_ambient_light_value_changed"]
-[connection signal="toggled" from="LightOptions/EnableSSIL" to="." method="_on_enable_ssil_toggled"]
-[connection signal="value_changed" from="RenderDistanceOptions/RenderDistance" to="." method="_on_render_distance_value_changed"]
-[connection signal="toggled" from="FogOptions/EnableFog" to="." method="_on_enable_fog_toggled"]
-[connection signal="value_changed" from="FPSOptions/MaxFPS" to="." method="_on_max_fps_value_changed"]
-[connection signal="toggled" from="FPSOptions/VSync" to="." method="_on_vsync_toggled"]
-[connection signal="toggled" from="FPSOptions/LimitFPS" to="." method="_on_limit_fps_toggled"]
-[connection signal="item_selected" from="PostProcessingOptions/PostProcessingEffect" to="." method="_on_post_processing_effect_item_selected"]
+[connection signal="toggled" from="HBoxContainer/Fullscreen" to="." method="_on_fullscreen_toggled"]
+[connection signal="item_selected" from="Settings/LCol/DisplayOptions/HBoxContainer2/ScaleMode" to="." method="_on_scale_mode_item_selected"]
+[connection signal="item_selected" from="Settings/LCol/DisplayOptions/HBoxContainer3/FSRQuality" to="." method="_on_fsr_quality_item_selected"]
+[connection signal="value_changed" from="Settings/LCol/DisplayOptions/FSRSharpnessBox/SharpnessScale" to="." method="_on_sharpness_scale_value_changed"]
+[connection signal="value_changed" from="Settings/LCol/DisplayOptions/HBoxContainer/RenderScale" to="." method="_on_render_scale_value_changed"]
+[connection signal="value_changed" from="Settings/LCol/LightOptions/HBoxContainer/AmbientLight" to="." method="_on_ambient_light_value_changed"]
+[connection signal="toggled" from="Settings/LCol/LightOptions/EnableSSIL" to="." method="_on_enable_ssil_toggled"]
+[connection signal="item_selected" from="Settings/LCol/PostProcessingOptions/PostProcessingEffect" to="." method="_on_post_processing_effect_item_selected"]
+[connection signal="toggled" from="Settings/RCol/ReflectionOptions/EnableReflections" to="." method="_on_enable_reflections_toggled"]
+[connection signal="value_changed" from="Settings/RCol/ReflectionOptions/HBoxContainer/ReflectionQuality" to="." method="_on_reflection_quality_value_changed"]
+[connection signal="toggled" from="Settings/RCol/FogOptions/EnableFog" to="." method="_on_enable_fog_toggled"]
+[connection signal="toggled" from="Settings/RCol/FPSOptions/VSync" to="." method="_on_v_sync_toggled"]
+[connection signal="value_changed" from="Settings/RCol/FPSOptions/HBoxContainer2/MaxFPS" to="." method="_on_max_fps_value_changed"]
+[connection signal="value_changed" from="Settings/RCol/RenderDistanceOptions/HBoxContainer/RenderDistance" to="." method="_on_render_distance_value_changed"]
+[connection signal="pressed" from="Restore" to="." method="_on_restore_pressed"]

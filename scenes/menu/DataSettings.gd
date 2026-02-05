@@ -1,9 +1,9 @@
 extends "res://scenes/menu/BaseSettingsPanel.gd"
 
-@onready var auto_limit_checkbox: CheckBox = $CacheOptions/CheckBox
-@onready var cache_size_limit: SpinBox = $CacheOptions/CacheSizeLimit
-@onready var cache_size_limit_value: Label = $CacheOptions/CacheSizeLimitValue
-@onready var cache_label: Label = $CacheOptions/CacheLabel
+@onready var auto_limit_checkbox: CheckBox = %AutoLimitCheckbox
+@onready var cache_size_limit: SpinBox = %CacheSizeLimit
+@onready var cache_size_limit_value: Label = %CacheSizeLimitValue
+@onready var cache_label: Label = %CacheLabel
 
 func _ready() -> void:
 	_settings_namespace = "data"

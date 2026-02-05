@@ -23,10 +23,6 @@ layout_mode = 2
 text = "Data Settings"
 label_settings = SubResource("LabelSettings_ktlel")
 
-[node name="Back" type="Button" parent="MainOptions" unique_id=1897072699]
-layout_mode = 2
-text = "Back"
-
 [node name="CacheOptions" type="VBoxContainer" parent="." unique_id=130181127]
 layout_mode = 2
 
@@ -36,6 +32,7 @@ text = "
 "
 
 [node name="CacheLabel" type="Label" parent="CacheOptions" unique_id=439753422]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Cache"
 
@@ -53,6 +50,7 @@ layout_mode = 2
 text = "Cache Size Limit"
 
 [node name="CacheSizeLimit" type="SpinBox" parent="CacheOptions" unique_id=1846794931]
+unique_name_in_owner = true
 layout_mode = 2
 min_value = 1.0
 max_value = 20.0
@@ -60,17 +58,18 @@ value = 4.0
 allow_greater = true
 
 [node name="CacheSizeLimitValue" type="Label" parent="CacheOptions" unique_id=161296900]
+unique_name_in_owner = true
 layout_mode = 2
 text = "4 Gb"
 horizontal_alignment = 1
 
-[node name="CheckBox" type="CheckBox" parent="CacheOptions" unique_id=897853888]
+[node name="AutoLimitCheckbox" type="CheckBox" parent="CacheOptions" unique_id=897853888]
+unique_name_in_owner = true
 layout_mode = 2
 button_pressed = true
 text = "Automatically limit cache size (on quit)"
 
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
-[connection signal="pressed" from="MainOptions/Back" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="CacheOptions/ClearCache" to="." method="_on_clear_cache_pressed"]
 [connection signal="value_changed" from="CacheOptions/CacheSizeLimit" to="." method="_on_cache_size_limit_value_changed"]
-[connection signal="toggled" from="CacheOptions/CheckBox" to="." method="_check_box_toggled"]
+[connection signal="toggled" from="CacheOptions/AutoLimitCheckbox" to="." method="_check_box_toggled"]
