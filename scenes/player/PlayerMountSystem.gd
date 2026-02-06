@@ -5,7 +5,7 @@ class_name PlayerMountSystem
 signal mount_requested(target: Node)
 signal dismount_requested
 
-const MOUNT_HEIGHT_OFFSET: float = 1.5
+const MOUNT_HEIGHT_OFFSET: float = 1.95
 
 var _player: CharacterBody3D = null
 var _crouch_system: PlayerCrouchSystem = null

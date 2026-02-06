@@ -125,7 +125,7 @@ func _start_pause() -> void:
 func set_npc_color(color: Color) -> void:
 	if _body_mesh and _body_mesh.material_override:
 		_body_mesh.material_override.set_shader_parameter("fallback_color", color)
-	if _head_mesh:
+	if _head_mesh and _head_mesh.mesh and _head_mesh.mesh.get_surface_count() > 0:
 		var head_material: Material = _head_mesh.get_surface_override_material(0)
 		if head_material and head_material is StandardMaterial3D:
 			var new_head_material: StandardMaterial3D = head_material.duplicate() as StandardMaterial3D

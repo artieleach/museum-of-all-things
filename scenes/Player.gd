@@ -372,7 +372,7 @@ func set_body_visible(is_visible: bool) -> void:
 
 
 func get_owned_body_material() -> Material:
-	if not _owned_body_material and _body_mesh:
+	if not _owned_body_material and _body_mesh and _body_mesh.mesh and _body_mesh.mesh.get_surface_count() > 0:
 		var material: Material = _body_mesh.get_surface_override_material(0)
 		if material:
 			_owned_body_material = material.duplicate()
@@ -381,7 +381,7 @@ func get_owned_body_material() -> Material:
 
 
 func get_owned_head_material() -> Material:
-	if not _owned_head_material and _head_mesh:
+	if not _owned_head_material and _head_mesh and _head_mesh.mesh and _head_mesh.mesh.get_surface_count() > 0:
 		var material: Material = _head_mesh.get_surface_override_material(0)
 		if material:
 			_owned_head_material = material.duplicate()
