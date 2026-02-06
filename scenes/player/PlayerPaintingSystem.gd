@@ -233,6 +233,9 @@ func process_eat(delta: float) -> void:
 			_carry_mesh_fp.position = CARRY_FP_POSITION.lerp(EAT_FP_TARGET, slide_t)
 
 		if _eat_progress >= 1.0:
+			# Equip the eaten painting as the player's skin
+			if _carried_image_url != "":
+				MultiplayerEvents.emit_skin_selected(_carried_image_url, _carried_texture as ImageTexture)
 			emit_signal("eat_requested", _carried_exhibit_title, _carried_image_title)
 			execute_drop()
 	elif _eating:
