@@ -188,18 +188,14 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 	if not _exhibits.has(context.title):
 		_exhibits[context.title] = { "entry": new_exhibit.entry, "exhibit": new_exhibit, "height": exhibit_height }
 		_exhibit_hist.append(context.title)
+
+		# Spawn NPCs if enabled
+		if _museum.npcs_enabled:
+			var npc_manager: NPCManager = NPCManager.new()
+			new_exhibit.add_child(npc_manager)
+			npc_manager.call_deferred("init", new_exhibit, _museum.npcs_per_exhibit)
 		if _exhibit_hist.size() > _max_exhibits_loaded:
-			for e: int in range(_exhibit_hist.size()):
-				var key: String = _exhibit_hist[e]
-				if _exhibits.has(key):
-					var old_exhibit: Dictionary = _exhibits[key]
-					var player: Node = _museum._player
-					if player and abs(4 * old_exhibit.height - player.position.y) < 20:
-						continue
-					if old_exhibit.exhibit.title == new_exhibit.title:
-						continue
-					erase_exhibit(key)
-					break
+			call_deferred("_cleanup_old_exhibits", new_exhibit.title)
 
 	# Clear loading flag after exhibit exists (handles both new and duplicate fetch cases)
 	_loading_exhibits.erase(context.title)
@@ -282,6 +278,20 @@ func _link_backlink_to_exit(exhibit: Node, hall: Hall) -> void:
 		new_hall = exhibit.entry
 	if new_hall:
 		link_halls(hall, new_hall)
+
+
+func _cleanup_old_exhibits(new_title: String) -> void:
+	for e: int in range(_exhibit_hist.size()):
+		var key: String = _exhibit_hist[e]
+		if _exhibits.has(key):
+			var old_exhibit: Dictionary = _exhibits[key]
+			var player: Node = _museum._player
+			if player and abs(4 * old_exhibit.height - player.position.y) < 20:
+				continue
+			if old_exhibit.exhibit.title == new_title:
+				continue
+			erase_exhibit(key)
+			break
 
 
 func erase_exhibit(key: String) -> void:

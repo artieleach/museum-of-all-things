@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://bd4eml3mgf268"]
+
+[ext_resource type="Script" uid="uid://dwu0bafpeiyhe" path="res://scenes/npc/NPC.gd" id="1_npc"]
+[ext_resource type="Material" uid="uid://dvpskin12345" path="res://assets/textures/player_skin.tres" id="2_skin"]
+[ext_resource type="Material" uid="uid://bkn1f1m7sdns4" path="res://assets/textures/head_material.tres" id="3_head"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.3
+height = 1.5
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.3
+height = 1.4
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.4
+height = 0.8
+radial_segments = 8
+rings = 4
+
+[node name="NPC" type="CharacterBody3D" unique_id=549660346]
+collision_layer = 2621440
+collision_mask = 524289
+script = ExtResource("1_npc")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1444239353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=947958095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("CapsuleMesh_body")
+surface_material_override/0 = ExtResource("2_skin")
+
+[node name="ObstacleRay" type="RayCast3D" parent="." unique_id=1594185687]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+target_position = Vector3(0, 0, -1)
+collision_mask = 524289
+
+[node name="HeadMesh" type="MeshInstance3D" parent="." unique_id=2127392712]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+mesh = SubResource("SphereMesh_head")
+surface_material_override/0 = ExtResource("3_head")

@@ -4,6 +4,7 @@ extends Node3D
 
 const _LOBBY_DATA_PATH: String = "res://assets/resources/lobby_data.tres"
 const QUEUE_DELAY: float = 0.05
+const _GROUP_PLAYER := &"Player"
 
 var StaticData: Resource = preload("res://assets/resources/lobby_data.tres")
 
@@ -20,6 +21,8 @@ var StaticData: Resource = preload("res://assets/resources/lobby_data.tres")
 @export var max_exhibits_loaded: int = 2
 @export var min_room_dimension: int = 2
 @export var max_room_dimension: int = 5
+@export var npcs_enabled: bool = false
+@export var npcs_per_exhibit: int = 0
 
 # =============================================================================
 # PRIVATE STATE VARIABLES
@@ -31,6 +34,8 @@ var _custom_door: Hall = null
 
 var _queue_running: bool = false
 var _global_item_queue_map: Dictionary = {}
+var _fog_tween: Tween = null
+var _queue_timer: Timer = null
 
 # =============================================================================
 # SUBSYSTEMS
@@ -80,17 +85,7 @@ func sync_rider_to_room(room_title: String) -> void:
 	_start_queue()
 
 	# Update fog color
-	var fog_color: Color = ExhibitStyle.gen_fog(_current_room_title)
-	var environment: Environment = $WorldEnvironment.environment
-	if environment.fog_light_color != fog_color:
-		var tween: Tween = create_tween()
-		tween.tween_property(
-				environment,
-				"fog_light_color",
-				fog_color,
-				1.0)
-		tween.set_trans(Tween.TRANS_LINEAR)
-		tween.set_ease(Tween.EASE_IN_OUT)
+	_tween_fog_color(ExhibitStyle.gen_fog(_current_room_title))
 
 
 func load_exhibit_for_rider(from_room: String, to_room: String) -> void:
@@ -152,13 +147,18 @@ func _find_any_hall_to_room(to_room: String) -> Hall:
 # LIFECYCLE
 # =============================================================================
 func _init() -> void:
-	RenderingServer.set_debug_generate_wireframes(true)
+	if OS.is_debug_build():
+		RenderingServer.set_debug_generate_wireframes(true)
 
 
 func _ready() -> void:
-	$WorldEnvironment.environment.ssr_enabled = true
-
 	_grid = $Lobby/GridMap
+
+	_queue_timer = Timer.new()
+	_queue_timer.wait_time = QUEUE_DELAY
+	_queue_timer.one_shot = true
+	_queue_timer.timeout.connect(_process_item_queue)
+	add_child(_queue_timer)
 
 	# Initialize subsystems
 	_teleport_manager = MuseumTeleportManager.new()
@@ -296,19 +296,19 @@ func _set_current_room_title(title: String) -> void:
 	if RaceManager.is_race_active() and title == RaceManager.get_target_article():
 		RaceManager.notify_article_reached(NetworkManager.get_unique_id(), title)
 
-	var fog_color: Color = ExhibitStyle.gen_fog(_current_room_title)
+	_tween_fog_color(ExhibitStyle.gen_fog(_current_room_title))
+
+
+func _tween_fog_color(fog_color: Color) -> void:
 	var environment: Environment = $WorldEnvironment.environment
-
-	if environment.fog_light_color != fog_color:
-		var tween: Tween = create_tween()
-		tween.tween_property(
-				environment,
-				"fog_light_color",
-				fog_color,
-				1.0)
-
-		tween.set_trans(Tween.TRANS_LINEAR)
-		tween.set_ease(Tween.EASE_IN_OUT)
+	if environment.fog_light_color == fog_color:
+		return
+	if _fog_tween and _fog_tween.is_valid():
+		_fog_tween.kill()
+	_fog_tween = create_tween()
+	_fog_tween.tween_property(environment, "fog_light_color", fog_color, 1.0)
+	_fog_tween.set_trans(Tween.TRANS_LINEAR)
+	_fog_tween.set_ease(Tween.EASE_IN_OUT)
 
 
 # =============================================================================
@@ -366,7 +366,7 @@ func _on_loader_body_entered(body: Node, hall: Hall, backlink: bool = false) -> 
 	if hall.to_title == "" or hall.to_title == _current_room_title:
 		return
 
-	if body.is_in_group("Player"):
+	if body.is_in_group(_GROUP_PLAYER):
 		# In multiplayer, only the local player triggers transitions
 		if NetworkManager.is_multiplayer_active() and not _multiplayer_sync.is_local_player(body):
 			return
@@ -406,7 +406,7 @@ func _process_item_queue() -> void:
 	var callable: Callable = queue.pop_front()
 	_queue_running = true
 	callable.call()
-	get_tree().create_timer(QUEUE_DELAY).timeout.connect(_process_item_queue.bind())
+	_queue_timer.start()
 
 
 func _queue_item_front(title: String, item: Variant) -> void:

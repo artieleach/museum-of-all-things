@@ -24,7 +24,6 @@ func _on_visibility_changed():
 		_tab_bar.grab_focus()
 
 func _on_tab_bar_tab_changed(tab: int):
-	print(tab)
 	for i in range(_tab_scenes.size()):
 		if _tab_scenes[i] == null:
 			continue

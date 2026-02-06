@@ -183,11 +183,3 @@ func _on_post_processing_effect_item_selected(index: int):
 func _on_render_distance_value_changed(value: float):
 	render_distance_value.text = "%dm" % int(value * 30)
 	GraphicsManager.set_render_distance_multiplier(value)
-
-
-func _on_scale_mode_item_selected(index: int) -> void:
-	pass # Replace with function body.
-
-
-func _on_v_sync_toggled(toggled_on: bool) -> void:
-	pass # Replace with function body.

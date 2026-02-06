@@ -45,6 +45,11 @@ func process_mount(delta: float) -> void:
 	if not _is_mounted:
 		return
 
+	# Auto-dismount if mount enters a hallway
+	if _player.is_local and is_instance_valid(mounted_on) and "in_hall" in mounted_on and mounted_on.in_hall:
+		_player.request_dismount()
+		return
+
 	# Follow mount's position
 	if is_instance_valid(mounted_on):
 		# Calculate height offset accounting for mount's crouch state
@@ -98,6 +103,9 @@ func process_mount(delta: float) -> void:
 
 
 func try_mount_target() -> void:
+	if _player.in_hall:
+		return
+
 	if not _player.has_node("Pivot/Camera3D/RayCast3D"):
 		return
 

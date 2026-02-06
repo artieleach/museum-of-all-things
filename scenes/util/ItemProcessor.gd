@@ -2,7 +2,7 @@ extends Node
 
 signal items_complete
 
-var ignore_sections = [
+var ignore_sections: Array[String] = [
 	"references",
 	"see also",
 	"notes",
@@ -14,30 +14,30 @@ var ignore_sections = [
 	"sources",
 ]
 
-var IMAGE_REGEX = RegEx.new()
-var s2_re = RegEx.new()
-var template_re = RegEx.new()
-var links_re = RegEx.new()
-var extlinks_re = RegEx.new()
-var em_re = RegEx.new()
-var tag_re = RegEx.new()
-var whitespace_re = RegEx.new()
-var nl_re = RegEx.new()
-var alt_re = RegEx.new()
-var tokenizer = RegEx.new()
-var image_name_re = RegEx.new()
-var image_field_re = RegEx.new()
-var exclude_image_re = RegEx.new()
+var IMAGE_REGEX: RegEx = RegEx.new()
+var s2_re: RegEx = RegEx.new()
+var template_re: RegEx = RegEx.new()
+var links_re: RegEx = RegEx.new()
+var extlinks_re: RegEx = RegEx.new()
+var em_re: RegEx = RegEx.new()
+var tag_re: RegEx = RegEx.new()
+var whitespace_re: RegEx = RegEx.new()
+var nl_re: RegEx = RegEx.new()
+var alt_re: RegEx = RegEx.new()
+var tokenizer: RegEx = RegEx.new()
+var image_name_re: RegEx = RegEx.new()
+var image_field_re: RegEx = RegEx.new()
+var exclude_image_re: RegEx = RegEx.new()
 
-var max_len_soft = 1000
-var text_item_fmt = "[color=black][b][font_size=48]%s[/font_size][/b]\n\n%s"
-var section_fmt = "[p][b][font_size=36]%s[/font_size][/b][/p]\n\n"
-var p_fmt = "[p]%s[/p]\n\n"
+var max_len_soft: int = 1000
+var text_item_fmt: String = "[color=black][b][font_size=48]%s[/font_size][/b]\n\n%s"
+var section_fmt: String = "[p][b][font_size=36]%s[/font_size][/b][/p]\n\n"
+var p_fmt: String = "[p]%s[/p]\n\n"
 
 var processor_thread: Thread
-var PROCESSOR_QUEUE = "ItemProcessor"
+var PROCESSOR_QUEUE: String = "ItemProcessor"
 
-func _ready():
+func _ready() -> void:
 	IMAGE_REGEX.compile("\\.(png|jpg|jpeg|webp|svg)$")
 	s2_re.compile("^==[^=]")
 	template_re.compile("\\{\\{.*?\\}\\}")
@@ -59,12 +59,12 @@ func _ready():
 		processor_thread = Thread.new()
 		processor_thread.start(_processor_thread_loop)
 
-func _exit_tree():
+func _exit_tree() -> void:
 	WorkQueue.set_quitting()
 	if processor_thread:
 		processor_thread.wait_to_finish()
 
-func _processor_thread_loop():
+func _processor_thread_loop() -> void:
 	while not WorkQueue.get_quitting():
 		_processor_thread_item()
 
@@ -72,55 +72,55 @@ func _process(_delta: float) -> void:
 	if not Platform.is_using_threads():
 		_processor_thread_item()
 
-func _processor_thread_item():
-		var item = WorkQueue.process_queue(PROCESSOR_QUEUE)
+func _processor_thread_item() -> void:
+		var item: Variant = WorkQueue.process_queue(PROCESSOR_QUEUE)
 		if item:
 			_create_items(item[0], item[1], item[2])
 
-func _seeded_shuffle(new_seed, arr, bias=false):
-	var rng = RandomNumberGenerator.new()
+func _seeded_shuffle(new_seed: String, arr: Array, bias: bool = false) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(new_seed)
 	if not bias:
 		CollectionUtils.shuffle(rng, arr)
 	else:
 		CollectionUtils.biased_shuffle(rng, arr, 2.0)
 
-func _to_link_case(s):
+func _to_link_case(s: String) -> String:
 	if len(s) > 0:
 		return s[0].to_upper() + s.substr(1)
 	else:
 		return ""
 
-func _add_text_item(items, title, subtitle, text):
+func _add_text_item(items: Array, title: String, subtitle: String, text: String) -> void:
 	if (
 		not ignore_sections.has(title.to_lower().strip_edges()) and
 		len(text) > 20
 	):
-		var t = ((section_fmt % subtitle) + "\n" + text) if subtitle != "" else text
+		var t: String = ((section_fmt % subtitle) + "\n" + text) if subtitle != "" else text
 		items.append({
 			"type": "rich_text",
 			"material": "marble",
 			"text": text_item_fmt % [title, t]
 		})
 
-func _clean_section(s):
+func _clean_section(s: String) -> String:
 	return s.replace("=", "").strip_edges()
 
-var trim_filename_front = len("File:")
-func _clean_filename(s):
+var trim_filename_front: int = len("File:")
+func _clean_filename(s: String) -> String:
 	return IMAGE_REGEX.sub(s.substr(trim_filename_front), "")
 
-func _create_text_items(title, extract):
-	var items = []
-	var lines = extract.split("\n")
+func _create_text_items(title: String, extract: String) -> Array:
+	var items: Array = []
+	var lines: PackedStringArray = extract.split("\n")
 
-	var current_title = title
-	var current_subtitle = ""
-	var current_text = ""
-	var current_text_has_content = false
+	var current_title: String = title
+	var current_subtitle: String = ""
+	var current_text: String = ""
+	var current_text_has_content: bool = false
 
-	for line in lines:
-		var over_lim = len(current_text) > max_len_soft
+	for line: String in lines:
+		var over_lim: bool = len(current_text) > max_len_soft
 		if line == "":
 			continue
 		elif s2_re.search(line):
@@ -132,7 +132,7 @@ func _create_text_items(title, extract):
 			current_text_has_content = false
 		else:
 			if line.begins_with("="):
-				var sec = section_fmt % _clean_section(line)
+				var sec: String = section_fmt % _clean_section(line)
 				if len(current_text) + len(sec) > max_len_soft and current_text_has_content:
 					_add_text_item(items, current_title, current_subtitle, current_text)
 					current_subtitle = _clean_section(line)
@@ -141,7 +141,7 @@ func _create_text_items(title, extract):
 				else:
 					current_text += sec
 			elif not over_lim:
-				var stripped = line.strip_edges()
+				var stripped: String = line.strip_edges()
 				if len(stripped) > 0:
 					current_text_has_content = true
 					current_text += p_fmt % stripped
@@ -151,7 +151,7 @@ func _create_text_items(title, extract):
 
 	return items
 
-func _wikitext_to_extract(wikitext):
+func _wikitext_to_extract(wikitext: String) -> String:
 	wikitext = template_re.sub(wikitext, "", true)
 	wikitext = links_re.sub(wikitext, "$2", true)
 	wikitext = extlinks_re.sub(wikitext, "$1", true)
@@ -161,31 +161,31 @@ func _wikitext_to_extract(wikitext):
 	wikitext = nl_re.sub(wikitext, "\n", true)
 	return wikitext.strip_edges()
 
-func _parse_wikitext(wikitext):
-	var tokens = tokenizer.search_all(wikitext)
-	var link = ""
-	var links = []
+func _parse_wikitext(wikitext: String) -> Array:
+	var tokens: Array[RegExMatch] = tokenizer.search_all(wikitext)
+	var link: String = ""
+	var links: Array = []
 
-	var depth_chars = {
+	var depth_chars: Dictionary = {
 		"<": ">",
 		"[": "]",
 		"{": "}",
 	}
 
-	var depth = []
-	var dc
-	var dl
-	var in_link
-	var t
-	var in_tag
-	var tag = ""
-	var html_tag = null
-	var html = []
-	var template = []
-	var in_template
+	var depth: Array[String] = []
+	var dc: Variant
+	var dl: int
+	var in_link: bool
+	var t: String
+	var in_tag: bool
+	var tag: String = ""
+	var html_tag: Variant = null
+	var html: Array[String] = []
+	var template: Array[String] = []
+	var in_template: bool
 
-	for match in tokens:
-		t = match.get_string(0)
+	for m: RegExMatch in tokens:
+		t = m.get_string(0)
 		dc = depth_chars.get(t)
 		dl = len(depth)
 		in_link = dl > 1 and depth[0] == "]" and depth[1] == "]"
@@ -229,27 +229,27 @@ func _parse_wikitext(wikitext):
 				html_tag = tag
 			else:
 				if len(html) > 0 and html_tag.strip_edges().begins_with("gallery"):
-					var html_str = "".join(html)
-					var lines = html_str.split("\n")
-					for line in lines:
-						links.append(["link", line])
+					var html_str: String = "".join(html)
+					var gallery_lines: PackedStringArray = html_str.split("\n")
+					for gallery_line: String in gallery_lines:
+						links.append(["link", gallery_line])
 				html.clear()
 				html_tag = null
 			tag = ""
 
 	return links
 
-func commons_images_to_items(title, images, extra_text):
-	var items = []
-	var rng = RandomNumberGenerator.new()
-	var material = ExhibitStyle.gen_item_material(title)
-	var plate = ExhibitStyle.gen_plate_style(title)
+func commons_images_to_items(title: String, images: Array, extra_text: Array) -> Array:
+	var items: Array = []
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	var material: String = ExhibitStyle.gen_item_material(title)
+	var plate: String = ExhibitStyle.gen_plate_style(title)
 
 	rng.seed = hash(title + ":commons_shuffler")
 	_seeded_shuffle(title + ":commons_images", images)
 
-	for image in images:
-		var il = len(items)
+	for image: String in images:
+		var il: int = len(items)
 		if il > 0 and items[il - 1].type != "text":
 			if len(extra_text) > 0 and rng.randi() % 2 == 0:
 				items.append(extra_text.pop_front())
@@ -265,33 +265,33 @@ func commons_images_to_items(title, images, extra_text):
 
 	return items
 
-func create_items(title, result, prev_title=""):
+func create_items(title: String, result: Dictionary, prev_title: String = "") -> void:
 	WorkQueue.add_item(PROCESSOR_QUEUE, [title, result, prev_title])
 
-func _create_items(title, result, prev_title):
-	var text_items = []
-	var image_items = []
-	var doors = []
-	var doors_used = {}
-	var material = ExhibitStyle.gen_item_material(title)
-	var plate = ExhibitStyle.gen_plate_style(title)
+func _create_items(title: String, result: Dictionary, prev_title: String) -> void:
+	var text_items: Array = []
+	var image_items: Array = []
+	var doors: Array = []
+	var doors_used: Dictionary = {}
+	var material: String = ExhibitStyle.gen_item_material(title)
+	var plate: String = ExhibitStyle.gen_plate_style(title)
 
 	if result and result.has("wikitext") and result.has("extract"):
-		var wikitext = result.wikitext
+		var wikitext: String = result.wikitext
 
 		Util.t_start()
-		var links = _parse_wikitext(wikitext)
+		var links: Array = _parse_wikitext(wikitext)
 		Util.t_end("_parse_wikitext")
 
 		# we are using the extract returned from API until my parser works better
 		text_items.append_array(_create_text_items(title, result.extract))
 
-		for link_entry in links:
-			var type = link_entry[0]
-			var link = link_entry[1]
+		for link_entry: Array in links:
+			var type: String = link_entry[0]
+			var link: String = link_entry[1]
 
-			var target = _to_link_case(image_name_re.sub(link.get_slice("|", 0), "File:"))
-			var caption = alt_re.search(link)
+			var target: String = _to_link_case(image_name_re.sub(link.get_slice("|", 0), "File:"))
+			var caption: RegExMatch = alt_re.search(link)
 
 			if target.begins_with("File:") and IMAGE_REGEX.search(target):
 				image_items.append({
@@ -303,10 +303,10 @@ func _create_items(title, result, prev_title):
 				})
 
 			elif type == "template":
-				var other_images = image_field_re.search_all(link)
+				var other_images: Array[RegExMatch] = image_field_re.search_all(link)
 				if len(other_images) > 0:
-					for match in other_images:
-						var image_title = image_name_re.sub(match.get_string(1), "File:")
+					for img_match: RegExMatch in other_images:
+						var image_title: String = image_name_re.sub(img_match.get_string(1), "File:")
 						if image_title.find("\n") >= 0:
 							print("newline in file name ", image_title)
 						if not image_title or not IMAGE_REGEX.search(image_title):
@@ -322,31 +322,31 @@ func _create_items(title, result, prev_title):
 						})
 
 			elif type == "link" and target and target.find(":") < 0:
-				var door = _to_link_case(target.get_slice("#", 0))
+				var door: String = _to_link_case(target.get_slice("#", 0))
 				if not doors_used.has(door) and door != title and door != prev_title and len(door) > 0:
 					doors.append(door)
 					doors_used[door] = true
 
 	# keep first item and first door intact
-	var front_text = text_items.pop_front()
-	var front_door = doors.pop_front()
+	var front_text: Variant = text_items.pop_front()
+	var front_door: Variant = doors.pop_front()
 	_seeded_shuffle(title + ":text_items", text_items)
 	_seeded_shuffle(title + ":image_items", image_items)
 	_seeded_shuffle(title + ":doors", doors, true)
 	text_items.push_front(front_text)
 	doors.push_front(front_door)
 
-	var rng = RandomNumberGenerator.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(title + ":shuffler")
 
 	# ensure that there aren't too many text items in a row
-	var items = []
+	var items: Array = []
 
 	if len(text_items) > 0:
 		items.append(text_items.pop_front())
 
 	while len(image_items) > 0:
-		var il = len(items)
+		var il: int = len(items)
 		if il > 0 and items[il - 1].type != "text":
 			if len(text_items) > 0 and rng.randi() % 2 == 0:
 				items.append(text_items.pop_front())

@@ -3,7 +3,7 @@ dist/
 .import/
 *.translation
 .mono/
-
+CLAUDE.md
 # Flatpak
 .flatpak-builder/
 repo/

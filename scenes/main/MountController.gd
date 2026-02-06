@@ -68,6 +68,8 @@ func handle_mount_request(rider_peer_id: int, mount_peer_id: int, local_player: 
 		return  # Mount already has a rider
 	if rider._is_mounted:
 		return  # Rider is already mounted
+	if "in_hall" in rider and rider.in_hall:
+		return  # Can't mount in a hallway
 
 	# Store mount state
 	_mount_state[rider_peer_id] = mount_peer_id

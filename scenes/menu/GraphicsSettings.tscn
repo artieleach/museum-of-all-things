@@ -315,7 +315,7 @@ text = "Restore Default Settings"
 
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
 [connection signal="toggled" from="HBoxContainer/Fullscreen" to="." method="_on_fullscreen_toggled"]
-[connection signal="item_selected" from="Settings/LCol/DisplayOptions/HBoxContainer2/ScaleMode" to="." method="_on_scale_mode_item_selected"]
+[connection signal="item_selected" from="Settings/LCol/DisplayOptions/HBoxContainer2/ScaleMode" to="." method="_on_scale_mode_value_changed"]
 [connection signal="item_selected" from="Settings/LCol/DisplayOptions/HBoxContainer3/FSRQuality" to="." method="_on_fsr_quality_item_selected"]
 [connection signal="value_changed" from="Settings/LCol/DisplayOptions/FSRSharpnessBox/SharpnessScale" to="." method="_on_sharpness_scale_value_changed"]
 [connection signal="value_changed" from="Settings/LCol/DisplayOptions/HBoxContainer/RenderScale" to="." method="_on_render_scale_value_changed"]
@@ -325,7 +325,7 @@ text = "Restore Default Settings"
 [connection signal="toggled" from="Settings/RCol/ReflectionOptions/EnableReflections" to="." method="_on_enable_reflections_toggled"]
 [connection signal="value_changed" from="Settings/RCol/ReflectionOptions/HBoxContainer/ReflectionQuality" to="." method="_on_reflection_quality_value_changed"]
 [connection signal="toggled" from="Settings/RCol/FogOptions/EnableFog" to="." method="_on_enable_fog_toggled"]
-[connection signal="toggled" from="Settings/RCol/FPSOptions/VSync" to="." method="_on_v_sync_toggled"]
+[connection signal="toggled" from="Settings/RCol/FPSOptions/VSync" to="." method="_on_vsync_toggled"]
 [connection signal="value_changed" from="Settings/RCol/FPSOptions/HBoxContainer2/MaxFPS" to="." method="_on_max_fps_value_changed"]
 [connection signal="value_changed" from="Settings/RCol/RenderDistanceOptions/HBoxContainer/RenderDistance" to="." method="_on_render_distance_value_changed"]
 [connection signal="pressed" from="Restore" to="." method="_on_restore_pressed"]

@@ -191,6 +191,11 @@ func _create_curve_hall(hall_start: Vector3, hall_dir: Vector3, is_right: bool =
 		to_pos = exit_hall - Vector3.UP
 
 
+func _exit_tree() -> void:
+	if ExhibitFetcher.wikitext_failed.is_connected(_on_fetch_failed):
+		ExhibitFetcher.wikitext_failed.disconnect(_on_fetch_failed)
+
+
 func _on_fetch_failed(titles: Array, message: String) -> void:
 	for title: String in titles:
 		if title == to_title:

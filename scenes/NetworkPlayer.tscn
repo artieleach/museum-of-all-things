@@ -4,6 +4,13 @@
 [ext_resource type="PackedScene" uid="uid://dxfoujgkv1e2y" path="res://scenes/FootstepPlayer.tscn" id="2_footstep"]
 [ext_resource type="Material" uid="uid://dvpskin12345" path="res://assets/textures/player_skin.tres" id="3_skin"]
 [ext_resource type="FontFile" uid="uid://siqgqfck828j" path="res://assets/fonts/NotoSans/NotoSans-Bold.ttf" id="4_408m0"]
+[ext_resource type="Material" uid="uid://bkn1f1m7sdns4" path="res://assets/textures/head_material.tres" id="5_head"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.35
+height = 0.7
+radial_segments = 8
+rings = 4
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_feet"]
 size = Vector3(0.6, 0.2, 0.6)
@@ -12,19 +19,23 @@ size = Vector3(0.6, 0.2, 0.6)
 radius = 0.3
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-radius = 0.3
-height = 1.4
+radius = 0.25
+height = 1.2
 
 [node name="NetworkPlayer" type="CharacterBody3D" unique_id=1515458623 groups=["NetworkPlayer", "Player"]]
 collision_layer = 524288
 collision_mask = 524289
 script = ExtResource("1_player")
-jump_impulse = 12
 smooth_movement = true
-max_speed_walk = 6
 
 [node name="Pivot" type="Node3D" parent="." unique_id=406466574]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Pivot" unique_id=1748170133]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("SphereMesh_head")
+surface_material_override/0 = ExtResource("5_head")
 
 [node name="Camera3D" type="Camera3D" parent="Pivot" unique_id=122904108]
 far = 2000.0
@@ -38,7 +49,8 @@ collision_mask = 524290
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 shape = SubResource("BoxShape3D_feet")
 
-[node name="CollisionShape2" type="CollisionShape3D" parent="." unique_id=875336534]
+[node name="BodyCollision" type="CollisionShape3D" parent="." unique_id=875336534]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
 shape = SubResource("CapsuleShape3D_body")
 
@@ -48,11 +60,13 @@ target_position = Vector3(0, 2.5, 0)
 [node name="FootstepPlayer" parent="." unique_id=506442078 instance=ExtResource("2_footstep")]
 
 [node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=1138044698]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.667, 0)
 mesh = SubResource("CapsuleMesh_body")
 surface_material_override/0 = ExtResource("3_skin")
 
 [node name="NameLabel" type="Label3D" parent="." unique_id=770185142]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 pixel_size = 0.002
 billboard = 2

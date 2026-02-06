@@ -4,8 +4,12 @@ extends CharacterBody3D
 
 const INTERPOLATION_SPEED: float = 15.0
 const TELEPORT_SNAP_THRESHOLD: float = 5.0
+const BOB_FREQUENCY: float = 12.0
+const BOB_AMPLITUDE: float = 0.05
 
 var _gravity: float = -30.0
+var _bob_time: float = 0.0
+var _body_mesh_base_y: float = 0.85
 var _crouch_move_speed: float = 4.0
 var _mouse_sensitivity: float = 0.002
 var _joy_sensitivity: float = 0.025
@@ -22,6 +26,7 @@ var _joy_deadzone: float = 0.05
 var player_name: String = "Player"
 var _original_name: String = ""  # Stored when mounting to restore later
 var current_room: String = "$Lobby"
+var in_hall: bool = false
 var _enabled: bool = false
 var _invert_y: bool = false
 var _mouse_sensitivity_factor: float = 1.0
@@ -49,6 +54,10 @@ var _skin_system: PlayerSkinSystem = null
 @onready var _multiplayer_sync: MultiplayerSynchronizer = get_node_or_null("MultiplayerSynchronizer")
 @onready var _name_label: Label3D = get_node_or_null("NameLabel")
 @onready var _body_mesh: MeshInstance3D = get_node_or_null("BodyMesh")
+@onready var _head_mesh: MeshInstance3D = get_node_or_null("Pivot/HeadMesh")
+
+var _owned_body_material: Material = null
+var _owned_head_material: Material = null
 
 
 func _ready() -> void:
@@ -163,11 +172,21 @@ func _physics_process(delta: float) -> void:
 
 	# Interpolate remote player positions
 	if not is_local and _has_network_target:
+		var horizontal_dist: float = Vector2(global_position.x - _target_position.x, global_position.z - _target_position.z).length()
 		global_position = global_position.lerp(_target_position, INTERPOLATION_SPEED * delta)
 		rotation.y = lerp_angle(rotation.y, _target_rotation_y, INTERPOLATION_SPEED * delta)
 		_pivot.rotation.x = lerp_angle(_pivot.rotation.x, _target_pivot_rot_x, INTERPOLATION_SPEED * delta)
 		_pivot.position.y = lerp(_pivot.position.y, _target_pivot_pos_y, INTERPOLATION_SPEED * delta)
 		_crouch_system.update_crouch_body()
+		# Apply body bob based on interpolation movement
+		if _body_mesh:
+			if horizontal_dist > 0.01:
+				_bob_time += delta * BOB_FREQUENCY
+				var bob_offset: float = sin(_bob_time) * BOB_AMPLITUDE
+				_body_mesh.position.y = _body_mesh_base_y + bob_offset
+			else:
+				_bob_time = 0.0
+				_body_mesh.position.y = _body_mesh_base_y
 
 	if not _enabled or not is_local:
 		return
@@ -207,6 +226,9 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_pressed("jump") and is_on_floor():
 		velocity.y = jump_impulse
+
+	# Apply body bob when moving
+	_update_body_bob(delta)
 
 	# Process crouch input
 	_crouch_system.process_crouch(delta)
@@ -339,6 +361,8 @@ func set_player_name(new_name: String) -> void:
 func set_body_visible(is_visible: bool) -> void:
 	if _body_mesh:
 		_body_mesh.visible = is_visible
+	if _head_mesh:
+		_head_mesh.visible = is_visible
 	if _name_label:
 		# Keep nameplate hidden if being ridden by another player
 		if is_visible and _has_rider:
@@ -347,18 +371,34 @@ func set_body_visible(is_visible: bool) -> void:
 			_name_label.visible = is_visible
 
 
-func set_player_color(color: Color) -> void:
-	if _body_mesh:
+func get_owned_body_material() -> Material:
+	if not _owned_body_material and _body_mesh:
 		var material: Material = _body_mesh.get_surface_override_material(0)
 		if material:
-			if material is ShaderMaterial:
-				var new_material: ShaderMaterial = material.duplicate() as ShaderMaterial
-				new_material.set_shader_parameter("fallback_color", color)
-				_body_mesh.set_surface_override_material(0, new_material)
-			elif material is StandardMaterial3D:
-				var new_material: StandardMaterial3D = material.duplicate() as StandardMaterial3D
-				new_material.albedo_color = color
-				_body_mesh.set_surface_override_material(0, new_material)
+			_owned_body_material = material.duplicate()
+			_body_mesh.set_surface_override_material(0, _owned_body_material)
+	return _owned_body_material
+
+
+func get_owned_head_material() -> Material:
+	if not _owned_head_material and _head_mesh:
+		var material: Material = _head_mesh.get_surface_override_material(0)
+		if material:
+			_owned_head_material = material.duplicate()
+			_head_mesh.set_surface_override_material(0, _owned_head_material)
+	return _owned_head_material
+
+
+func set_player_color(color: Color) -> void:
+	var body_mat: Material = get_owned_body_material()
+	if body_mat:
+		if body_mat is ShaderMaterial:
+			body_mat.set_shader_parameter("fallback_color", color)
+		elif body_mat is StandardMaterial3D:
+			body_mat.albedo_color = color
+	var head_mat: Material = get_owned_head_material()
+	if head_mat and head_mat is StandardMaterial3D:
+		head_mat.albedo_color = color.lightened(0.15)
 
 
 func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35) -> void:
@@ -375,13 +415,30 @@ func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivo
 	if should_snap:
 		global_position = pos
 		_pivot.position.y = pivot_pos_y
-		_pivot.position.y = pivot_pos_y
 
 	_has_network_target = true
 	_target_position = pos
 	_target_rotation_y = rot_y
 	_target_pivot_rot_x = pivot_rot_x
 	_target_pivot_pos_y = pivot_pos_y
+
+
+# =============================================================================
+# BODY BOB
+# =============================================================================
+
+func _update_body_bob(delta: float) -> void:
+	if not _body_mesh:
+		return
+
+	var horizontal_speed: float = Vector2(velocity.x, velocity.z).length()
+	if horizontal_speed > 0.5 and is_on_floor():
+		_bob_time += delta * BOB_FREQUENCY
+		var bob_offset: float = sin(_bob_time) * BOB_AMPLITUDE
+		_body_mesh.position.y = _body_mesh_base_y + bob_offset
+	else:
+		_bob_time = 0.0
+		_body_mesh.position.y = _body_mesh_base_y
 
 
 # =============================================================================

@@ -20,13 +20,19 @@ func init(entry: Vector3, exit: Vector3) -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	if body.is_in_group("Player") and _is_local_player(body):
-		player = body
+	if body.is_in_group("Player"):
+		if "in_hall" in body:
+			body.in_hall = true
+		if _is_local_player(body):
+			player = body
 
 
 func _on_body_exited(body: Node) -> void:
-	if body.is_in_group("Player") and _is_local_player(body):
-		player = null
+	if body.is_in_group("Player"):
+		if "in_hall" in body:
+			body.in_hall = false
+		if _is_local_player(body):
+			player = null
 
 
 func _is_local_player(body: Node) -> bool:

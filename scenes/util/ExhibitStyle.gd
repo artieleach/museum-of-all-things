@@ -15,8 +15,8 @@ static func gen_fog(title: String) -> Color:
 static func gen_item_material(title: String) -> String:
 	return ITEM_MATERIAL_LIST[hash(title + ":material") % len(ITEM_MATERIAL_LIST)]
 
-static func gen_plate_style(title: String) -> Variant:
+static func gen_plate_style(title: String) -> String:
 	var material := gen_item_material(title)
 	if material == "none":
 		return "white"
-	return null
+	return PLATE_STYLE_LIST[hash(title + ":plate") % len(PLATE_STYLE_LIST)]

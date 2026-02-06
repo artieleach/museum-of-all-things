@@ -31,30 +31,24 @@ func _on_skin_image_loaded(url: String, texture: ImageTexture, _ctx: Variant) ->
 
 func _apply_skin_texture(texture: ImageTexture) -> void:
 	_skin_texture = texture
-	if not _player or not _player.has_node("BodyMesh"):
+	if not _player or not _player.has_method("get_owned_body_material"):
 		return
 
-	var mesh_instance: MeshInstance3D = _player.get_node("BodyMesh") as MeshInstance3D
-	var material: Material = mesh_instance.get_surface_override_material(0)
+	var material: Material = _player.get_owned_body_material()
 	if material and material is ShaderMaterial:
-		var shader_mat: ShaderMaterial = material.duplicate() as ShaderMaterial
-		shader_mat.set_shader_parameter("texture_albedo", texture)
-		shader_mat.set_shader_parameter("has_texture", true)
-		mesh_instance.set_surface_override_material(0, shader_mat)
+		material.set_shader_parameter("texture_albedo", texture)
+		material.set_shader_parameter("has_texture", true)
 
 
 func clear_player_skin() -> void:
 	skin_url = ""
 	_skin_texture = null
-	if not _player or not _player.has_node("BodyMesh"):
+	if not _player or not _player.has_method("get_owned_body_material"):
 		return
 
-	var mesh_instance: MeshInstance3D = _player.get_node("BodyMesh") as MeshInstance3D
-	var material: Material = mesh_instance.get_surface_override_material(0)
+	var material: Material = _player.get_owned_body_material()
 	if material and material is ShaderMaterial:
-		var shader_mat: ShaderMaterial = material.duplicate() as ShaderMaterial
-		shader_mat.set_shader_parameter("has_texture", false)
-		mesh_instance.set_surface_override_material(0, shader_mat)
+		material.set_shader_parameter("has_texture", false)
 
 
 func get_skin_url() -> String:

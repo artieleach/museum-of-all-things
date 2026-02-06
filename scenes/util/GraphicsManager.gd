@@ -3,6 +3,9 @@ extends Node
 signal change_post_processing(post_processing: String)
 
 const _settings_ns = "graphics"
+const _GROUP_MANAGED_LIGHT := &"managed_light"
+const _GROUP_MANAGED_LIGHT_SKIP := &"managed_light_skip_direction_test"
+const _GROUP_RENDER_DISTANCE := &"render_distance"
 
 # Deprecated: use Constants.MANAGED_LIGHTS_* instead
 const MANAGED_LIGHTS_MAX := Constants.MANAGED_LIGHTS_MAX
@@ -22,6 +25,7 @@ var post_processing: String = "none"
 var render_distance_multiplier: float = 2.5
 var vsync_enabled: bool = true
 var light_timer: Timer
+var _light_tweens: Dictionary = {}
 
 func init() -> void:
 	_env = get_tree().get_nodes_in_group("Environment")[0]
@@ -91,7 +95,7 @@ func set_render_distance_multiplier(value: float) -> void:
 	var last_distance := render_distance_multiplier
 	render_distance_multiplier = value
 	if not is_equal_approx(last_distance, render_distance_multiplier):
-		for node in get_tree().get_nodes_in_group("render_distance"):
+		for node in get_tree().get_nodes_in_group(_GROUP_RENDER_DISTANCE):
 			node.visibility_range_end *= render_distance_multiplier / last_distance
 
 func set_vsync_enabled(_vsync_enabled: bool) -> void:
@@ -100,7 +104,7 @@ func set_vsync_enabled(_vsync_enabled: bool) -> void:
 
 func _on_node_added(node: Node) -> void:
 	if not is_equal_approx(render_distance_multiplier, 1.0):
-		if node.is_in_group("render_distance"):
+		if node.is_in_group(_GROUP_RENDER_DISTANCE):
 			node.visibility_range_end *= render_distance_multiplier
 
 func get_env() -> Environment:
@@ -168,7 +172,7 @@ func _ready() -> void:
 
 func _manage_lights() -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
-	var lights = get_tree().get_nodes_in_group("managed_light")
+	var lights = get_tree().get_nodes_in_group(_GROUP_MANAGED_LIGHT)
 
 	var light_data := []
 	for light in lights:
@@ -180,7 +184,7 @@ func _manage_lights() -> void:
 
 		var v: Vector3 = p - camera.global_position
 
-		if not light.is_in_group('managed_light_skip_direction_test'):
+		if not light.is_in_group(_GROUP_MANAGED_LIGHT_SKIP):
 			var camera_dot = v.normalized().dot(-camera.global_transform.basis.z)
 			if camera_dot < MANAGED_LIGHTS_DIRECTION_THRESHOLD:
 				# This light is behind the player, so turn it off, and move on.
@@ -210,7 +214,12 @@ func _toggle_managed_light(light: Light3D, enable: bool) -> void:
 	if light.visible == enable:
 		return
 
+	var light_id: int = light.get_instance_id()
+	if _light_tweens.has(light_id) and _light_tweens[light_id].is_valid():
+		_light_tweens[light_id].kill()
+
 	var tween := get_tree().create_tween()
+	_light_tweens[light_id] = tween
 	var light_energy: float = light.light_energy
 
 	if is_zero_approx(light_energy):
@@ -224,4 +233,5 @@ func _toggle_managed_light(light: Light3D, enable: bool) -> void:
 	tween.tween_callback(func ():
 		light.visible = enable
 		light.light_energy = light_energy
+		_light_tweens.erase(light_id)
 	)

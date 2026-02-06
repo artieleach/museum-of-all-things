@@ -107,6 +107,15 @@ func _set_image(data: Dictionary) -> void:
 		DataManager.loaded_image.connect(_on_image_loaded)
 		DataManager.request_image(data.src)
 
+func _exit_tree() -> void:
+	if ExhibitFetcher.images_complete.is_connected(_on_image_complete):
+		ExhibitFetcher.images_complete.disconnect(_on_image_complete)
+	if ExhibitFetcher.commons_images_complete.is_connected(_on_image_complete):
+		ExhibitFetcher.commons_images_complete.disconnect(_on_image_complete)
+	if DataManager.loaded_image.is_connected(_on_image_loaded):
+		DataManager.loaded_image.disconnect(_on_image_loaded)
+
+
 func _ready() -> void:
 	if not plate_style:
 		pass

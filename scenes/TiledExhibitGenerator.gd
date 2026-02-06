@@ -21,6 +21,7 @@ const BENCH: int = GridConstants.BENCH
 const FREE_WALL: int = GridConstants.FREE_WALL
 
 const DIRECTIONS: Array[Vector3] = GridConstants.DIRECTIONS
+const _GROUP_SCENERY := &"Scenery"
 
 @onready var _pool_scene: PackedScene = preload("res://scenes/items/Pool.tscn")
 @onready var _planter_scene: PackedScene = preload("res://scenes/items/Planter.tscn")
@@ -78,12 +79,12 @@ func vgt(v1: Vector3, v2: Vector3) -> Vector3:
 	return v1 if v1.x > v2.x or v1.z > v2.z else v2
 
 
-func vec_key(v: Vector3) -> PackedByteArray:
-	return var_to_bytes(v)
+func vec_key(v: Vector3) -> Vector3i:
+	return Vector3i(int(v.x), int(v.y), int(v.z))
 
 
 func add_item_slot(s: Array) -> void:
-	var k: PackedByteArray = vec_key(s[0])
+	var k: Vector3i = vec_key(s[0])
 	if not _item_slot_map.has(k):
 		_item_slot_map[vec_key(s[0])] = s
 		_item_slots.append(s)
@@ -246,7 +247,7 @@ func _clear_scenery_in_area(h1: Vector3, h2: Vector3) -> void:
 	var wh1: Vector3 = GridUtils.grid_to_world(h1)
 	var wh2: Vector3 = GridUtils.grid_to_world(h2)
 	for c: Node in get_children():
-		if c.is_in_group("Scenery"):
+		if c.is_in_group(_GROUP_SCENERY):
 			var p: Vector3 = c.global_position
 			if p.x >= wh1.x and p.x <= wh2.x and p.z >= wh1.z and p.z <= wh2.z:
 				c.queue_free()
@@ -457,3 +458,16 @@ func _overlaps_room(corner1: Vector3, corner2: Vector3, y: int) -> bool:
 			if not GridUtils.safe_overwrite(_grid, Vector3(x, y, z)):
 				return true
 	return false
+
+
+func get_rooms_for_npcs() -> Array:
+	## Returns room data for NPC spawning.
+	var result: Array = []
+	for room_key: Vector3i in _room_list:
+		var room: Dictionary = _room_list[room_key]
+		var bounds: Array = _room_to_bounds(room.center, room.width, room.length)
+		result.append({
+			"center": room.center,
+			"bounds": bounds
+		})
+	return result

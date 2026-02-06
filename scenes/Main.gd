@@ -10,6 +10,8 @@ extends Node
 @export var starting_rotation: float = 0
 
 var _player: Node = null
+var _player_pivot: Node3D = null
+var _fps_update_timer: float = 0.0
 
 # Subsystems
 var _menu_controller: MainMenuController = null
@@ -110,7 +112,8 @@ func _recreate_player() -> void:
 
 	_player = Player.instantiate()
 	add_child(_player)
-	_player.get_node("Pivot/Camera3D").make_current()
+	_player_pivot = _player.get_node("Pivot")
+	_player_pivot.get_node("Camera3D").make_current()
 	_player.rotation.y = starting_rotation
 	_player.max_speed = player_speed
 	_player.smooth_movement = smooth_movement
@@ -225,17 +228,18 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	$FpsLabel.text = str(Engine.get_frames_per_second())
+	if $FpsLabel.visible:
+		_fps_update_timer -= delta
+		if _fps_update_timer <= 0.0:
+			_fps_update_timer = 0.5
+			$FpsLabel.text = str(Engine.get_frames_per_second())
 
 	# Broadcast local player position to other players
 	if _multiplayer_controller.process_position_sync(delta, _player):
-		var pivot_rot_x: float = 0.0
-		var pivot_pos_y: float = 1.35
-		if _player.has_node("Pivot"):
-			pivot_rot_x = _player.get_node("Pivot").rotation.x
-			pivot_pos_y = _player.get_node("Pivot").position.y
-		var is_mounted: bool = _player._is_mounted if _player.has_method("execute_mount") else false
-		var mounted_peer_id: int = _player.mount_peer_id if _player.has_method("execute_mount") else -1
+		var pivot_rot_x: float = _player_pivot.rotation.x if _player_pivot else 0.0
+		var pivot_pos_y: float = _player_pivot.position.y if _player_pivot else 1.35
+		var is_mounted: bool = _player._is_mounted
+		var mounted_peer_id: int = _player.mount_peer_id
 		# If mounted, use mount's room to stay synced during room transitions
 		var current_room: String = "$Lobby"
 		if is_mounted and is_instance_valid(_player.mounted_on) and "current_room" in _player.mounted_on:
