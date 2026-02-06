@@ -88,6 +88,11 @@ func _apply_steal(peer_id: int, exhibit_title: String, image_title: String, imag
 
 	if "_painting_system" in player and player._painting_system:
 		player._painting_system.execute_steal(texture, image_url, image_title, exhibit_title, image_size)
+		# If texture wasn't available locally, request it from DataManager
+		if not texture and image_url != "":
+			var cb: Callable = _on_carry_image_loaded.bind(player, image_url)
+			DataManager.loaded_image.connect(cb)
+			DataManager.request_image(image_url)
 
 
 func _execute_steal_local(exhibit_title: String, image_title: String, image_url: String, image_size: Vector2, local_player: Node) -> void:
@@ -272,6 +277,15 @@ func _create_placed_painting(wall_position: Vector3, wall_normal: Vector3, image
 	painting.basis = Basis(x_axis, y_axis, z_axis)
 
 
+func _on_carry_image_loaded(url: String, image: Texture2D, _ctx: Variant, player: Node, target_url: String) -> void:
+	if url != Util.normalize_url(target_url):
+		return
+	DataManager.loaded_image.disconnect(_on_carry_image_loaded.bind(player, target_url))
+	if is_instance_valid(player) and "_painting_system" in player and player._painting_system:
+		player._painting_system._carry_material.set_shader_parameter("texture_albedo", image)
+		player._painting_system._carried_texture = image
+
+
 func _on_placed_painting_image_loaded(url: String, image: Texture2D, _ctx: Variant, painting: MeshInstance3D, material: ShaderMaterial, target_url: String) -> void:
 	if url != Util.normalize_url(target_url):
 		return
@@ -318,15 +332,19 @@ func execute_eat_sync(peer_id: int, local_player: Node) -> void:
 func _apply_eat(peer_id: int, local_player: Node) -> void:
 	var player: Node = _multiplayer_controller.get_player_by_peer_id(peer_id, local_player)
 	if is_instance_valid(player) and "_painting_system" in player and player._painting_system:
-		# For network players, tween the TP mesh to zero then drop
-		if not player.is_local:
-			var tp_mesh: MeshInstance3D = player._painting_system._carry_mesh_tp
-			if is_instance_valid(tp_mesh) and tp_mesh.visible:
-				var tween: Tween = player.create_tween()
-				tween.tween_property(tp_mesh, "scale", Vector3.ZERO, 0.5)
-				tween.tween_callback(player._painting_system.execute_drop)
-				return
 		player._painting_system.execute_drop()
+
+
+func apply_eat_anim_start(peer_id: int, local_player: Node) -> void:
+	var player: Node = _multiplayer_controller.get_player_by_peer_id(peer_id, local_player)
+	if is_instance_valid(player) and "_painting_system" in player and player._painting_system:
+		player._painting_system.start_eat_tween()
+
+
+func apply_eat_anim_cancel(peer_id: int, local_player: Node) -> void:
+	var player: Node = _multiplayer_controller.get_player_by_peer_id(peer_id, local_player)
+	if is_instance_valid(player) and "_painting_system" in player and player._painting_system:
+		player._painting_system.cancel_eat_tween()
 
 
 func _execute_eat_local(exhibit_title: String, image_title: String, local_player: Node) -> void:

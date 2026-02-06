@@ -125,5 +125,5 @@ func init(item_data: Dictionary) -> void:
 		_start_animate()
 	else:
 		return
-	_item.position = Vector3(0, 0, 0.07)
+	_item.position = Vector3(0, 0, 0.1)
 	_item_node.add_child(_item)

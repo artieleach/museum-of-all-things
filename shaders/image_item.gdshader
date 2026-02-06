@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode cull_disabled;
 
 uniform vec3 background : source_color;
 uniform sampler2D texture_albedo : hint_default_white, filter_linear_mipmap_anisotropic;

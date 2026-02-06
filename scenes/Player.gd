@@ -86,6 +86,8 @@ func _ready() -> void:
 	_painting_system.steal_requested.connect(_on_steal_requested)
 	_painting_system.place_requested.connect(_on_place_requested)
 	_painting_system.eat_requested.connect(_on_eat_requested)
+	_painting_system.eat_anim_started.connect(_on_eat_anim_started)
+	_painting_system.eat_anim_cancelled.connect(_on_eat_anim_cancelled)
 	add_child(_painting_system)
 
 
@@ -497,6 +499,18 @@ func _on_eat_requested(exhibit_title: String, image_title: String) -> void:
 	var main_node: Node = get_tree().current_scene
 	if main_node and main_node.has_method("_request_eat_painting"):
 		main_node._request_eat_painting(exhibit_title, image_title)
+
+
+func _on_eat_anim_started() -> void:
+	var main_node: Node = get_tree().current_scene
+	if main_node and main_node.has_method("_broadcast_eat_anim_start"):
+		main_node._broadcast_eat_anim_start()
+
+
+func _on_eat_anim_cancelled() -> void:
+	var main_node: Node = get_tree().current_scene
+	if main_node and main_node.has_method("_broadcast_eat_anim_cancel"):
+		main_node._broadcast_eat_anim_cancel()
 
 
 func execute_steal_painting(texture: Texture2D, url: String, title: String, exhibit_title: String, size: Vector2) -> void:

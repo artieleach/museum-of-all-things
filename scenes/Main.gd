@@ -274,9 +274,12 @@ func _save_skin_preference(url: String) -> void:
 	SettingsManager.save_settings("player", player_settings)
 
 
+const _SKIN_EQUIP_SOUND: AudioStream = preload("res://assets/sound/UI/UI Crystal 1.ogg")
+
 func _on_skin_selected(url: String, _texture: ImageTexture) -> void:
 	NetworkManager.set_local_player_skin(url)
 	_save_skin_preference(url)
+	UISoundManager._play(_SKIN_EQUIP_SOUND)
 	_debug_log("Main: Skin selected: " + url)
 
 
@@ -466,6 +469,18 @@ func _request_eat_painting(exhibit_title: String, image_title: String) -> void:
 	_painting_controller.request_eat(exhibit_title, image_title, _player)
 
 
+func _broadcast_eat_anim_start() -> void:
+	if _multiplayer_controller.is_multiplayer_game() and NetworkManager.is_multiplayer_active():
+		var peer_id: int = NetworkManager.get_unique_id()
+		_eat_anim_start_sync.rpc(peer_id)
+
+
+func _broadcast_eat_anim_cancel() -> void:
+	if _multiplayer_controller.is_multiplayer_game() and NetworkManager.is_multiplayer_active():
+		var peer_id: int = NetworkManager.get_unique_id()
+		_eat_anim_cancel_sync.rpc(peer_id)
+
+
 # =============================================================================
 # MULTIPLAYER RPCS
 # =============================================================================
@@ -541,3 +556,13 @@ func _execute_place_sync(peer_id: int, exhibit_title: String, image_title: Strin
 @rpc("authority", "call_local", "reliable")
 func _execute_eat_sync(peer_id: int) -> void:
 	_painting_controller.execute_eat_sync(peer_id, _player)
+
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _eat_anim_start_sync(peer_id: int) -> void:
+	_painting_controller.apply_eat_anim_start(peer_id, _player)
+
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _eat_anim_cancel_sync(peer_id: int) -> void:
+	_painting_controller.apply_eat_anim_cancel(peer_id, _player)

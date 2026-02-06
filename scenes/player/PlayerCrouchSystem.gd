@@ -30,7 +30,7 @@ func init(player: CharacterBody3D) -> void:
 	if _player.has_node("Pivot"):
 		_pivot = _player.get_node("Pivot")
 		_starting_height = _pivot.position.y
-		_crouching_height = _starting_height / 3
+		_crouching_height = _starting_height * 0.6
 		_crouch_speed = (_starting_height - _crouching_height) / _crouch_time
 
 	# Store starting values for crouch body scaling

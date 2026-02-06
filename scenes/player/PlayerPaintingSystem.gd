@@ -5,10 +5,17 @@ class_name PlayerPaintingSystem
 signal steal_requested(exhibit_title: String, image_title: String, image_url: String, image_size: Vector2)
 signal place_requested(exhibit_title: String, image_title: String, image_url: String, wall_position: Vector3, wall_normal: Vector3, image_size: Vector2)
 signal eat_requested(exhibit_title: String, image_title: String)
+signal eat_anim_started
+signal eat_anim_cancelled
 
 const EAT_DURATION: float = 1.0
 const CARRY_FP_POSITION: Vector3 = Vector3(0.4, -0.3, -0.6)
 const CARRY_TP_POSITION: Vector3 = Vector3(0.0, 0.1, -0.5)
+const EAT_FP_TARGET: Vector3 = Vector3(0.0, 0.5, -0.3)
+const EAT_TP_TARGET: Vector3 = Vector3(0.0, 0.1, 0.0)
+const EAT_ROTATE_FRACTION: float = 0.3  # First 30% of eat is the rotation phase
+const CARRY_ROTATION: Vector3 = Vector3(90, 0, 0)
+const EAT_ROTATION: Vector3 = Vector3(0, 0, 0)  # Parallel with floor
 const PLACE_RAY_LENGTH: float = 4.0
 
 var _player: CharacterBody3D = null
@@ -25,6 +32,7 @@ var _carried_image_size: Vector2 = Vector2.ZERO
 # Eat state
 var _eat_progress: float = 0.0
 var _eating: bool = false
+var _eat_tween: Tween = null
 
 # Carry meshes
 var _carry_mesh_fp: MeshInstance3D = null  # First-person, child of Camera3D
@@ -192,10 +200,15 @@ func execute_drop() -> void:
 	_carried_image_size = Vector2.ZERO
 	_eat_progress = 0.0
 	_eating = false
+	if _eat_tween and _eat_tween.is_valid():
+		_eat_tween.kill()
+	_eat_tween = null
 	_carry_mesh_fp.visible = false
 	_carry_mesh_tp.visible = false
 	_carry_mesh_fp.position = CARRY_FP_POSITION
-	_carry_mesh_fp.scale = Vector3.ONE
+	_carry_mesh_fp.rotation_degrees = CARRY_ROTATION
+	_carry_mesh_tp.position = CARRY_TP_POSITION
+	_carry_mesh_tp.rotation_degrees = CARRY_ROTATION
 
 
 func process_eat(delta: float) -> void:
@@ -203,13 +216,21 @@ func process_eat(delta: float) -> void:
 		return
 
 	if Input.is_action_pressed("interact") and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		_eating = true
+		if not _eating:
+			_eating = true
+			emit_signal("eat_anim_started")
 		_eat_progress += delta / EAT_DURATION
 
-		# Lerp FP mesh toward face and shrink
 		var t: float = clamp(_eat_progress, 0.0, 1.0)
-		_carry_mesh_fp.position = CARRY_FP_POSITION.lerp(Vector3(0, 0, -0.1), t)
-		_carry_mesh_fp.scale = Vector3.ONE * (1.0 - t)
+		if t <= EAT_ROTATE_FRACTION:
+			# Phase 1: rotate painting parallel with floor
+			var rot_t: float = t / EAT_ROTATE_FRACTION
+			_carry_mesh_fp.rotation_degrees = CARRY_ROTATION.lerp(EAT_ROTATION, rot_t)
+		else:
+			# Phase 2: slide into head
+			_carry_mesh_fp.rotation_degrees = EAT_ROTATION
+			var slide_t: float = (t - EAT_ROTATE_FRACTION) / (1.0 - EAT_ROTATE_FRACTION)
+			_carry_mesh_fp.position = CARRY_FP_POSITION.lerp(EAT_FP_TARGET, slide_t)
 
 		if _eat_progress >= 1.0:
 			emit_signal("eat_requested", _carried_exhibit_title, _carried_image_title)
@@ -219,11 +240,32 @@ func process_eat(delta: float) -> void:
 		_eating = false
 		_eat_progress = 0.0
 		_carry_mesh_fp.position = CARRY_FP_POSITION
-		_carry_mesh_fp.scale = Vector3.ONE
+		_carry_mesh_fp.rotation_degrees = CARRY_ROTATION
+		emit_signal("eat_anim_cancelled")
 
 
 func show_tp_mesh(is_visible: bool) -> void:
 	_carry_mesh_tp.visible = is_visible
+
+
+func start_eat_tween() -> void:
+	if _eat_tween and _eat_tween.is_valid():
+		_eat_tween.kill()
+	_carry_mesh_tp.position = CARRY_TP_POSITION
+	_carry_mesh_tp.rotation_degrees = CARRY_ROTATION
+	var rotate_time: float = EAT_DURATION * EAT_ROTATE_FRACTION
+	var slide_time: float = EAT_DURATION * (1.0 - EAT_ROTATE_FRACTION)
+	_eat_tween = _player.create_tween()
+	_eat_tween.tween_property(_carry_mesh_tp, "rotation_degrees", EAT_ROTATION, rotate_time)
+	_eat_tween.tween_property(_carry_mesh_tp, "position", EAT_TP_TARGET, slide_time)
+
+
+func cancel_eat_tween() -> void:
+	if _eat_tween and _eat_tween.is_valid():
+		_eat_tween.kill()
+	_eat_tween = null
+	_carry_mesh_tp.position = CARRY_TP_POSITION
+	_carry_mesh_tp.rotation_degrees = CARRY_ROTATION
 
 
 func get_carried_image_url() -> String:
