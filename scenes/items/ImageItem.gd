@@ -80,8 +80,7 @@ func _update_collision_shape(width: float, height: float) -> void:
 			box_shape.size = Vector3(width, height, 0.1)
 
 func interact() -> void:
-	if _image and image_url:
-		MultiplayerEvents.emit_skin_selected(image_url, _image)
+	pass
 
 func set_stolen(stolen: bool) -> void:
 	is_stolen = stolen
