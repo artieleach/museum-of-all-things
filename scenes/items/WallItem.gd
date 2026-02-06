@@ -76,6 +76,28 @@ func _on_image_item_loaded() -> void:
 	_frame.position.z = 0
 	_start_animate()
 
+func get_image_item() -> Node:
+	if _item and "image_url" in _item:
+		return _item
+	return null
+
+
+func get_image_title() -> String:
+	if _item and "title" in _item:
+		return _item.title
+	return ""
+
+
+func set_stolen(stolen: bool) -> void:
+	if _item and _item.has_method("set_stolen"):
+		_item.set_stolen(stolen)
+	# Also hide/show the frame and light
+	if _frame:
+		_frame.visible = not stolen
+	if _light and not Platform.is_compatibility_renderer():
+		_light.visible = not stolen
+
+
 func init(item_data: Dictionary) -> void:
 	if item_data.has("material"):
 		if item_data.material == "marble":

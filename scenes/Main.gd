@@ -17,6 +17,7 @@ var _fps_update_timer: float = 0.0
 var _menu_controller: MainMenuController = null
 var _multiplayer_controller: MultiplayerController = null
 var _mount_controller: MountController = null
+var _painting_controller: PaintingController = null
 
 @onready var player_list_overlay: Control = $TabMenu/PlayerListOverlay
 @onready var game_started: bool = false
@@ -59,6 +60,10 @@ func _ready() -> void:
 	_mount_controller = MountController.new()
 	_mount_controller.init(self, _multiplayer_controller)
 	add_child(_mount_controller)
+
+	_painting_controller = PaintingController.new()
+	_painting_controller.init(self, _multiplayer_controller)
+	add_child(_painting_controller)
 
 	_parse_command_line()
 
@@ -395,6 +400,8 @@ func _on_network_peer_connected(peer_id: int) -> void:
 
 
 func _on_network_peer_disconnected(peer_id: int) -> void:
+	if _painting_controller:
+		_painting_controller.on_player_disconnected(peer_id, _player)
 	_multiplayer_controller.remove_network_player(peer_id, _player, _mount_controller.get_mount_state())
 
 
@@ -445,6 +452,21 @@ func _request_dismount() -> void:
 
 
 # =============================================================================
+# PAINTING SYSTEM
+# =============================================================================
+func _request_steal_painting(exhibit_title: String, image_title: String, image_url: String, image_size: Vector2) -> void:
+	_painting_controller.request_steal(exhibit_title, image_title, image_url, image_size, _player)
+
+
+func _request_place_painting(exhibit_title: String, image_title: String, image_url: String, wall_position: Vector3, wall_normal: Vector3, image_size: Vector2) -> void:
+	_painting_controller.request_place(exhibit_title, image_title, image_url, wall_position, wall_normal, image_size, _player)
+
+
+func _request_eat_painting(exhibit_title: String, image_title: String) -> void:
+	_painting_controller.request_eat(exhibit_title, image_title, _player)
+
+
+# =============================================================================
 # MULTIPLAYER RPCS
 # =============================================================================
 @rpc("authority", "call_remote", "reliable")
@@ -485,3 +507,37 @@ func _execute_mount_sync(rider_peer_id: int, mount_peer_id: int) -> void:
 @rpc("authority", "call_local", "reliable")
 func _execute_dismount_sync(rider_peer_id: int) -> void:
 	_mount_controller.execute_dismount_sync(rider_peer_id, _player)
+
+
+# Painting RPCs
+@rpc("any_peer", "call_remote", "reliable")
+func _request_steal_painting_rpc(peer_id: int, exhibit_title: String, image_title: String, image_url: String, image_size: Vector2) -> void:
+	if NetworkManager.is_server():
+		_painting_controller.handle_steal_request(peer_id, exhibit_title, image_title, image_url, image_size, _player)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_place_painting_rpc(peer_id: int, exhibit_title: String, image_title: String, image_url: String, wall_position: Vector3, wall_normal: Vector3, image_size: Vector2) -> void:
+	if NetworkManager.is_server():
+		_painting_controller.handle_place_request(peer_id, exhibit_title, image_title, image_url, wall_position, wall_normal, image_size, _player)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_eat_painting_rpc(peer_id: int, exhibit_title: String, image_title: String) -> void:
+	if NetworkManager.is_server():
+		_painting_controller.handle_eat_request(peer_id, exhibit_title, image_title, _player)
+
+
+@rpc("authority", "call_local", "reliable")
+func _execute_steal_sync(peer_id: int, exhibit_title: String, image_title: String, image_url: String, image_size: Vector2) -> void:
+	_painting_controller.execute_steal_sync(peer_id, exhibit_title, image_title, image_url, image_size, _player)
+
+
+@rpc("authority", "call_local", "reliable")
+func _execute_place_sync(peer_id: int, exhibit_title: String, image_title: String, image_url: String, wall_position: Vector3, wall_normal: Vector3, image_size: Vector2) -> void:
+	_painting_controller.execute_place_sync(peer_id, exhibit_title, image_title, image_url, wall_position, wall_normal, image_size, _player)
+
+
+@rpc("authority", "call_local", "reliable")
+func _execute_eat_sync(peer_id: int) -> void:
+	_painting_controller.execute_eat_sync(peer_id, _player)

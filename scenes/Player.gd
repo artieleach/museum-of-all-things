@@ -46,6 +46,7 @@ var _has_network_target: bool = false
 var _crouch_system: PlayerCrouchSystem = null
 var _mount_system: PlayerMountSystem = null
 var _skin_system: PlayerSkinSystem = null
+var _painting_system: PlayerPaintingSystem = null
 
 @onready var camera: Camera3D = $Pivot/Camera3D
 @onready var _pivot: Node3D = $Pivot
@@ -80,6 +81,13 @@ func _ready() -> void:
 	_skin_system.init(self)
 	add_child(_skin_system)
 
+	_painting_system = PlayerPaintingSystem.new()
+	_painting_system.init(self)
+	_painting_system.steal_requested.connect(_on_steal_requested)
+	_painting_system.place_requested.connect(_on_place_requested)
+	_painting_system.eat_requested.connect(_on_eat_requested)
+	add_child(_painting_system)
+
 
 # =============================================================================
 # PUBLIC API - Facade methods that delegate to subsystems
@@ -100,6 +108,10 @@ var mount_peer_id: int:
 # Skin API (delegates to PlayerSkinSystem)
 var skin_url: String:
 	get: return _skin_system.get_skin_url() if _skin_system else ""
+
+# Painting API (delegates to PlayerPaintingSystem)
+var is_carrying_painting: bool:
+	get: return _painting_system.is_carrying() if _painting_system else false
 
 # Crouch API (delegates to PlayerCrouchSystem)
 var starting_height: float:
@@ -132,21 +144,28 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _enabled or not is_local:
 		return
 
-	# Mount/dismount handling
+	# Mount/dismount/steal/place handling (E key)
 	if event.is_action_pressed("mount") and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		if _mount_system.is_mounted():
+		if _painting_system and _painting_system.is_carrying():
+			_painting_system.try_place_painting()
+		elif _mount_system.is_mounted():
 			request_dismount()
+		elif _painting_system and _painting_system.try_steal_target():
+			pass  # Steal initiated
 		else:
 			_mount_system.try_mount_target()
 
-	# Interact handling (equip skin, etc.)
+	# Interact handling (equip skin, etc.) — skip if carrying a painting (right-click is eat)
 	if event.is_action_pressed("interact") and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		var collider: Node = _raycast.get_collider()
-		if collider:
-			if collider.has_method("interact"):
-				collider.interact()
-			elif collider.get_parent() and collider.get_parent().has_method("interact"):
-				collider.get_parent().interact()
+		if _painting_system and _painting_system.is_carrying():
+			pass  # Eat is handled in _process via process_eat()
+		else:
+			var collider: Node = _raycast.get_collider()
+			if collider:
+				if collider.has_method("interact"):
+					collider.interact()
+				elif collider.get_parent() and collider.get_parent().has_method("interact"):
+					collider.get_parent().interact()
 
 	var is_mouse: bool = event is InputEventMouseMotion
 	if is_mouse and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -233,7 +252,11 @@ func _physics_process(delta: float) -> void:
 	# Process crouch input
 	_crouch_system.process_crouch(delta)
 
-	if Input.is_action_just_pressed("reset_skin"): 
+	# Process painting eat
+	if _painting_system:
+		_painting_system.process_eat(delta)
+
+	if Input.is_action_just_pressed("reset_skin"):
 		MultiplayerEvents.emit_skin_reset()
 
 
@@ -452,3 +475,35 @@ func _get_crouch_factor() -> float:
 func _update_crouch_body() -> void:
 	if _crouch_system:
 		_crouch_system.update_crouch_body()
+
+
+# =============================================================================
+# PAINTING SYSTEM DELEGATION
+# =============================================================================
+
+func _on_steal_requested(exhibit_title: String, image_title: String, image_url: String, image_size: Vector2) -> void:
+	var main_node: Node = get_tree().current_scene
+	if main_node and main_node.has_method("_request_steal_painting"):
+		main_node._request_steal_painting(exhibit_title, image_title, image_url, image_size)
+
+
+func _on_place_requested(exhibit_title: String, image_title: String, image_url: String, wall_position: Vector3, wall_normal: Vector3, image_size: Vector2) -> void:
+	var main_node: Node = get_tree().current_scene
+	if main_node and main_node.has_method("_request_place_painting"):
+		main_node._request_place_painting(exhibit_title, image_title, image_url, wall_position, wall_normal, image_size)
+
+
+func _on_eat_requested(exhibit_title: String, image_title: String) -> void:
+	var main_node: Node = get_tree().current_scene
+	if main_node and main_node.has_method("_request_eat_painting"):
+		main_node._request_eat_painting(exhibit_title, image_title)
+
+
+func execute_steal_painting(texture: Texture2D, url: String, title: String, exhibit_title: String, size: Vector2) -> void:
+	if _painting_system:
+		_painting_system.execute_steal(texture, url, title, exhibit_title, size)
+
+
+func execute_drop_painting() -> void:
+	if _painting_system:
+		_painting_system.execute_drop()

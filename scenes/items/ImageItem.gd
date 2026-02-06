@@ -7,6 +7,7 @@ var _image: Texture2D
 var text: String
 var title: String
 var plate_style: String
+var is_stolen: bool = false
 
 var plate_margin: float = 0.05
 var max_text_height: float = 0.5
@@ -81,6 +82,13 @@ func _update_collision_shape(width: float, height: float) -> void:
 func interact() -> void:
 	if _image and image_url:
 		MultiplayerEvents.emit_skin_selected(image_url, _image)
+
+func set_stolen(stolen: bool) -> void:
+	is_stolen = stolen
+	visible = not stolen
+	if has_node("InteractionBody/CollisionShape3D"):
+		$InteractionBody/CollisionShape3D.disabled = stolen
+
 
 func _on_pointer_event(event: Variant) -> void:
 	if event.event_type == "click" or (event.has("pressed") and event.pressed):
