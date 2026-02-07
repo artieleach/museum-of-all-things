@@ -21,6 +21,7 @@ var _painting_controller: PaintingController = null
 
 @onready var player_list_overlay: Control = $TabMenu/PlayerListOverlay
 @onready var _server_console_overlay: Control = $TabMenu/ServerConsoleOverlay
+@onready var _map_overlay: Control = $TabMenu/ExhibitMapOverlay
 @onready var game_started: bool = false
 
 
@@ -136,6 +137,7 @@ func _start_game() -> void:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_player.start()
 	_menu_controller.close_menus()
+	_map_overlay.restore_after_pause()
 	if not game_started:
 		game_started = true
 		$Museum.init(_player)
@@ -220,7 +222,11 @@ func _input(event: InputEvent) -> void:
 		if _multiplayer_controller.is_multiplayer_game():
 			_server_console_overlay.toggle()
 
+	if event.is_action_pressed("toggle_map") and not $CanvasLayer.visible:
+		_map_overlay.cycle_mode()
+
 	if event.is_action_pressed("pause"):
+		_map_overlay.set_hidden()
 		_pause_game()
 
 	if event.is_action_pressed("free_pointer"):

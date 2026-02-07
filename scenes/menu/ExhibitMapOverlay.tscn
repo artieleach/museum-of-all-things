@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://cp2i85wd6xow4"]
+
+[ext_resource type="Script" uid="uid://b3qmxmll0fsvi" path="res://scenes/menu/ExhibitMapOverlay.gd" id="1_mapovly"]
+
+[node name="ExhibitMapOverlay" type="Control" unique_id=999884490]
+clip_contents = true
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_mapovly")

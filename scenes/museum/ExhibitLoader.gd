@@ -233,12 +233,16 @@ func _on_exit_added_no_hall(exit: Hall, doors: Array, new_exhibit: Node3D) -> vo
 	## Simplified exit handler for rider_load case without a source hall.
 	var linked_exhibit: String = Util.coalesce(doors.pop_front(), "")
 	exit.to_title = linked_exhibit
+	if linked_exhibit != "":
+		ExhibitGraph.add_edge(new_exhibit.title, linked_exhibit)
 	exit.loader.body_entered.connect(_museum._on_loader_body_entered.bind(exit))
 
 
 func _on_exit_added(exit: Hall, doors: Array, backlink: bool, new_exhibit: Node3D, hall: Hall) -> void:
 	var linked_exhibit: String = Util.coalesce(doors.pop_front(), "")
 	exit.to_title = linked_exhibit
+	if linked_exhibit != "":
+		ExhibitGraph.add_edge(new_exhibit.title, linked_exhibit)
 	exit.loader.body_entered.connect(_museum._on_loader_body_entered.bind(exit))
 	if is_instance_valid(hall) and backlink and exit.to_title == hall.to_title:
 		link_halls(hall, exit)

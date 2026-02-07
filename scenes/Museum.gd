@@ -225,6 +225,7 @@ func _set_up_lobby(lobby: Node) -> void:
 			wing_indices[wing.name] += 1
 			if wing_indices[wing.name] < wing.exhibits.size():
 				exit.to_title = wing.exhibits[wing_indices[wing.name]]
+				ExhibitGraph.add_edge("$Lobby", exit.to_title)
 
 		elif not _custom_door:
 			_custom_door = exit
@@ -250,6 +251,7 @@ func _on_change_language(_lang: String = "") -> void:
 		for exhibit: String in _exhibit_loader.get_exhibits().keys():
 			if exhibit != "$Lobby":
 				_exhibit_loader.erase_exhibit(exhibit)
+		ExhibitGraph.reset()
 		StaticData = ResourceLoader.load(_LOBBY_DATA_PATH, "", ResourceLoader.CACHE_MODE_IGNORE)
 		_set_up_lobby($Lobby)
 
@@ -262,6 +264,10 @@ func get_current_room() -> String:
 
 
 func reset_to_lobby() -> void:
+	ExhibitGraph.reset()
+	for exit: Hall in $Lobby.exits:
+		if exit.to_title != "" and exit.to_title != "$Lobby":
+			ExhibitGraph.add_edge("$Lobby", exit.to_title)
 	_set_current_room_title("$Lobby")
 	# All exhibits stay visible - room filtering is handled by player visibility instead
 	var exhibits: Dictionary = _exhibit_loader.get_exhibits()
