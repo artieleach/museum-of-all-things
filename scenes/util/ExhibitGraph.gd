@@ -15,6 +15,7 @@ var _current_room: String = "$Lobby"
 
 func _ready() -> void:
 	SettingsEvents.set_current_room.connect(_on_room_changed)
+	NetworkManager.peer_connected.connect(_sync_graph_to_peer)
 	reset()
 
 
@@ -54,6 +55,52 @@ func add_edge(from: String, to: String) -> void:
 
 	_layout_dirty = true
 	graph_changed.emit()
+
+	if NetworkManager.is_multiplayer_active():
+		_broadcast_edge.rpc(from, to)
+
+
+func add_edge_from_network(from: String, to: String) -> void:
+	## Adds an edge locally without re-broadcasting. Used by network RPCs.
+	var key: String = from + "|" + to
+	if _edge_set.has(key):
+		return
+
+	_edge_set[key] = true
+	_edges.append([from, to])
+
+	if not _nodes.has(from):
+		_nodes[from] = { "visited": false }
+		_layout_dirty = true
+	if not _nodes.has(to):
+		_nodes[to] = { "visited": false }
+		_layout_dirty = true
+
+	_layout_dirty = true
+	graph_changed.emit()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _broadcast_edge(from: String, to: String) -> void:
+	add_edge_from_network(from, to)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _receive_bulk_edges(edges_packed: PackedStringArray) -> void:
+	## Receives a flat array of [from1, to1, from2, to2, ...] pairs.
+	for i: int in range(0, edges_packed.size() - 1, 2):
+		add_edge_from_network(edges_packed[i], edges_packed[i + 1])
+
+
+func _sync_graph_to_peer(peer_id: int) -> void:
+	## Sends all current edges to a newly connected peer.
+	if _edges.is_empty():
+		return
+	var packed := PackedStringArray()
+	for edge: Array in _edges:
+		packed.append(edge[0])
+		packed.append(edge[1])
+	_receive_bulk_edges.rpc_id(peer_id, packed)
 
 
 func get_current_room() -> String:

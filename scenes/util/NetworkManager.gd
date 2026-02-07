@@ -176,6 +176,10 @@ func _on_peer_connected(id: int) -> void:
 	# Send our info to the new peer (skip for dedicated servers)
 	if not is_dedicated_server:
 		_receive_player_info.rpc_id(id, multiplayer.get_unique_id(), local_player_name, local_player_color.to_html(), local_player_skin)
+		# Also send our current room so the new peer knows where we are
+		var my_id := multiplayer.get_unique_id()
+		var my_room := get_player_room(my_id)
+		_broadcast_player_room.rpc_id(id, my_id, my_room)
 
 	# If we're the server, send all existing player info to the new peer
 	if is_server():
@@ -185,6 +189,9 @@ func _on_peer_connected(id: int) -> void:
 				var color_html = info.color.to_html() if info.has("color") else Color(0.2, 0.5, 0.8, 1.0).to_html()
 				var skin = info.skin_url if info.has("skin_url") else ""
 				_receive_player_info.rpc_id(id, existing_id, info.name, color_html, skin)
+				# Also send each existing player's current room
+				var room: String = info.current_room if info.has("current_room") else "$Lobby"
+				_broadcast_player_room.rpc_id(id, existing_id, room)
 
 	emit_signal("peer_connected", id)
 
