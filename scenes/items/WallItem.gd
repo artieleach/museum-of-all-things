@@ -91,11 +91,6 @@ func get_image_title() -> String:
 func set_stolen(stolen: bool) -> void:
 	if _item and _item.has_method("set_stolen"):
 		_item.set_stolen(stolen)
-	# Also hide/show the frame and light
-	if _frame:
-		_frame.visible = not stolen
-	if _light and not Platform.is_compatibility_renderer():
-		_light.visible = not stolen
 
 
 func init(item_data: Dictionary) -> void:

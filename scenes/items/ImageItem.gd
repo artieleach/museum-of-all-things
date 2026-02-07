@@ -84,7 +84,7 @@ func interact() -> void:
 
 func set_stolen(stolen: bool) -> void:
 	is_stolen = stolen
-	visible = not stolen
+	layers = 0 if stolen else 1
 	if has_node("InteractionBody/CollisionShape3D"):
 		$InteractionBody/CollisionShape3D.disabled = stolen
 

@@ -168,6 +168,13 @@ func _apply_place(peer_id: int, exhibit_title: String, image_title: String, imag
 		texture = player._painting_system._carried_texture
 		player._painting_system.execute_drop()
 
+	# Snap back to original WallItem if placing nearby
+	var original_wall_item: Node = _find_wall_item_by_image_title(exhibit_title, image_title)
+	if original_wall_item and is_instance_valid(original_wall_item):
+		if original_wall_item.global_position.distance_to(wall_position) < 2.0:
+			original_wall_item.set_stolen(false)
+			return
+
 	_create_placed_painting(wall_position, wall_normal, image_size, texture, exhibit_title, image_title, image_url)
 
 
@@ -182,10 +189,17 @@ func _execute_place_local(exhibit_title: String, image_title: String, image_url:
 		_stolen_paintings.erase(painting_key)
 		_carry_state.erase(0)
 
-	_create_placed_painting(wall_position, wall_normal, image_size, texture, exhibit_title, image_title, image_url)
-
 	if "_painting_system" in local_player and local_player._painting_system:
 		local_player._painting_system.execute_drop()
+
+	# Snap back to original WallItem if placing nearby
+	var original_wall_item: Node = _find_wall_item_by_image_title(exhibit_title, image_title)
+	if original_wall_item and is_instance_valid(original_wall_item):
+		if original_wall_item.global_position.distance_to(wall_position) < 2.0:
+			original_wall_item.set_stolen(false)
+			return
+
+	_create_placed_painting(wall_position, wall_normal, image_size, texture, exhibit_title, image_title, image_url)
 
 
 func _create_placed_painting(wall_position: Vector3, wall_normal: Vector3, image_size: Vector2, texture: Texture2D, exhibit_title: String, image_title: String, image_url: String) -> void:
@@ -238,8 +252,7 @@ func _create_placed_painting(wall_position: Vector3, wall_normal: Vector3, image
 		frame.scale.x *= aspect
 	# Rotate frame so it faces +Y (wall normal) instead of its default +Z
 	frame.rotation_degrees = Vector3(-90, 0, 0)
-	# Position frame slightly in front of the painting surface (local +Y = wall normal)
-	frame.position = Vector3(0, 0.03, 0)
+	frame.position = Vector3.ZERO
 	painting.add_child(frame)
 
 	# Store metadata for re-stealing
@@ -264,7 +277,7 @@ func _create_placed_painting(wall_position: Vector3, wall_normal: Vector3, image
 	_placed_paintings.append(painting)
 
 	# Position off the wall enough for the frame to clear
-	painting.global_position = wall_position + wall_normal * 0.06
+	painting.global_position = wall_position + wall_normal * 0.13
 
 	# Orient so PlaneMesh lies flat against wall (PlaneMesh face normal is +Y)
 	var y_axis: Vector3 = wall_normal
