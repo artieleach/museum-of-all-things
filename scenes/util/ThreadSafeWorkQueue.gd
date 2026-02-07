@@ -4,7 +4,7 @@ var QUEUE_WAIT_TIMEOUT_MS = 50
 var DEFAULT_FRAME_PACING = 9
 var _global_queue_lock = Mutex.new()
 var _current_exhibit_lock = Mutex.new()
-var _current_exhibit = "$Lobby"
+var _current_exhibit = "Lobby"
 var _quitting = false
 var _queue_map = {}
 

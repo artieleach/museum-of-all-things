@@ -159,7 +159,7 @@ func process_position_sync(delta: float, local_player: Node) -> bool:
 	return false
 
 
-func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node, current_room: String = "$Lobby") -> void:
+func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node, current_room: String = "Lobby") -> void:
 	# Update room in player_info
 	if NetworkManager.player_info.has(peer_id):
 		NetworkManager.player_info[peer_id].current_room = current_room
@@ -178,7 +178,7 @@ func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_
 					local_riding_this_player = true
 					# Only sync room if the exhibit exists on this client (or it's the lobby)
 					if "current_room" in local_player and local_player.current_room != current_room:
-						var can_transition: bool = current_room == "$Lobby"
+						var can_transition: bool = current_room == "Lobby"
 						if not can_transition and _main and _main.has_node("Museum"):
 							var museum: Node = _main.get_node("Museum")
 							if museum.has_method("has_exhibit"):
@@ -187,7 +187,7 @@ func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_
 							local_player.current_room = current_room
 
 			# Check if player is in the same room before showing
-			var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "$Lobby"
+			var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "Lobby"
 
 			# For mounted players, also check mount's room in case of sync timing issues
 			var effective_room: String = current_room
@@ -238,7 +238,7 @@ func _update_player_visibility(peer_id: int) -> void:
 			if mount_room != "":
 				remote_room = mount_room
 
-	var local_room: String = "$Lobby"
+	var local_room: String = "Lobby"
 	if _main and _main.has_method("get_local_player"):
 		var local_player: Node = _main.get_local_player()
 		if local_player and "current_room" in local_player:
@@ -248,7 +248,7 @@ func _update_player_visibility(peer_id: int) -> void:
 
 
 func update_all_player_visibility(local_player: Node) -> void:
-	var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "$Lobby"
+	var local_room: String = local_player.current_room if local_player and "current_room" in local_player else "Lobby"
 	for peer_id: int in _network_players:
 		var net_player: Node = _network_players[peer_id]
 		if is_instance_valid(net_player):

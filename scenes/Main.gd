@@ -257,7 +257,7 @@ func _process(delta: float) -> void:
 		var is_mounted: bool = _player._is_mounted
 		var mounted_peer_id: int = _player.mount_peer_id
 		# If mounted, use mount's room to stay synced during room transitions
-		var current_room: String = "$Lobby"
+		var current_room: String = "Lobby"
 		if is_mounted and is_instance_valid(_player.mounted_on) and "current_room" in _player.mounted_on:
 			current_room = _player.mounted_on.current_room
 		elif "current_room" in _player:
@@ -515,7 +515,7 @@ func _sync_exhibit_to_peer(exhibit_title: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1, current_room: String = "$Lobby") -> void:
+func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1, current_room: String = "Lobby") -> void:
 	_multiplayer_controller.apply_network_position(peer_id, pos, rot_y, pivot_rot_x, pivot_pos_y, is_mounted, mounted_peer_id, _player, current_room)
 
 

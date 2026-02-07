@@ -81,7 +81,7 @@ func _find_hall_for_transition(to_title: String, from_title: String, _backlink: 
 					return exit
 
 	# Check the lobby
-	if from_title == "$Lobby" and is_instance_valid(_museum.get_node_or_null("Lobby")):
+	if from_title == "Lobby" and is_instance_valid(_museum.get_node_or_null("Lobby")):
 		for exit: Hall in _museum.get_node("Lobby").exits:
 			if exit.to_title == to_title:
 				return exit
@@ -91,7 +91,7 @@ func _find_hall_for_transition(to_title: String, from_title: String, _backlink: 
 
 func sync_to_exhibit(exhibit_title: String) -> void:
 	# Called when a late-joining player needs to sync to the current exhibit
-	if exhibit_title == "$Lobby" or exhibit_title == _museum._current_room_title:
+	if exhibit_title == "Lobby" or exhibit_title == _museum._current_room_title:
 		return
 
 	Log.info("MuseumSync", "Syncing to exhibit %s" % exhibit_title)

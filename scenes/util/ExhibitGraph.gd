@@ -10,7 +10,7 @@ var _edge_set: Dictionary = {}  # "from|to" -> true for dedup
 var _visit_history: Array[String] = []
 var _layout: Dictionary = {}  # title -> Vector2 (cached radial positions)
 var _layout_dirty: bool = true
-var _current_room: String = "$Lobby"
+var _current_room: String = "Lobby"
 
 
 func _ready() -> void:
@@ -133,17 +133,17 @@ func reset() -> void:
 	_visit_history.clear()
 	_layout.clear()
 	_layout_dirty = true
-	_current_room = "$Lobby"
-	_nodes["$Lobby"] = { "visited": true }
-	_visit_history.append("$Lobby")
+	_current_room = "Lobby"
+	_nodes["Lobby"] = { "visited": true }
+	_visit_history.append("Lobby")
 	graph_changed.emit()
 
 
 func _recalculate_layout() -> void:
-	## BFS radial tree layout from $Lobby at center.
+	## BFS radial tree layout from Lobby at center.
 	_layout.clear()
 
-	if not _nodes.has("$Lobby"):
+	if not _nodes.has("Lobby"):
 		return
 
 	# Build adjacency list
@@ -158,13 +158,13 @@ func _recalculate_layout() -> void:
 		if adj.has(to):
 			adj[to].append(from)
 
-	# BFS from $Lobby
+	# BFS from Lobby
 	var visited: Dictionary = {}
-	var queue: Array = ["$Lobby"]
-	visited["$Lobby"] = true
+	var queue: Array = ["Lobby"]
+	visited["Lobby"] = true
 	var levels: Array = []  # Array of Arrays — each level is list of [title, parent]
 	var parent_map: Dictionary = {}  # title -> parent_title
-	parent_map["$Lobby"] = ""
+	parent_map["Lobby"] = ""
 
 	while not queue.is_empty():
 		var next_queue: Array = []
@@ -179,8 +179,8 @@ func _recalculate_layout() -> void:
 		levels.append(level)
 		queue = next_queue
 
-	# Place $Lobby at center
-	_layout["$Lobby"] = Vector2.ZERO
+	# Place Lobby at center
+	_layout["Lobby"] = Vector2.ZERO
 
 	if levels.size() <= 1:
 		return
@@ -201,12 +201,12 @@ func _recalculate_layout() -> void:
 	# Root gets full circle [0, TAU)
 	var angle_start: Dictionary = {}  # title -> start angle
 	var angle_span: Dictionary = {}  # title -> angular span
-	angle_start["$Lobby"] = 0.0
-	angle_span["$Lobby"] = TAU
+	angle_start["Lobby"] = 0.0
+	angle_span["Lobby"] = TAU
 
 	# Count total descendants for proportional arc allocation
 	var descendant_count: Dictionary = {}
-	_count_descendants("$Lobby", children_of, descendant_count)
+	_count_descendants("Lobby", children_of, descendant_count)
 
 	for level_idx: int in range(1, levels.size()):
 		for title: String in levels[level_idx]:

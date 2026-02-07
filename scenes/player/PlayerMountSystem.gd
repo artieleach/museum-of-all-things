@@ -80,7 +80,7 @@ func process_mount(delta: float) -> void:
 		if "current_room" in _player and "current_room" in mounted_on:
 			if _player.current_room != mounted_on.current_room:
 				var target_room: String = mounted_on.current_room
-				var can_sync: bool = target_room == "$Lobby"
+				var can_sync: bool = target_room == "Lobby"
 				var museum: Node = null
 				if not can_sync:
 					var main_node: Node = _player.get_tree().current_scene

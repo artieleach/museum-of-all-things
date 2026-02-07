@@ -27,7 +27,7 @@ var StaticData: Resource = preload("res://assets/resources/lobby_data.tres")
 # =============================================================================
 # PRIVATE STATE VARIABLES
 # =============================================================================
-var _current_room_title: String = "$Lobby"
+var _current_room_title: String = "Lobby"
 var _grid: GridMap = null
 var _player: Node = null
 var _custom_door: Hall = null
@@ -122,7 +122,7 @@ func _find_hall_for_room_transition(from_room: String, to_room: String) -> Hall:
 				if exit.to_title == to_room:
 					return exit
 
-	if from_room == "$Lobby" and has_node("Lobby"):
+	if from_room == "Lobby" and has_node("Lobby"):
 		for exit: Hall in $Lobby.exits:
 			if exit.to_title == to_room:
 				return exit
@@ -209,7 +209,7 @@ func _get_lobby_exit_zone(exit: Hall) -> Variant:
 
 func _set_up_lobby(lobby: Node) -> void:
 	var exits: Array = lobby.exits
-	_exhibit_loader.get_exhibits()["$Lobby"] = { "exhibit": lobby, "height": 0 }
+	_exhibit_loader.get_exhibits()["Lobby"] = { "exhibit": lobby, "height": 0 }
 
 	if OS.is_debug_build():
 		print("Setting up lobby with %s exits..." % exits.size())
@@ -225,7 +225,7 @@ func _set_up_lobby(lobby: Node) -> void:
 			wing_indices[wing.name] += 1
 			if wing_indices[wing.name] < wing.exhibits.size():
 				exit.to_title = wing.exhibits[wing_indices[wing.name]]
-				ExhibitGraph.add_edge("$Lobby", exit.to_title)
+				ExhibitGraph.add_edge("Lobby", exit.to_title)
 
 		elif not _custom_door:
 			_custom_door = exit
@@ -247,9 +247,9 @@ func _reset_custom_door(_title: String) -> void:
 
 
 func _on_change_language(_lang: String = "") -> void:
-	if _current_room_title == "$Lobby":
+	if _current_room_title == "Lobby":
 		for exhibit: String in _exhibit_loader.get_exhibits().keys():
-			if exhibit != "$Lobby":
+			if exhibit != "Lobby":
 				_exhibit_loader.erase_exhibit(exhibit)
 		ExhibitGraph.reset()
 		StaticData = ResourceLoader.load(_LOBBY_DATA_PATH, "", ResourceLoader.CACHE_MODE_IGNORE)
@@ -266,9 +266,9 @@ func get_current_room() -> String:
 func reset_to_lobby() -> void:
 	ExhibitGraph.reset()
 	for exit: Hall in $Lobby.exits:
-		if exit.to_title != "" and exit.to_title != "$Lobby":
-			ExhibitGraph.add_edge("$Lobby", exit.to_title)
-	_set_current_room_title("$Lobby")
+		if exit.to_title != "" and exit.to_title != "Lobby":
+			ExhibitGraph.add_edge("Lobby", exit.to_title)
+	_set_current_room_title("Lobby")
 	# All exhibits stay visible - room filtering is handled by player visibility instead
 	var exhibits: Dictionary = _exhibit_loader.get_exhibits()
 	for exhibit_key: String in exhibits:
@@ -276,7 +276,7 @@ func reset_to_lobby() -> void:
 
 
 func _set_current_room_title(title: String) -> void:
-	if title == "$Lobby":
+	if title == "Lobby":
 		_exhibit_loader.clear_backlink_map()
 
 	_current_room_title = title

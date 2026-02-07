@@ -62,7 +62,7 @@ func release_exhibit_height(height: int) -> void:
 func load_exhibit_from_entry(entry: Hall) -> void:
 	var prev_article: String = Util.coalesce(entry.from_title, "Fungus")
 
-	if entry.from_title == "$Lobby":
+	if entry.from_title == "Lobby":
 		_link_backlink_to_exit(_museum.get_node("Lobby"), entry)
 		return
 

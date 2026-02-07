@@ -25,7 +25,7 @@ var _joy_deadzone: float = 0.05
 
 var player_name: String = "Player"
 var _original_name: String = ""  # Stored when mounting to restore later
-var current_room: String = "$Lobby"
+var current_room: String = "Lobby"
 var in_hall: bool = false
 var _enabled: bool = false
 var _invert_y: bool = false

@@ -19,7 +19,7 @@ var entry: Hall = null
 
 func _ready() -> void:
 	GridManager.update_from_gridmap(_grid)
-	_rng.seed = hash("$Lobby")
+	_rng.seed = hash("Lobby")
 	for cell_pos: Vector3i in _grid.get_used_cells():
 		var c: Vector3 = Vector3(cell_pos)
 		if _grid.get_cell_item(c) == INTERNAL_HALL:
@@ -28,7 +28,7 @@ func _ready() -> void:
 				continue
 			var hall_instance: Hall = _hall_scene.instantiate()
 			add_child(hall_instance)
-			hall_instance.init(_grid, "$Lobby", "$Lobby", c, hall_dir, [true, _rng.randi_range(-1, 1)])
+			hall_instance.init(_grid, "Lobby", "Lobby", c, hall_dir, [true, _rng.randi_range(-1, 1)])
 			exits.append(hall_instance)
 
 

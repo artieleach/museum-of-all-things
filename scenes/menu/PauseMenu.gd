@@ -36,12 +36,12 @@ func ui_cancel_pressed():
 	if visible:
 		call_deferred("_on_resume_pressed")
 
-var current_room = "$Lobby"
+var current_room = "Lobby"
 func set_current_room(room):
 	current_room = room
-	vbox.get_node("Title").text = current_room.replace("$", "") + (" - " + tr("Paused"))
-	vbox.get_node("Open").disabled = current_room.begins_with("$")
-	$MarginContainer/VBoxContainer/Language.visible = current_room == "$Lobby"
+	vbox.get_node("Title").text = current_room + (" - " + tr("Paused"))
+	vbox.get_node("Open").disabled = current_room == "Lobby"
+	$MarginContainer/VBoxContainer/Language.visible = current_room == "Lobby"
 
 func _on_resume_pressed():
 	resume.emit()
