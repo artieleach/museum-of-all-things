@@ -121,7 +121,13 @@ func _draw() -> void:
 			show_labels = true
 
 	# Draw background (local coords: 0,0 to size)
-	draw_rect(Rect2(Vector2.ZERO, size), bg_color)
+	var is_minimap: bool = _mode == Mode.MINIMAP
+	var map_center: Vector2 = size * 0.5
+	var map_radius: float = minf(size.x, size.y) * 0.5
+	if is_minimap:
+		draw_circle(map_center, map_radius, bg_color)
+	else:
+		draw_rect(Rect2(Vector2.ZERO, size), bg_color)
 
 	# Compute transform from graph space to local screen space
 	var current_pos: Vector2 = layout.get(current, Vector2.ZERO)
@@ -155,6 +161,13 @@ func _draw() -> void:
 		var p1: Vector2 = _graph_to_screen(layout[from], current_pos, scale_factor, center_offset)
 		var p2: Vector2 = _graph_to_screen(layout[to], current_pos, scale_factor, center_offset)
 
+		if is_minimap:
+			var clipped: Array = _clip_line_to_circle(p1, p2, map_center, map_radius)
+			if clipped.is_empty():
+				continue
+			p1 = clipped[0]
+			p2 = clipped[1]
+
 		var key: String = from + "|" + to
 		var is_path: bool = path_edges.has(key)
 		var edge_color: Color = COLOR_PATH if is_path else COLOR_EDGE
@@ -166,6 +179,9 @@ func _draw() -> void:
 		if not nodes.has(title):
 			continue
 		var screen_pos: Vector2 = _graph_to_screen(layout[title], current_pos, scale_factor, center_offset)
+
+		if is_minimap and screen_pos.distance_to(map_center) > map_radius - node_radius:
+			continue
 
 		var color: Color
 		if title == current:
@@ -206,8 +222,39 @@ func _draw() -> void:
 			var orbit_offset: Vector2 = Vector2(cos(orbit_angle), sin(orbit_angle)) * (node_radius + 6)
 			var dot_pos: Vector2 = base_pos + orbit_offset
 			var dot_color: Color = NetworkManager.get_player_color(peer_id)
+			if is_minimap and dot_pos.distance_to(map_center) > map_radius - 4.0:
+				peer_index += 1
+				continue
 			draw_circle(dot_pos, 4.0, dot_color)
 			peer_index += 1
+
+
+	# Draw circle border for minimap
+	if is_minimap:
+		draw_arc(map_center, map_radius, 0, TAU, 64, Color(1, 1, 1, 0.3), 1.5, true)
+
+
+func _clip_line_to_circle(p1: Vector2, p2: Vector2, center: Vector2, radius: float) -> Array:
+	var d1: float = p1.distance_to(center)
+	var d2: float = p2.distance_to(center)
+	if d1 <= radius and d2 <= radius:
+		return [p1, p2]
+	var dir: Vector2 = p2 - p1
+	var f: Vector2 = p1 - center
+	var a: float = dir.dot(dir)
+	var b: float = 2.0 * f.dot(dir)
+	var c: float = f.dot(f) - radius * radius
+	var discriminant: float = b * b - 4.0 * a * c
+	if discriminant < 0:
+		return []
+	var sqrt_disc: float = sqrt(discriminant)
+	var t1: float = (-b - sqrt_disc) / (2.0 * a)
+	var t2: float = (-b + sqrt_disc) / (2.0 * a)
+	var enter: float = maxf(t1, 0.0)
+	var exit_t: float = minf(t2, 1.0)
+	if enter > exit_t:
+		return []
+	return [p1 + dir * enter, p1 + dir * exit_t]
 
 
 func _graph_to_screen(graph_pos: Vector2, camera_center: Vector2, scale_val: float, screen_center: Vector2) -> Vector2:

@@ -156,6 +156,8 @@ func _broadcast_player_info(peer_id: int, player_name: String, color_html: Strin
 
 @rpc("any_peer", "reliable")
 func _request_player_info(from_peer: int) -> void:
+	if is_dedicated_server:
+		return
 	# Send our info back to the requesting peer
 	_receive_player_info.rpc_id(from_peer, multiplayer.get_unique_id(), local_player_name, local_player_color.to_html(), local_player_skin)
 
