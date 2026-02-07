@@ -2,12 +2,17 @@
 
 [ext_resource type="Script" uid="uid://b4w1fxbmkdcgh" path="res://scenes/Player.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://dxfoujgkv1e2y" path="res://scenes/FootstepPlayer.tscn" id="2_1mcm1"]
+[ext_resource type="Material" uid="uid://dvpskin12345" path="res://assets/textures/player_skin.tres" id="3_skin"]
 
 [sub_resource type="BoxShape3D" id="1"]
 size = Vector3(0.6, 0.2, 0.6)
 
 [sub_resource type="CapsuleShape3D" id="2"]
 radius = 0.3
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.25
+height = 1.2
 
 [node name="Player" type="CharacterBody3D" unique_id=923866932 groups=["Player"]]
 collision_layer = 524288
@@ -38,3 +43,8 @@ shape = SubResource("2")
 target_position = Vector3(0, 2.5, 0)
 
 [node name="FootstepPlayer" parent="." unique_id=832196575 instance=ExtResource("2_1mcm1")]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+mesh = SubResource("CapsuleMesh_body")
+surface_material_override/0 = ExtResource("3_skin")

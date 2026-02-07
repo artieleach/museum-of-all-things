@@ -11,7 +11,7 @@ signal eat_anim_cancelled
 const EAT_DURATION: float = 1.0
 const CARRY_FP_POSITION: Vector3 = Vector3(0.4, -0.3, -0.6)
 const CARRY_TP_POSITION: Vector3 = Vector3(0.0, 0.1, -0.5)
-const EAT_FP_TARGET: Vector3 = Vector3(0.0, 0.5, -0.3)
+const EAT_FP_TARGET: Vector3 = Vector3(0.0, -0.3, 0.5)
 const EAT_TP_TARGET: Vector3 = Vector3(0.0, 0.1, 0.0)
 const EAT_ROTATE_FRACTION: float = 0.3  # First 30% of eat is the rotation phase
 const CARRY_ROTATION: Vector3 = Vector3(90, 0, 0)

@@ -9,7 +9,7 @@ const BOB_AMPLITUDE: float = 0.05
 
 var _gravity: float = -30.0
 var _bob_time: float = 0.0
-var _body_mesh_base_y: float = 0.85
+var _body_mesh_base_y: float = 0.667
 var _crouch_move_speed: float = 4.0
 var _mouse_sensitivity: float = 0.002
 var _joy_sensitivity: float = 0.025
@@ -65,6 +65,9 @@ func _ready() -> void:
 	SettingsEvents.set_invert_y.connect(_set_invert_y)
 	SettingsEvents.set_mouse_sensitivity.connect(_set_mouse_sensitivity)
 	SettingsEvents.set_joypad_deadzone.connect(_set_joy_deadzone)
+
+	if _body_mesh:
+		_body_mesh_base_y = _body_mesh.position.y
 
 	# Initialize subsystems
 	_crouch_system = PlayerCrouchSystem.new()

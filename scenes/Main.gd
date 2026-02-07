@@ -124,6 +124,7 @@ func _recreate_player() -> void:
 	_player.smooth_movement = smooth_movement
 	_player.dampening = smooth_movement_dampening
 	_player.position = starting_point
+	_player.set_player_color(NetworkManager.local_player_color)
 
 
 func _change_post_processing(post_processing: String) -> void:
@@ -279,6 +280,8 @@ const _SKIN_EQUIP_SOUND: AudioStream = preload("res://assets/sound/UI/UI Crystal
 func _on_skin_selected(url: String, _texture: ImageTexture) -> void:
 	NetworkManager.set_local_player_skin(url)
 	_save_skin_preference(url)
+	if _player:
+		_player.set_player_skin(url, _texture)
 	UISoundManager._play(_SKIN_EQUIP_SOUND)
 	_debug_log("Main: Skin selected: " + url)
 
@@ -286,6 +289,8 @@ func _on_skin_selected(url: String, _texture: ImageTexture) -> void:
 func _on_skin_reset() -> void:
 	NetworkManager.set_local_player_skin("")
 	_save_skin_preference("")
+	if _player:
+		_player.clear_player_skin()
 	_debug_log("Main: Skin reset")
 
 
@@ -295,6 +300,8 @@ func _load_saved_skin() -> void:
 		var skin_url: String = player_settings["skin_url"]
 		if skin_url != "":
 			NetworkManager.local_player_skin = skin_url
+			if _player:
+				_player.set_player_skin(skin_url)
 			_debug_log("Main: Loaded saved skin: " + skin_url)
 
 
