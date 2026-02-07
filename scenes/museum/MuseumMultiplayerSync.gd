@@ -55,8 +55,7 @@ func _execute_multiplayer_transition(to_title: String, from_title: String, hall_
 
 	var backlink: bool = hall_info.get("backlink", false)
 
-	if OS.is_debug_build():
-		print("MuseumMultiplayerSync: Executing multiplayer transition to ", to_title, " backlink=", backlink)
+	Log.info("MuseumSync", "Executing multiplayer transition to %s backlink=%s" % [to_title, str(backlink)])
 
 	# Find the hall that matches this transition
 	var hall: Hall = _find_hall_for_transition(to_title, from_title, backlink)
@@ -95,8 +94,7 @@ func sync_to_exhibit(exhibit_title: String) -> void:
 	if exhibit_title == "$Lobby" or exhibit_title == _museum._current_room_title:
 		return
 
-	if OS.is_debug_build():
-		print("MuseumMultiplayerSync: Syncing to exhibit ", exhibit_title)
+	Log.info("MuseumSync", "Syncing to exhibit %s" % exhibit_title)
 
 	# The exhibit will be generated locally since generation is deterministic
 	_museum._set_current_room_title(exhibit_title)

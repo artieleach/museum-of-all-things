@@ -20,12 +20,12 @@ var _mount_controller: MountController = null
 var _painting_controller: PaintingController = null
 
 @onready var player_list_overlay: Control = $TabMenu/PlayerListOverlay
+@onready var _server_console_overlay: Control = $TabMenu/ServerConsoleOverlay
 @onready var game_started: bool = false
 
 
 func _debug_log(message: String) -> void:
-	if OS.is_debug_build():
-		print(message)
+	Log.debug("Main", message)
 
 
 func _parse_command_line() -> void:
@@ -216,6 +216,10 @@ func _input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("show_fps"):
 		$FpsLabel.visible = not $FpsLabel.visible
 
+	if Input.is_action_just_pressed("toggle_server_console"):
+		if _multiplayer_controller.is_multiplayer_game():
+			_server_console_overlay.toggle()
+
 	if event.is_action_pressed("pause"):
 		_pause_game()
 
@@ -364,7 +368,7 @@ func _on_race_started(target_article: String) -> void:
 # MULTIPLAYER FUNCTIONS
 # =============================================================================
 func _start_dedicated_server() -> void:
-	print("Starting dedicated server on port %d..." % _multiplayer_controller.get_server_port())
+	Log.info("Main", "Starting dedicated server on port %d..." % _multiplayer_controller.get_server_port())
 
 	# Connect multiplayer signals before hosting
 	NetworkManager.peer_connected.connect(_on_network_peer_connected)
@@ -377,7 +381,7 @@ func _start_dedicated_server() -> void:
 
 	var error: Error = NetworkManager.host_game(_multiplayer_controller.get_server_port(), true)
 	if error != OK:
-		printerr("Failed to start server: ", error)
+		Log.error("Main", "Failed to start server: %s" % str(error))
 		get_tree().quit(1)
 		return
 
@@ -387,7 +391,7 @@ func _start_dedicated_server() -> void:
 	# Initialize museum without a local player
 	$Museum.init(null)
 
-	print("Server started successfully. Waiting for players...")
+	Log.info("Main", "Server started successfully. Waiting for players...")
 
 
 func _start_multiplayer_game() -> void:

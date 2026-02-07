@@ -38,7 +38,7 @@ var _eat_tween: Tween = null
 var _carry_mesh_fp: MeshInstance3D = null  # First-person, child of Camera3D
 var _carry_mesh_tp: MeshInstance3D = null  # Third-person, child of Pivot
 
-var _carry_material: ShaderMaterial = null
+var _carry_material: Material = null
 
 
 func init(player: CharacterBody3D) -> void:
@@ -46,7 +46,7 @@ func init(player: CharacterBody3D) -> void:
 	_raycast = player.get_node("Pivot/Camera3D/RayCast3D")
 
 	# Create shared material for carry meshes
-	var base_material: ShaderMaterial = preload("res://assets/textures/image_item.tres")
+	var base_material: Material = preload("res://assets/textures/image_item.tres")
 	_carry_material = base_material.duplicate()
 
 	# Create first-person carry mesh (child of Camera3D)
@@ -167,7 +167,8 @@ func execute_steal(texture: Texture2D, url: String, title: String, exhibit_title
 	_carried_image_size = size
 
 	# Apply texture to carry material
-	_carry_material.set_shader_parameter("texture_albedo", texture)
+	if _carry_material is ShaderMaterial:
+		_carry_material.set_shader_parameter("texture_albedo", texture)
 
 	# Scale mesh to match image aspect ratio
 	var aspect: float = size.x / size.y if size.y > 0 else 1.0

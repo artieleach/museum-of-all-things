@@ -221,13 +221,13 @@ func _create_placed_painting(wall_position: Vector3, wall_normal: Vector3, image
 
 	painting.mesh = plane_mesh
 
-	var material: ShaderMaterial = preload("res://assets/textures/image_item.tres").duplicate()
+	var material: Material = preload("res://assets/textures/image_item.tres").duplicate()
 	painting.material_override = material
 
 	# Apply texture immediately if available, otherwise request it
-	if texture:
+	if texture and material is ShaderMaterial:
 		material.set_shader_parameter("texture_albedo", texture)
-	else:
+	elif not texture and image_url != "":
 		var cb: Callable = _on_placed_painting_image_loaded.bind(painting, material, image_url)
 		DataManager.loaded_image.connect(cb)
 		DataManager.request_image(image_url)
@@ -235,7 +235,7 @@ func _create_placed_painting(wall_position: Vector3, wall_normal: Vector3, image
 	painting.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 	# Add picture frame
-	var frame_mesh: ArrayMesh = preload("res://assets/models/frame.obj")
+	var frame_mesh: Mesh = preload("res://assets/models/frame.obj")
 	var frame_material: Material = preload("res://assets/textures/black.tres")
 	var frame: MeshInstance3D = MeshInstance3D.new()
 	frame.name = "Frame"
@@ -295,14 +295,15 @@ func _on_carry_image_loaded(url: String, image: Texture2D, _ctx: Variant, player
 		return
 	DataManager.loaded_image.disconnect(_on_carry_image_loaded.bind(player, target_url))
 	if is_instance_valid(player) and "_painting_system" in player and player._painting_system:
-		player._painting_system._carry_material.set_shader_parameter("texture_albedo", image)
+		if player._painting_system._carry_material is ShaderMaterial:
+			player._painting_system._carry_material.set_shader_parameter("texture_albedo", image)
 		player._painting_system._carried_texture = image
 
 
-func _on_placed_painting_image_loaded(url: String, image: Texture2D, _ctx: Variant, painting: MeshInstance3D, material: ShaderMaterial, target_url: String) -> void:
+func _on_placed_painting_image_loaded(url: String, image: Texture2D, _ctx: Variant, painting: MeshInstance3D, material: Material, target_url: String) -> void:
 	if url != Util.normalize_url(target_url):
 		return
-	if is_instance_valid(painting) and is_instance_valid(material):
+	if is_instance_valid(painting) and is_instance_valid(material) and material is ShaderMaterial:
 		material.set_shader_parameter("texture_albedo", image)
 	DataManager.loaded_image.disconnect(_on_placed_painting_image_loaded.bind(painting, material, target_url))
 

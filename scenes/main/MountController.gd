@@ -114,8 +114,7 @@ func execute_mount_sync(rider_peer_id: int, mount_peer_id: int, local_player: No
 		return
 
 	rider.execute_mount(mount, mount_peer_id)
-	if OS.is_debug_build():
-		print("MountController: Mount sync - %d mounted on %d" % [rider_peer_id, mount_peer_id])
+	Log.debug("Mount", "Mount sync - %d mounted on %d" % [rider_peer_id, mount_peer_id])
 
 
 func execute_dismount_sync(rider_peer_id: int, local_player: Node) -> void:
@@ -125,5 +124,4 @@ func execute_dismount_sync(rider_peer_id: int, local_player: Node) -> void:
 	if NetworkManager.is_server():
 		return
 	rider.execute_dismount()
-	if OS.is_debug_build():
-		print("MountController: Dismount sync - %d" % rider_peer_id)
+	Log.debug("Mount", "Dismount sync - %d" % rider_peer_id)

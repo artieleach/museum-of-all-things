@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://bj7vvqjer0u7e" path="res://scenes/menu/PlayerListOverlay.tscn" id="11_plyrovly"]
 [ext_resource type="PackedScene" path="res://scenes/menu/RaceHUD.tscn" id="12_racehud"]
 [ext_resource type="PackedScene" path="res://scenes/menu/VictoryScreen.tscn" id="13_victory"]
+[ext_resource type="PackedScene" path="res://scenes/menu/ServerConsoleOverlay.tscn" id="14_srvcon"]
 
 [node name="Main" type="Node" unique_id=557895252]
 script = ExtResource("1_d7g3n")
@@ -86,6 +87,9 @@ sky_mode = 1
 visible = false
 
 [node name="RaceHUD" parent="TabMenu" unique_id=1376436483 instance=ExtResource("12_racehud")]
+
+[node name="ServerConsoleOverlay" parent="TabMenu" instance=ExtResource("14_srvcon")]
+visible = false
 
 [connection signal="resume" from="CanvasLayer/Settings" to="." method="_on_settings_back"]
 [connection signal="settings" from="CanvasLayer/MainMenu" to="." method="_on_main_menu_settings"]

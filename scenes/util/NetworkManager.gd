@@ -42,8 +42,7 @@ func host_game(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 	if not dedicated:
 		player_info[1] = { "name": local_player_name, "color": local_player_color, "skin_url": local_player_skin, "current_room": "$Lobby" }
 
-	if OS.is_debug_build():
-		print("NetworkManager: Hosting game on port ", port, " (dedicated: ", dedicated, ")")
+	Log.debug("Network", "Hosting game on port %d (dedicated: %s)" % [port, str(dedicated)])
 
 	return OK
 
@@ -57,8 +56,7 @@ func join_game(address: String, port: int = DEFAULT_PORT) -> Error:
 	multiplayer.multiplayer_peer = peer
 	is_hosting = false
 
-	if OS.is_debug_build():
-		print("NetworkManager: Joining game at ", address, ":", port)
+	Log.debug("Network", "Joining game at %s:%d" % [address, port])
 
 	return OK
 
@@ -72,8 +70,7 @@ func disconnect_from_game() -> void:
 	is_hosting = false
 	is_dedicated_server = false
 
-	if OS.is_debug_build():
-		print("NetworkManager: Disconnected from game")
+	Log.debug("Network", "Disconnected from game")
 
 func is_multiplayer_active() -> bool:
 	return peer != null and multiplayer.multiplayer_peer != null
@@ -171,8 +168,7 @@ func _receive_player_info(peer_id: int, player_name: String, color_html: String,
 	emit_signal("player_info_updated", peer_id)
 
 func _on_peer_connected(id: int) -> void:
-	if OS.is_debug_build():
-		print("NetworkManager: Peer connected: ", id)
+	Log.info("Network", "Peer connected: %d" % id)
 
 	# Request player info from the new peer
 	_request_player_info.rpc_id(id, multiplayer.get_unique_id())
@@ -193,15 +189,13 @@ func _on_peer_connected(id: int) -> void:
 	emit_signal("peer_connected", id)
 
 func _on_peer_disconnected(id: int) -> void:
-	if OS.is_debug_build():
-		print("NetworkManager: Peer disconnected: ", id)
+	Log.info("Network", "Peer disconnected: %d" % id)
 
 	player_info.erase(id)
 	emit_signal("peer_disconnected", id)
 
 func _on_connected_to_server() -> void:
-	if OS.is_debug_build():
-		print("NetworkManager: Connected to server")
+	Log.debug("Network", "Connected to server")
 
 	# Register ourselves
 	var my_id = multiplayer.get_unique_id()
@@ -210,16 +204,14 @@ func _on_connected_to_server() -> void:
 	emit_signal("connection_succeeded")
 
 func _on_connection_failed() -> void:
-	if OS.is_debug_build():
-		print("NetworkManager: Connection failed")
+	Log.warn("Network", "Connection failed")
 
 	peer = null
 	multiplayer.multiplayer_peer = null
 	emit_signal("connection_failed")
 
 func _on_server_disconnected() -> void:
-	if OS.is_debug_build():
-		print("NetworkManager: Server disconnected")
+	Log.info("Network", "Server disconnected")
 
 	peer = null
 	multiplayer.multiplayer_peer = null
