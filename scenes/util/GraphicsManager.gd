@@ -218,7 +218,7 @@ func _toggle_managed_light(light: Light3D, enable: bool) -> void:
 	if _light_tweens.has(light_id) and _light_tweens[light_id].is_valid():
 		_light_tweens[light_id].kill()
 
-	var tween := get_tree().create_tween()
+	var tween := get_tree().create_tween().bind_node(light)
 	_light_tweens[light_id] = tween
 	var light_energy: float = light.light_energy
 
@@ -231,7 +231,9 @@ func _toggle_managed_light(light: Light3D, enable: bool) -> void:
 
 	tween.tween_property(light, "light_energy", light_energy if enable else 0.0, MANAGED_LIGHTS_FREQUENCY * 0.5)
 	tween.tween_callback(func ():
+		_light_tweens.erase(light_id)
+		if not is_instance_valid(light):
+			return
 		light.visible = enable
 		light.light_energy = light_energy
-		_light_tweens.erase(light_id)
 	)
