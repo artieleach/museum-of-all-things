@@ -64,11 +64,11 @@ func _input(event: InputEvent) -> void:
 		joypad_button.button_pressed:
 			remap_action_joypad(event)
 
-func _debounce_button(button, refocus):
+func _debounce_button(button: Button, refocus: bool) -> void:
 	button.disabled = true
 	call_deferred("_enable_button", button, refocus)
 
-func _enable_button(button, refocus):
+func _enable_button(button: Button, refocus: bool) -> void:
 	button.disabled = false
 	if refocus:
 		button.grab_focus()

@@ -55,7 +55,7 @@ func _prepare_halls_for_teleport(from_hall: Hall, to_hall: Hall, entry_to_exit: 
 		_teleport_player.bind(from_hall, to_hall, entry_to_exit),
 		ConnectFlags.CONNECT_ONE_SHOT
 	)
-	timer.start(HallDoor.animation_duration)
+	timer.start(HallDoor.ANIMATION_DURATION)
 
 
 func toggle_exhibit_visibility(hide_title: String, show_title: String, exhibits: Dictionary) -> void:
@@ -78,7 +78,7 @@ func _teleport_player(from_hall: Hall, to_hall: Hall, entry_to_exit: bool = fals
 			if not is_instance_valid(player):
 				continue
 			# Skip mounted players - they follow their mount
-			if "_is_mounted" in player and player._is_mounted:
+			if "is_mounted" in player and player.is_mounted:
 				continue
 			var distance: float = (from_hall.position - player.global_position).length()
 			if distance <= _max_teleport_distance:
@@ -125,7 +125,7 @@ func _teleport_network_players_in_range(from_hall: Hall, to_hall: Hall, rot_diff
 			if player in _players or not is_instance_valid(player):
 				continue
 			# Skip mounted players - they follow their mount
-			if "_is_mounted" in player and player._is_mounted:
+			if "is_mounted" in player and player.is_mounted:
 				continue
 			# Only teleport if within range
 			var distance: float = (from_hall.position - player.global_position).length()

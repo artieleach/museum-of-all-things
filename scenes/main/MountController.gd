@@ -20,7 +20,7 @@ func get_mount_state() -> Dictionary:
 func request_mount(target: Node, local_player: Node) -> void:
 	if not _multiplayer_controller.is_multiplayer_game() or not NetworkManager.is_multiplayer_active():
 		# Single player - just mount directly
-		if is_instance_valid(target) and not target._has_rider:
+		if is_instance_valid(target) and not target.has_rider:
 			local_player.execute_mount(target)
 		return
 
@@ -64,9 +64,9 @@ func handle_mount_request(rider_peer_id: int, mount_peer_id: int, local_player: 
 		return
 	if rider == mount:
 		return  # Can't mount self
-	if mount._has_rider:
+	if mount.has_rider:
 		return  # Mount already has a rider
-	if rider._is_mounted:
+	if rider.is_mounted:
 		return  # Rider is already mounted
 	if "in_hall" in rider and rider.in_hall:
 		return  # Can't mount in a hallway

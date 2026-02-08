@@ -1,14 +1,12 @@
-[gd_scene load_steps=6 format=3 uid="uid://crfgn0ehls7w7"]
+[gd_scene load_steps=5 format=3 uid="uid://crfgn0ehls7w7"]
 
 [ext_resource type="Script" uid="uid://b1bbc30yehajv" path="res://scenes/menu/TerminalMenu.gd" id="1_3ulr5"]
-[ext_resource type="FontFile" uid="uid://81fevjg70kl3" path="res://assets/fonts/NotoSansMono/static/NotoSansMono-Bold.ttf" id="1_8vlbg"]
 [ext_resource type="Texture2D" uid="uid://djxbiu7sjen2u" path="res://assets/logo/moat_logo_small.png" id="2_go2dw"]
 [ext_resource type="FontFile" uid="uid://tbendthemd68" path="res://assets/fonts/NotoSansMono/static/NotoSansMono-Regular.ttf" id="2_vd2bc"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_mawx1"]
-font = ExtResource("1_8vlbg")
-font_size = 32
-font_color = Color(0, 0, 0, 1)
+font_size = 24
+font_color = Color(0.125, 0.129, 0.133, 1)
 
 [node name="TerminalMenu" type="Control"]
 layout_mode = 3
@@ -49,16 +47,12 @@ autowrap_mode = 3
 [node name="EnterExhibit" type="Button" parent="MarginContainer/StartPage"]
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_fonts/font = ExtResource("1_8vlbg")
-theme_override_font_sizes/font_size = 32
 text = "Enter Exhibit Name "
 alignment = 0
 
 [node name="RandomExhibit" type="Button" parent="MarginContainer/StartPage"]
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_fonts/font = ExtResource("1_8vlbg")
-theme_override_font_sizes/font_size = 32
 text = "Go to Random Exhibit "
 alignment = 0
 
@@ -90,15 +84,11 @@ autowrap_mode = 3
 [node name="SearchExhibit" type="Button" parent="MarginContainer/SearchPage"]
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_fonts/font = ExtResource("1_8vlbg")
-theme_override_font_sizes/font_size = 32
 text = "Confirm"
 
 [node name="Reset" type="Button" parent="MarginContainer/SearchPage"]
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_fonts/font = ExtResource("1_8vlbg")
-theme_override_font_sizes/font_size = 32
 text = "Back"
 
 [node name="ResultPage" type="VBoxContainer" parent="MarginContainer"]
@@ -124,8 +114,6 @@ autowrap_mode = 3
 [node name="Reset" type="Button" parent="MarginContainer/ResultPage"]
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_fonts/font = ExtResource("1_8vlbg")
-theme_override_font_sizes/font_size = 32
 text = "OK / Exit"
 
 [node name="ErrorPage" type="VBoxContainer" parent="MarginContainer"]
@@ -143,8 +131,6 @@ autowrap_mode = 3
 [node name="Reset" type="Button" parent="MarginContainer/ErrorPage"]
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_fonts/font = ExtResource("1_8vlbg")
-theme_override_font_sizes/font_size = 32
 text = "OK / Exit"
 
 [node name="Control" type="Control" parent="."]

@@ -2,9 +2,12 @@
 
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_uck0y"]
 [ext_resource type="Script" uid="uid://wemyyxl6w8es" path="res://scenes/menu/AudioSettings.gd" id="2_o66du"]
+[ext_resource type="FontFile" uid="uid://bxph8sc2vndn" path="res://assets/fonts/CormorantGaramond/CormorantGaramond-SemiBold.ttf" id="3_serif"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_giwmb"]
-font_size = 64
+font = ExtResource("3_serif")
+font_size = 48
+font_color = Color(0, 0, 0, 1)
 
 [node name="AudioSettings" type="VBoxContainer" unique_id=1013685418]
 anchors_preset = 15
@@ -30,12 +33,15 @@ layout_mode = 2
 layout_mode = 2
 text = " "
 
-[node name="Label4" type="Label" parent="VolumeOptions" unique_id=858033376]
-layout_mode = 2
-text = "Global Volume"
-
 [node name="HBoxContainer" type="HBoxContainer" parent="VolumeOptions" unique_id=1846231984]
 layout_mode = 2
+
+[node name="Label4" type="Label" parent="VolumeOptions/HBoxContainer" unique_id=858033376]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+text = "Global Volume"
+horizontal_alignment = 2
 
 [node name="GlobalVolume" type="HSlider" parent="VolumeOptions/HBoxContainer" unique_id=889923650]
 unique_name_in_owner = true
@@ -54,12 +60,15 @@ size_flags_stretch_ratio = 0.1
 text = "100%"
 horizontal_alignment = 1
 
-[node name="Label2" type="Label" parent="VolumeOptions" unique_id=354447371]
-layout_mode = 2
-text = "Sound Effects Volume"
-
 [node name="HBoxContainer2" type="HBoxContainer" parent="VolumeOptions" unique_id=653458920]
 layout_mode = 2
+
+[node name="Label2" type="Label" parent="VolumeOptions/HBoxContainer2" unique_id=354447371]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+text = "Sound Effects Volume"
+horizontal_alignment = 2
 
 [node name="SoundVolume" type="HSlider" parent="VolumeOptions/HBoxContainer2" unique_id=1837656018]
 unique_name_in_owner = true
@@ -78,12 +87,15 @@ size_flags_stretch_ratio = 0.1
 text = "100%"
 horizontal_alignment = 1
 
-[node name="Label3" type="Label" parent="VolumeOptions" unique_id=998176386]
-layout_mode = 2
-text = "Ambience Volume"
-
 [node name="HBoxContainer3" type="HBoxContainer" parent="VolumeOptions" unique_id=1976516578]
 layout_mode = 2
+
+[node name="Label3" type="Label" parent="VolumeOptions/HBoxContainer3" unique_id=998176386]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+text = "Ambience Volume"
+horizontal_alignment = 2
 
 [node name="AmbienceVolume" type="HSlider" parent="VolumeOptions/HBoxContainer3" unique_id=1602436777]
 unique_name_in_owner = true
@@ -102,12 +114,15 @@ size_flags_stretch_ratio = 0.1
 text = "100%"
 horizontal_alignment = 1
 
-[node name="Label5" type="Label" parent="VolumeOptions" unique_id=1622151840]
-layout_mode = 2
-text = "Music Volume"
-
 [node name="HBoxContainer4" type="HBoxContainer" parent="VolumeOptions" unique_id=309289976]
 layout_mode = 2
+
+[node name="Label5" type="Label" parent="VolumeOptions/HBoxContainer4" unique_id=1622151840]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+text = "Music Volume"
+horizontal_alignment = 2
 
 [node name="MusicVolume" type="HSlider" parent="VolumeOptions/HBoxContainer4" unique_id=440074716]
 unique_name_in_owner = true

@@ -9,13 +9,22 @@ const WhiteMaterial: Material = preload("res://assets/textures/flat_white.tres")
 const WoodMaterial: Material = preload("res://assets/textures/wood_2.tres")
 const BlackMaterial: Material = preload("res://assets/textures/black.tres")
 
+const ANIMATE_OFFSET_Y: float = 4.0
+const CEILING_DROP_Y: float = 2.0
+const LIGHT_ENERGY: float = 3.0
+const ANIMATE_DURATION: float = 0.5
+
 @onready var _item_node: Node3D = $Item
 @onready var _item: Node3D
 @onready var _ceiling: Node3D = $Ceiling
 @onready var _light: SpotLight3D = get_node("Item/SpotLight3D")
 @onready var _frame: Node3D = get_node("Item/Frame")
-@onready var _animate_item_target: Vector3 = _item_node.position + Vector3(0, 4, 0)
-@onready var _animate_ceiling_target: Vector3 = _ceiling.position - Vector3(0, 2, 0)
+@onready var _animate_item_target: Vector3 = _item_node.position + Vector3(0, ANIMATE_OFFSET_Y, 0)
+@onready var _animate_ceiling_target: Vector3 = _ceiling.position - Vector3(0, CEILING_DROP_Y, 0)
+
+var _item_tween: Tween = null
+var _light_tween: Tween = null
+var _ceiling_tween: Tween = null
 
 func _start_animate() -> void:
 	var tween_time: float = 0.0
@@ -24,22 +33,29 @@ func _start_animate() -> void:
 	# Check if any player is close enough to see/hear the animation
 	for player in get_tree().get_nodes_in_group("Player"):
 		if position.distance_to(player.global_position) <= visibility_range:
-			tween_time = 0.5
+			tween_time = ANIMATE_DURATION
 			$SlideSound.play()
 			break
 
-	var tween: Tween = create_tween()
-	var light_tween: Tween = create_tween()
-	var ceiling_tween: Tween = create_tween()
+	if _item_tween and _item_tween.is_valid():
+		_item_tween.kill()
+	if _light_tween and _light_tween.is_valid():
+		_light_tween.kill()
+	if _ceiling_tween and _ceiling_tween.is_valid():
+		_ceiling_tween.kill()
 
-	tween.tween_property(
+	_item_tween = create_tween()
+	_light_tween = create_tween()
+	_ceiling_tween = create_tween()
+
+	_item_tween.tween_property(
 		_item_node,
 		"position",
 		_animate_item_target,
 		tween_time
 	)
 
-	ceiling_tween.tween_property(
+	_ceiling_tween.tween_property(
 		_ceiling,
 		"position",
 		_animate_ceiling_target,
@@ -47,24 +63,24 @@ func _start_animate() -> void:
 	)
 
 	if Platform.is_compatibility_renderer():
-		light_tween.kill()
+		_light_tween.kill()
 		_light.visible = false
 	else:
-		light_tween.tween_property(
+		_light_tween.tween_property(
 			_light,
 			"light_energy",
-			3.0,
+			LIGHT_ENERGY,
 			tween_time
 		)
 
-	tween.set_trans(Tween.TRANS_LINEAR)
-	tween.set_ease(Tween.EASE_IN_OUT)
+	_item_tween.set_trans(Tween.TRANS_LINEAR)
+	_item_tween.set_ease(Tween.EASE_IN_OUT)
 
-	light_tween.set_trans(Tween.TRANS_LINEAR)
-	light_tween.set_ease(Tween.EASE_IN_OUT)
+	_light_tween.set_trans(Tween.TRANS_LINEAR)
+	_light_tween.set_ease(Tween.EASE_IN_OUT)
 
-	ceiling_tween.set_trans(Tween.TRANS_LINEAR)
-	ceiling_tween.set_ease(Tween.EASE_IN_OUT)
+	_ceiling_tween.set_trans(Tween.TRANS_LINEAR)
+	_ceiling_tween.set_ease(Tween.EASE_IN_OUT)
 
 func _on_image_item_loaded() -> void:
 	var size: Vector2 = _item.get_image_size()

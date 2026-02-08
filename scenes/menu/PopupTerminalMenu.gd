@@ -6,4 +6,4 @@ signal resume
 
 func _on_terminal_menu_resume() -> void:
 	if visible:
-		call_deferred("emit_signal", "resume")
+		resume.emit.call_deferred()

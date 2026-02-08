@@ -1,12 +1,14 @@
 extends Node3D
 class_name HallDoor
 
-static var animation_duration: float = 0.25
+const OPEN_POS_Y: float = 6.5
+const CLOSED_POS_Y: float = 2.0
+const ANIMATION_DURATION: float = 0.25
 
 @onready var _door: Node3D = $Door
-@onready var _open: bool = false
-var _open_pos: Vector3 = Vector3(0, 6.5, 0)
-var _closed_pos: Vector3 = Vector3(0, 2, 0)
+var _open: bool = false
+var _open_pos: Vector3 = Vector3(0, OPEN_POS_Y, 0)
+var _closed_pos: Vector3 = Vector3(0, CLOSED_POS_Y, 0)
 
 func open() -> void:
 	set_open(true)
@@ -21,7 +23,7 @@ func set_open(open: bool = true, instant: bool = false) -> void:
 			_door,
 			"position",
 			_open_pos if open else _closed_pos,
-			animation_duration
+			ANIMATION_DURATION
 		)
 		tween.set_trans(Tween.TRANS_LINEAR)
 		tween.set_ease(Tween.EASE_IN_OUT)
@@ -47,7 +49,7 @@ func set_message(msg: String, instant: bool = false) -> void:
 			label_pivot,
 			"rotation:z",
 			label_pivot.rotation.z + PI,
-			animation_duration
+			ANIMATION_DURATION
 		)
 	else:
 		_label_tween = null

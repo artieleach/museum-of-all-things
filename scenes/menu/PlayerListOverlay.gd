@@ -2,17 +2,17 @@ extends Control
 
 @onready var player_container = $PanelContainer/MarginContainer/VBoxContainer/PlayerListContainer
 
-func _ready():
+func _ready() -> void:
 	NetworkManager.peer_connected.connect(_refresh)
 	NetworkManager.peer_disconnected.connect(_refresh)
 	NetworkManager.player_info_updated.connect(_refresh)
 	visibility_changed.connect(_on_visibility_changed)
 
-func _on_visibility_changed():
+func _on_visibility_changed() -> void:
 	if visible:
 		_refresh()
 
-func _refresh(_id = null):
+func _refresh(_id: Variant = null) -> void:
 	if not is_inside_tree():
 		return
 

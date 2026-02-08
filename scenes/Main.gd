@@ -9,7 +9,7 @@ extends Node
 @export var starting_point: Vector3 = Vector3(0, 4, 0)
 @export var starting_rotation: float = 0
 
-var _player: Node = null
+var _player: CharacterBody3D = null
 var _player_pivot: Node3D = null
 var _fps_update_timer: float = 0.0
 
@@ -22,7 +22,7 @@ var _painting_controller: PaintingController = null
 @onready var player_list_overlay: Control = $TabMenu/PlayerListOverlay
 @onready var _server_console_overlay: Control = $TabMenu/ServerConsoleOverlay
 @onready var _map_overlay: Control = $TabMenu/ExhibitMapOverlay
-@onready var game_started: bool = false
+var game_started: bool = false
 
 
 func _debug_log(message: String) -> void:
@@ -254,7 +254,7 @@ func _process(delta: float) -> void:
 	if _multiplayer_controller.process_position_sync(delta, _player):
 		var pivot_rot_x: float = _player_pivot.rotation.x if _player_pivot else 0.0
 		var pivot_pos_y: float = _player_pivot.position.y if _player_pivot else 1.35
-		var is_mounted: bool = _player._is_mounted
+		var is_mounted: bool = _player.is_mounted
 		var mounted_peer_id: int = _player.mount_peer_id
 		# If mounted, use mount's room to stay synced during room transitions
 		var current_room: String = "Lobby"
@@ -346,7 +346,7 @@ func _on_random_article_complete(title: String, context: Dictionary) -> void:
 		return
 
 	if title == null or title == "":
-		push_error("Main: Failed to fetch random article for race")
+		Log.error("Main", "Failed to fetch random article for race")
 		return
 	_debug_log("Main: Starting race to '%s'" % title)
 	RaceManager.start_race(title)

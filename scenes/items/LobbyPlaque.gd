@@ -28,6 +28,10 @@ func _ready() -> void:
 			SettingsEvents.set_language.connect(_resize_text)
 			_resize_text()
 
+func _exit_tree() -> void:
+	if SettingsEvents.set_language.is_connected(_resize_text):
+		SettingsEvents.set_language.disconnect(_resize_text)
+
 func _resize_text(_lang: String = "") -> void:
 	$Title.font_size = start_font_size_title
 	TextUtils.resize_text_to_px($Title, max_title_length_px)

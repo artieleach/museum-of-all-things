@@ -12,45 +12,45 @@ func _ready() -> void:
 	ExhibitFetcher.random_complete.connect(_show_page_result)
 	reset()
 
-func _resume():
+func _resume() -> void:
 	resume.emit()
 
-func reset():
+func reset() -> void:
 	$MarginContainer/StartPage/RandomExhibit.disabled = false
 	$MarginContainer/SearchPage/SearchExhibit.disabled = false
 	_switch_to_page("StartPage")
 	$MarginContainer/StartPage/EnterExhibit.grab_focus()
 
-func _switch_to_page(page):
+func _switch_to_page(page: String) -> void:
 	for vbox in $MarginContainer.get_children():
 		vbox.visible = false
 	get_node("MarginContainer/" + page).visible = true
 
-func _go_to_search_page():
+func _go_to_search_page() -> void:
 	_switch_to_page("SearchPage")
 	UIEvents.emit_reset_custom_door()
 	$MarginContainer/SearchPage/ExhibitTitle.grab_focus()
 
-func _get_random_page():
+func _get_random_page() -> void:
 	$MarginContainer/StartPage/RandomExhibit.disabled = true
 	UIEvents.emit_reset_custom_door()
 	ExhibitFetcher.fetch_random(null)
 
-func _handle_accept():
+func _handle_accept() -> void:
 	if $MarginContainer/SearchPage/ExhibitTitle.has_focus():
 		_search_exhibit()
 
-func _search_exhibit():
+func _search_exhibit() -> void:
 	var search_text = $MarginContainer/SearchPage/ExhibitTitle.text
 	if len(search_text) > 0:
 		$MarginContainer/SearchPage/SearchExhibit.disabled = true
 		ExhibitFetcher.fetch_search($MarginContainer/SearchPage/ExhibitTitle.text, null)
 
-func _show_page_result(page, _ctx):
+func _show_page_result(page: Variant, _ctx: Variant) -> void:
 	$MarginContainer/SearchPage/ExhibitTitle.text = ""
 	_on_terminal_result_ready(not page, page)
 
-func _on_terminal_result_ready(error: bool, page: String):
+func _on_terminal_result_ready(error: bool, page: String) -> void:
 	if error:
 		_switch_to_page("ErrorPage")
 		$MarginContainer/ErrorPage/Reset.grab_focus()
@@ -60,6 +60,6 @@ func _on_terminal_result_ready(error: bool, page: String):
 		$MarginContainer/ResultPage/ResultLabel.text = "Exhibit Found: \"%s\"" % page
 		$MarginContainer/ResultPage/Reset.grab_focus()
 
-func _on_reset_pressed():
+func _on_reset_pressed() -> void:
 	reset()
 	_resume()

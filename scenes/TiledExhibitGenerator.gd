@@ -23,11 +23,11 @@ const FREE_WALL: int = GridConstants.FREE_WALL
 const DIRECTIONS: Array[Vector3] = GridConstants.DIRECTIONS
 const _GROUP_SCENERY := &"Scenery"
 
-@onready var _pool_scene: PackedScene = preload("res://scenes/items/Pool.tscn")
-@onready var _planter_scene: PackedScene = preload("res://scenes/items/Planter.tscn")
-@onready var _small_planter_scene: PackedScene = preload("res://scenes/items/SmallPlanter.tscn")
-@onready var _hall_scene: PackedScene = preload("res://scenes/Hall.tscn")
-@onready var _grid_wrapper: PackedScene = preload("res://scenes/util/GridWrapper.tscn")
+const _POOL_SCENE: PackedScene = preload("res://scenes/items/Pool.tscn")
+const _PLANTER_SCENE: PackedScene = preload("res://scenes/items/Planter.tscn")
+const _SMALL_PLANTER_SCENE: PackedScene = preload("res://scenes/items/SmallPlanter.tscn")
+const _HALL_SCENE: PackedScene = preload("res://scenes/Hall.tscn")
+const _GRID_WRAPPER: PackedScene = preload("res://scenes/util/GridWrapper.tscn")
 
 var _rng: RandomNumberGenerator = null
 var title: String = ""
@@ -118,7 +118,7 @@ func generate(params: Dictionary) -> void:
 	_exit_limit = params.exit_limit if params.has("exit_limit") else 1000000
 
 	# init grid
-	_grid = _grid_wrapper.instantiate()
+	_grid = _GRID_WRAPPER.instantiate()
 	add_child(_grid)
 	_raw_grid = _grid._grid
 
@@ -129,7 +129,7 @@ func generate(params: Dictionary) -> void:
 	_floor = ExhibitStyle.gen_floor(title)
 
 	# init starting hall
-	var starting_hall: Hall = _hall_scene.instantiate()
+	var starting_hall: Hall = _HALL_SCENE.instantiate()
 	add_child(starting_hall)
 	starting_hall.init(
 		_grid,
@@ -221,7 +221,7 @@ func _add_to_room_list(c: Vector3, w: int, l: int) -> Dictionary:
 
 func add_room() -> void:
 	if _next_room_candidates.size() == 0:
-		push_error("no room candidate to create")
+		Log.error("ExhibitGenerator", "no room candidate to create")
 		return
 	if _item_slots.size() > Platform.get_max_slots_per_exhibit():
 		return
@@ -324,29 +324,39 @@ func _decorate_reserved_walls(last_room: Dictionary, hall_bounds: Array, dir: Ve
 			last_room.center.z + (last_room.length / 2 + 1) * dir.z,
 		)
 
-	var planter: Node3D = _small_planter_scene.instantiate()
+	var planter: Node3D = _SMALL_PLANTER_SCENE.instantiate()
 	planter.rotation = planter_rot
 	planter.position = GridUtils.grid_to_world(planter_pos) + dir
 	add_child(planter)
 
 
 func _decorate_room_center(center: Vector3, width: int, length: int) -> void:
-	if width > 3 and length > 3:
-		var bounds: Array = _room_to_bounds(center, width, length)
-		var true_center: Vector3 = (bounds[0] + bounds[1]) / 2
-		var roll: int = _rng.randi_range(0, 3)
-		if roll == 0:
-			var pool: Node3D = _pool_scene.instantiate()
-			pool.position = GridUtils.grid_to_world(true_center)
-			add_child(pool)
-			return
-		elif roll == 1:
-			var planter: Node3D = _planter_scene.instantiate()
-			planter.position = GridUtils.grid_to_world(true_center)
-			planter.rotation.y = PI / 2 if length > width else 0.0
-			add_child(planter)
-			return
+	if _try_place_large_decoration(center, width, length):
+		return
+	_place_benches_and_walls(center, width, length)
 
+
+func _try_place_large_decoration(center: Vector3, width: int, length: int) -> bool:
+	if width <= 3 or length <= 3:
+		return false
+	var bounds: Array = _room_to_bounds(center, width, length)
+	var true_center: Vector3 = (bounds[0] + bounds[1]) / 2
+	var roll: int = _rng.randi_range(0, 3)
+	if roll == 0:
+		var pool: Node3D = _POOL_SCENE.instantiate()
+		pool.position = GridUtils.grid_to_world(true_center)
+		add_child(pool)
+		return true
+	elif roll == 1:
+		var planter: Node3D = _PLANTER_SCENE.instantiate()
+		planter.position = GridUtils.grid_to_world(true_center)
+		planter.rotation.y = PI / 2 if length > width else 0.0
+		add_child(planter)
+		return true
+	return false
+
+
+func _place_benches_and_walls(center: Vector3, width: int, length: int) -> void:
 	var bench_area_bounds: Variant = null
 	var bench_area_ori: int = 0
 
@@ -355,34 +365,36 @@ func _decorate_room_center(center: Vector3, width: int, length: int) -> void:
 	elif length > width and length > 2:
 		bench_area_ori = GridUtils.vec_to_orientation(_grid, Vector3(1, 0, 0))
 		bench_area_bounds = _room_to_bounds(center, 1, length - 2)
-	if bench_area_bounds:
-		var bench_slots: Array = []
-		var c1: Vector3 = bench_area_bounds[0]
-		var c2: Vector3 = bench_area_bounds[1]
-		var y: int = int(center.y)
-		for x: int in range(int(c1.x), int(c2.x) + 1):
-			for z: int in range(int(c1.z), int(c2.z) + 1):
-				var pos: Vector3 = Vector3(x, y, z)
-				if _raw_grid.get_cell_item(pos) != -1:
-					continue
+	if not bench_area_bounds:
+		return
 
-				var free_wall: bool = _rng.randi_range(0, 1) == 0
-				var valid_bench: bool = GridUtils.cell_neighbors(_raw_grid, pos, INTERNAL_HALL).size() == 0 and\
-						GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_UP).size() == 0 and\
-						GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_DOWN).size() == 0
-				var valid_free_wall: bool = valid_bench and GridUtils.cell_neighbors(_raw_grid, pos, WALL).size() == 0
+	var bench_slots: Array = []
+	var c1: Vector3 = bench_area_bounds[0]
+	var c2: Vector3 = bench_area_bounds[1]
+	var y: int = int(center.y)
+	for x: int in range(int(c1.x), int(c2.x) + 1):
+		for z: int in range(int(c1.z), int(c2.z) + 1):
+			var pos: Vector3 = Vector3(x, y, z)
+			if _raw_grid.get_cell_item(pos) != -1:
+				continue
 
-				if width > 3 or length > 3 and free_wall and valid_free_wall and _room_count > 2:
-					var dir: Vector3 = Vector3.RIGHT if width > length else Vector3.FORWARD
-					var item_dir: Vector3 = Vector3.FORWARD if width > length else Vector3.RIGHT
-					var ori: int = GridUtils.vec_to_orientation(_grid, dir)
-					_grid.set_cell_item(pos, FREE_WALL, ori)
-					bench_slots.push_front([pos - item_dir * 0.075, item_dir])
-					bench_slots.append([pos + item_dir * 0.075, -item_dir])
-				elif valid_bench:
-					_grid.set_cell_item(pos, BENCH, bench_area_ori)
-		for slot: Array in bench_slots:
-			add_item_slot(slot)
+			var free_wall: bool = _rng.randi_range(0, 1) == 0
+			var valid_bench: bool = GridUtils.cell_neighbors(_raw_grid, pos, INTERNAL_HALL).size() == 0 and\
+					GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_UP).size() == 0 and\
+					GridUtils.cell_neighbors(_raw_grid, pos, HALL_STAIRS_DOWN).size() == 0
+			var valid_free_wall: bool = valid_bench and GridUtils.cell_neighbors(_raw_grid, pos, WALL).size() == 0
+
+			if width > 3 or length > 3 and free_wall and valid_free_wall and _room_count > 2:
+				var dir: Vector3 = Vector3.RIGHT if width > length else Vector3.FORWARD
+				var item_dir: Vector3 = Vector3.FORWARD if width > length else Vector3.RIGHT
+				var ori: int = GridUtils.vec_to_orientation(_grid, dir)
+				_grid.set_cell_item(pos, FREE_WALL, ori)
+				bench_slots.push_front([pos - item_dir * 0.075, item_dir])
+				bench_slots.append([pos + item_dir * 0.075, -item_dir])
+			elif valid_bench:
+				_grid.set_cell_item(pos, BENCH, bench_area_ori)
+	for slot: Array in bench_slots:
+		add_item_slot(slot)
 
 
 func _decorate_wall_tile(pos: Vector3) -> void:
@@ -398,7 +410,7 @@ func _decorate_wall_tile(pos: Vector3) -> void:
 
 		# put an exit everywhere it fits
 		if valid_halls.size() > 0 and exits.size() < _exit_limit:
-			var new_hall: Hall = _hall_scene.instantiate()
+			var new_hall: Hall = _HALL_SCENE.instantiate()
 			var hall_type: Array = valid_halls[_rng.randi() % valid_halls.size()]
 			add_child(new_hall)
 			new_hall.init(
@@ -411,7 +423,7 @@ func _decorate_wall_tile(pos: Vector3) -> void:
 			)
 
 			exits.append(new_hall)
-			emit_signal("exit_added", new_hall)
+			exit_added.emit(new_hall)
 		# put exhibit items everywhere else
 		else:
 			add_item_slot([slot, hall_dir])

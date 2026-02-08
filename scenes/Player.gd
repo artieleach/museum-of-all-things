@@ -6,6 +6,8 @@ const INTERPOLATION_SPEED: float = 15.0
 const TELEPORT_SNAP_THRESHOLD: float = 5.0
 const BOB_FREQUENCY: float = 12.0
 const BOB_AMPLITUDE: float = 0.05
+const DEFAULT_PIVOT_Y: float = 1.35
+const PITCH_CLAMP: float = 1.2
 
 var _gravity: float = -30.0
 var _bob_time: float = 0.0
@@ -39,7 +41,7 @@ var _joy_right_y: int = JOY_AXIS_RIGHT_Y
 var _target_position: Vector3 = Vector3.ZERO
 var _target_rotation_y: float = 0.0
 var _target_pivot_rot_x: float = 0.0
-var _target_pivot_pos_y: float = 1.35
+var _target_pivot_pos_y: float = DEFAULT_PIVOT_Y
 var _has_network_target: bool = false
 
 # Subsystems
@@ -103,9 +105,9 @@ var mounted_on: Node:
 	get: return _mount_system.mounted_on if _mount_system else null
 var mounted_by: Node:
 	get: return _mount_system.mounted_by if _mount_system else null
-var _is_mounted: bool:
+var is_mounted: bool:
 	get: return _mount_system.is_mounted() if _mount_system else false
-var _has_rider: bool:
+var has_rider: bool:
 	get: return _mount_system.has_rider() if _mount_system else false
 var mount_peer_id: int:
 	get: return _mount_system.mount_peer_id if _mount_system else -1
@@ -120,7 +122,7 @@ var is_carrying_painting: bool:
 
 # Crouch API (delegates to PlayerCrouchSystem)
 var starting_height: float:
-	get: return _crouch_system.get_starting_height() if _crouch_system else 1.35
+	get: return _crouch_system.get_starting_height() if _crouch_system else DEFAULT_PIVOT_Y
 var crouching_height: float:
 	get: return _crouch_system.get_crouching_height() if _crouch_system else 0.45
 
@@ -180,7 +182,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not smooth_movement:
 			rotate_y(delta_x)
 			_pivot.rotate_x(delta_y)
-			_pivot.rotation.x = clamp(_pivot.rotation.x, -1.2, 1.2)
+			_pivot.rotation.x = clamp(_pivot.rotation.x, -PITCH_CLAMP, PITCH_CLAMP)
 		else:
 			_camera_v += Vector2(
 				clamp(delta_y, -dampening, dampening),
@@ -238,12 +240,12 @@ func _physics_process(delta: float) -> void:
 	if delta_vec.length() > _joy_deadzone:
 		rotate_y(delta_vec.x * _joy_sensitivity)
 		_pivot.rotate_x(delta_vec.y * _joy_sensitivity)
-		_pivot.rotation.x = clamp(_pivot.rotation.x, -1.2, 1.2)
+		_pivot.rotation.x = clamp(_pivot.rotation.x, -PITCH_CLAMP, PITCH_CLAMP)
 
 	if smooth_movement:
 		rotate_y(_camera_v.y)
 		_pivot.rotate_x(_camera_v.x)
-		_pivot.rotation.x = clamp(_pivot.rotation.x, -1.2, 1.2)
+		_pivot.rotation.x = clamp(_pivot.rotation.x, -PITCH_CLAMP, PITCH_CLAMP)
 		_camera_v *= 0.95
 
 	_footstep_player.set_on_floor(is_on_floor())
@@ -393,7 +395,7 @@ func set_body_visible(is_visible: bool) -> void:
 		_head_mesh.visible = is_visible
 	if _name_label:
 		# Keep nameplate hidden if being ridden by another player
-		if is_visible and _has_rider:
+		if is_visible and has_rider:
 			_name_label.visible = false
 		else:
 			_name_label.visible = is_visible
@@ -429,7 +431,7 @@ func set_player_color(color: Color) -> void:
 		head_mat.albedo_color = color.lightened(0.15)
 
 
-func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35) -> void:
+func apply_network_position(pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = DEFAULT_PIVOT_Y) -> void:
 	var should_snap: bool = false
 
 	if not _has_network_target:

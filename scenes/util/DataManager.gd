@@ -22,7 +22,7 @@ func _ready() -> void:
 		if not dir:
 			var err := DirAccess.make_dir_recursive_absolute(cache_dir)
 			if err != OK:
-				push_error("DataManager: Failed to create cache directory '%s': %s" % [cache_dir, error_string(err)])
+				Log.error("DataManager", "Failed to create cache directory '%s': %s" % [cache_dir, error_string(err)])
 			elif OS.is_debug_build():
 				print("cache directory created at '%s'" % cache_dir)
 
@@ -62,7 +62,7 @@ func _texture_load_item():
 
 					var handle_result = func(result):
 						if result[0] != OK:
-							push_error("failed to fetch image ", result[1], " ", item.url)
+							Log.error("DataManager", "failed to fetch image %s %s" % [str(result[1]), item.url])
 						else:
 							var fetched_data: PackedByteArray = result[3]
 							_write_url(item.url, fetched_data)
@@ -160,7 +160,7 @@ func _write_url(url: String, data: PackedByteArray) -> Error:
 	var f := FileAccess.open(file_path, FileAccess.WRITE)
 	if not f:
 		var err := FileAccess.get_open_error()
-		push_error("DataManager: Failed to write file '%s': %s" % [file_path, error_string(err)])
+		Log.error("DataManager", "Failed to write file '%s': %s" % [file_path, error_string(err)])
 		_fs_lock.unlock()
 		return err
 	f.store_buffer(data)
@@ -199,7 +199,7 @@ func load_json_data(url: String) -> Variant:
 	var json_str: String = data.get_string_from_utf8()
 	var parsed: Variant = JSON.parse_string(json_str)
 	if parsed == null and not json_str.is_empty():
-		push_error("DataManager: Failed to parse JSON from cache for '%s'" % url)
+		Log.error("DataManager", "Failed to parse JSON from cache for '%s'" % url)
 	return parsed
 
 func save_json_data(url: String, json: Dictionary) -> Error:
@@ -211,10 +211,10 @@ func save_json_data(url: String, json: Dictionary) -> Error:
 func _emit_image(url: String, texture: ImageTexture, ctx: Variant) -> void:
 	if texture == null:
 		return
-	call_deferred("emit_signal", "loaded_image", url, texture, ctx)
+	loaded_image.emit.call_deferred(url, texture, ctx)
 
 func _emit_error(url: String, error_msg: String) -> void:
-	call_deferred("emit_signal", "image_load_error", url, error_msg)
+	image_load_error.emit.call_deferred(url, error_msg)
 
 func request_image(url: String, ctx: Variant = null) -> void:
 	WorkQueue.add_item(TEXTURE_QUEUE, {

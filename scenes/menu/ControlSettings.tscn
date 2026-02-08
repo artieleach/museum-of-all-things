@@ -3,8 +3,12 @@
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_3stxh"]
 [ext_resource type="Script" uid="uid://cxehe8cfw3mam" path="res://scenes/menu/ControlSettings.gd" id="1_od8gn"]
 
+[ext_resource type="FontFile" uid="uid://bxph8sc2vndn" path="res://assets/fonts/CormorantGaramond/CormorantGaramond-SemiBold.ttf" id="3_serif"]
+
 [sub_resource type="LabelSettings" id="LabelSettings_kfvnr"]
-font_size = 64
+font = ExtResource("3_serif")
+font_size = 48
+font_color = Color(0, 0, 0, 1)
 
 [node name="ControlSettings" type="VBoxContainer" unique_id=773576803]
 anchors_preset = 15

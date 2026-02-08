@@ -42,7 +42,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.501961)
+color = Color(0, 0, 0, 0.65)
 
 [node name="Settings" parent="CanvasLayer" unique_id=864804262 instance=ExtResource("4_31ns1")]
 visible = false

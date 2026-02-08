@@ -289,7 +289,7 @@ func _set_current_room_title(title: String) -> void:
 		_player.current_room = title
 
 		# Also update any rider mounted on local player (sync room immediately to prevent race condition)
-		if "_has_rider" in _player and _player._has_rider:
+		if "has_rider" in _player and _player.has_rider:
 			var rider: Node = _player.mounted_by
 			if is_instance_valid(rider) and "current_room" in rider:
 				rider.current_room = title

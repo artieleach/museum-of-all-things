@@ -22,8 +22,8 @@ var _mount_lerp_duration: float = 0.3
 var _mount_initial_offset: Vector3 = Vector3.ZERO
 
 # Store original collision settings
-var _original_collision_layer: int = 524288
-var _original_collision_mask: int = 524289
+var _original_collision_layer: int = 1 << 19  # Layer 20: Player Body
+var _original_collision_mask: int = (1 << 19) | (1 << 0)  # Layer 20 + Layer 1: Static World
 
 
 func init(player: CharacterBody3D, crouch_system: PlayerCrouchSystem) -> void:
@@ -119,17 +119,17 @@ func try_mount_target() -> void:
 
 	# Check if we hit a player
 	if collider.is_in_group("Player") and collider != _player:
-		emit_signal("mount_requested", collider)
+		mount_requested.emit(collider)
 
 
 func request_dismount() -> void:
-	emit_signal("dismount_requested")
+	dismount_requested.emit()
 
 
 func execute_mount(target: Node, target_peer_id: int = -1) -> void:
 	if not is_instance_valid(target):
 		return
-	if "_has_rider" in target and target._has_rider:
+	if "has_rider" in target and target.has_rider:
 		return  # Target already has a rider
 
 	mounted_on = target

@@ -11,15 +11,15 @@ const FULL_MARGIN := 60.0
 const MINIMAP_NODE_RADIUS := 6.0
 const FULL_NODE_RADIUS := 14.0
 
-const BG_MINIMAP := Color(0, 0, 0, 0.5)
-const BG_FULL := Color(0, 0, 0, 0.7)
+const BG_MINIMAP := Color(1, 1, 1, 0.8)
+const BG_FULL := Color(0.973, 0.976, 0.98, 0.2)
 
-const COLOR_CURRENT := Color(1.0, 0.9, 0.2)  # Yellow
-const COLOR_VISITED := Color(0.3, 0.5, 0.9)  # Blue
-const COLOR_UNVISITED := Color(0.5, 0.5, 0.5, 0.4)  # Dim gray
-const COLOR_EDGE := Color(0.4, 0.4, 0.4, 0.6)
-const COLOR_PATH := Color(0.3, 0.5, 0.9, 0.8)  # Blue path
-const COLOR_LABEL := Color(1, 1, 1, 0.9)
+const COLOR_CURRENT := Color(0.024, 0.271, 0.678)  # Wikipedia blue
+const COLOR_VISITED := Color(0.420, 0.294, 0.631)  # Wikipedia purple
+const COLOR_UNVISITED := Color(0.784, 0.800, 0.820, 0.5)  # Light gray
+const COLOR_EDGE := Color(0.635, 0.663, 0.694, 0.6)
+const COLOR_PATH := Color(0.024, 0.271, 0.678, 0.8)  # Blue path
+const COLOR_LABEL := Color(0.125, 0.129, 0.133, 0.9)
 
 var _mode: Mode = Mode.HIDDEN
 var _mode_before_pause: Mode = Mode.HIDDEN
@@ -100,7 +100,6 @@ func _draw() -> void:
 	var history: Array[String] = ExhibitGraph.get_visit_history()
 	var current: String = ExhibitGraph.get_current_room()
 
-	# Resize control to the map area — clip_contents handles clipping
 	var node_radius: float
 	var bg_color: Color
 	var show_labels: bool
@@ -120,14 +119,11 @@ func _draw() -> void:
 			bg_color = BG_FULL
 			show_labels = true
 
-	# Draw background (local coords: 0,0 to size)
 	var is_minimap: bool = _mode == Mode.MINIMAP
 	var map_center: Vector2 = size * 0.5
 	var map_radius: float = minf(size.x, size.y) * 0.5
 	if is_minimap:
 		draw_circle(map_center, map_radius, bg_color)
-	else:
-		draw_rect(Rect2(Vector2.ZERO, size), bg_color)
 
 	# Compute transform from graph space to local screen space
 	var current_pos: Vector2 = layout.get(current, Vector2.ZERO)
@@ -152,7 +148,15 @@ func _draw() -> void:
 		path_edges[key_a] = true
 		path_edges[key_b] = true
 
-	# Draw edges
+	_draw_edges(edges, layout, current_pos, scale_factor, center_offset, path_edges, is_minimap, map_center, map_radius)
+	_draw_nodes(nodes, layout, current, current_pos, scale_factor, center_offset, node_radius, is_minimap, map_center, map_radius, show_labels)
+	_draw_player_dots(layout, current_pos, scale_factor, center_offset, node_radius, is_minimap, map_center, map_radius)
+
+	if is_minimap:
+		draw_arc(map_center, map_radius, 0, TAU, 64, Color(0.635, 0.663, 0.694, 0.5), 1.5, true)
+
+
+func _draw_edges(edges: Array, layout: Dictionary, current_pos: Vector2, scale_factor: float, center_offset: Vector2, path_edges: Dictionary, is_minimap: bool, map_center: Vector2, map_radius: float) -> void:
 	for edge: Array in edges:
 		var from: String = edge[0]
 		var to: String = edge[1]
@@ -174,7 +178,8 @@ func _draw() -> void:
 		var edge_width: float = 3.0 if is_path else 1.5
 		draw_line(p1, p2, edge_color, edge_width, true)
 
-	# Draw nodes
+
+func _draw_nodes(nodes: Dictionary, layout: Dictionary, current: String, current_pos: Vector2, scale_factor: float, center_offset: Vector2, node_radius: float, is_minimap: bool, map_center: Vector2, map_radius: float, show_labels: bool) -> void:
 	for title: String in layout:
 		if not nodes.has(title):
 			continue
@@ -205,33 +210,30 @@ func _draw() -> void:
 			var label_pos: Vector2 = screen_pos + Vector2(node_radius + 4, 5)
 			draw_string(_font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, COLOR_CURRENT)
 
-	# Draw multiplayer player dots
-	if NetworkManager.is_multiplayer_active():
-		var local_id: int = NetworkManager.get_unique_id()
-		var player_list: Array = NetworkManager.get_player_list()
-		var peer_index: int = 0
-		for peer_id: int in player_list:
-			if peer_id == local_id:
-				continue
-			var room: String = NetworkManager.get_player_room(peer_id)
-			if not layout.has(room):
-				continue
-			var base_pos: Vector2 = _graph_to_screen(layout[room], current_pos, scale_factor, center_offset)
 
-			var orbit_angle: float = _time * 1.5 + peer_index * TAU / maxf(player_list.size() - 1, 1)
-			var orbit_offset: Vector2 = Vector2(cos(orbit_angle), sin(orbit_angle)) * (node_radius + 6)
-			var dot_pos: Vector2 = base_pos + orbit_offset
-			var dot_color: Color = NetworkManager.get_player_color(peer_id)
-			if is_minimap and dot_pos.distance_to(map_center) > map_radius - 4.0:
-				peer_index += 1
-				continue
-			draw_circle(dot_pos, 4.0, dot_color)
+func _draw_player_dots(layout: Dictionary, current_pos: Vector2, scale_factor: float, center_offset: Vector2, node_radius: float, is_minimap: bool, map_center: Vector2, map_radius: float) -> void:
+	if not NetworkManager.is_multiplayer_active():
+		return
+	var local_id: int = NetworkManager.get_unique_id()
+	var player_list: Array = NetworkManager.get_player_list()
+	var peer_index: int = 0
+	for peer_id: int in player_list:
+		if peer_id == local_id:
+			continue
+		var room: String = NetworkManager.get_player_room(peer_id)
+		if not layout.has(room):
+			continue
+		var base_pos: Vector2 = _graph_to_screen(layout[room], current_pos, scale_factor, center_offset)
+
+		var orbit_angle: float = _time * 1.5 + peer_index * TAU / maxf(player_list.size() - 1, 1)
+		var orbit_offset: Vector2 = Vector2(cos(orbit_angle), sin(orbit_angle)) * (node_radius + 6)
+		var dot_pos: Vector2 = base_pos + orbit_offset
+		var dot_color: Color = NetworkManager.get_player_color(peer_id)
+		if is_minimap and dot_pos.distance_to(map_center) > map_radius - 4.0:
 			peer_index += 1
-
-
-	# Draw circle border for minimap
-	if is_minimap:
-		draw_arc(map_center, map_radius, 0, TAU, 64, Color(1, 1, 1, 0.3), 1.5, true)
+			continue
+		draw_circle(dot_pos, 4.0, dot_color)
+		peer_index += 1
 
 
 func _clip_line_to_circle(p1: Vector2, p2: Vector2, center: Vector2, radius: float) -> Array:

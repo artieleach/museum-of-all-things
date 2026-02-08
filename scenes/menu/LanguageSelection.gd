@@ -1,15 +1,15 @@
 extends OptionButton
 
-var _languages
+var _languages: Array
 
-func _get_lang_array():
+func _get_lang_array() -> Array:
 	var arr = ["en"]
 	for locale in TranslationServer.get_loaded_locales():
 		if locale != "en":
 			arr.append(locale)
 	return arr
 
-func _ready():
+func _ready() -> void:
 	SettingsEvents.set_language.connect(_on_set_language)
 
 	_languages = _get_lang_array()

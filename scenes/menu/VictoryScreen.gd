@@ -2,8 +2,8 @@ extends Control
 
 signal continue_pressed
 
-@onready var winner_label: Label = $VBoxContainer/WinnerLabel
-@onready var continue_button: Button = $VBoxContainer/ContinueButton
+@onready var winner_label: Label = $CenterContainer/PanelContainer/VBoxContainer/WinnerLabel
+@onready var continue_button: Button = $CenterContainer/PanelContainer/VBoxContainer/ContinueButton
 
 func _ready() -> void:
 	visible = false

@@ -117,7 +117,7 @@ func get_player_room(peer_id: int) -> String:
 func _broadcast_player_room(peer_id: int, room: String) -> void:
 	if player_info.has(peer_id):
 		player_info[peer_id].current_room = room
-	emit_signal("player_room_changed", peer_id, room)
+	player_room_changed.emit(peer_id, room)
 
 func set_local_player_name(player_name: String) -> void:
 	local_player_name = player_name
@@ -152,7 +152,7 @@ func _broadcast_player_info(peer_id: int, player_name: String, color_html: Strin
 	if player_info.has(peer_id) and player_info[peer_id].has("current_room"):
 		current_room = player_info[peer_id].current_room
 	player_info[peer_id] = { "name": player_name, "color": Color.html(color_html), "skin_url": skin_url, "current_room": current_room }
-	emit_signal("player_info_updated", peer_id)
+	player_info_updated.emit(peer_id)
 
 @rpc("any_peer", "reliable")
 func _request_player_info(from_peer: int) -> void:
@@ -167,7 +167,7 @@ func _receive_player_info(peer_id: int, player_name: String, color_html: String,
 	if player_info.has(peer_id) and player_info[peer_id].has("current_room"):
 		current_room = player_info[peer_id].current_room
 	player_info[peer_id] = { "name": player_name, "color": Color.html(color_html), "skin_url": skin_url, "current_room": current_room }
-	emit_signal("player_info_updated", peer_id)
+	player_info_updated.emit(peer_id)
 
 func _on_peer_connected(id: int) -> void:
 	Log.info("Network", "Peer connected: %d" % id)
@@ -195,13 +195,13 @@ func _on_peer_connected(id: int) -> void:
 				var room: String = info.current_room if info.has("current_room") else "Lobby"
 				_broadcast_player_room.rpc_id(id, existing_id, room)
 
-	emit_signal("peer_connected", id)
+	peer_connected.emit(id)
 
 func _on_peer_disconnected(id: int) -> void:
 	Log.info("Network", "Peer disconnected: %d" % id)
 
 	player_info.erase(id)
-	emit_signal("peer_disconnected", id)
+	peer_disconnected.emit(id)
 
 func _on_connected_to_server() -> void:
 	Log.debug("Network", "Connected to server")
@@ -210,14 +210,14 @@ func _on_connected_to_server() -> void:
 	var my_id = multiplayer.get_unique_id()
 	player_info[my_id] = { "name": local_player_name, "color": local_player_color, "skin_url": local_player_skin, "current_room": "Lobby" }
 
-	emit_signal("connection_succeeded")
+	connection_succeeded.emit()
 
 func _on_connection_failed() -> void:
 	Log.warn("Network", "Connection failed")
 
 	peer = null
 	multiplayer.multiplayer_peer = null
-	emit_signal("connection_failed")
+	connection_failed.emit()
 
 func _on_server_disconnected() -> void:
 	Log.info("Network", "Server disconnected")
@@ -227,4 +227,4 @@ func _on_server_disconnected() -> void:
 	player_info.clear()
 	is_hosting = false
 	is_dedicated_server = false
-	emit_signal("server_disconnected")
+	server_disconnected.emit()

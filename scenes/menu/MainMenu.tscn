@@ -4,9 +4,28 @@
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_dwey2"]
 [ext_resource type="Texture2D" uid="uid://dgfyxj62mioye" path="res://assets/logo/moat_logo_large_funky.png" id="3_vuiv8"]
 [ext_resource type="PackedScene" uid="uid://cv3acpc23tjw0" path="res://scenes/menu/LanguageSelection.tscn" id="4_2nud1"]
+[ext_resource type="FontFile" uid="uid://bxph8sc2vndn" path="res://assets/fonts/CormorantGaramond/CormorantGaramond-SemiBold.ttf" id="5_serif"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_46gfj"]
-font_size = 64
+font = ExtResource("5_serif")
+font_size = 48
+font_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 40.0
+content_margin_top = 30.0
+content_margin_right = 40.0
+content_margin_bottom = 30.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.635, 0.663, 0.694, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [node name="MainMenu" type="Control" unique_id=1948110404]
 layout_mode = 3
@@ -17,6 +36,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_cmhx0")
 
+[node name="Background" type="ColorRect" parent="." unique_id=1173342466]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0)
+
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1877874735]
 layout_mode = 1
 anchors_preset = 15
@@ -26,48 +55,57 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_dwey2")
 theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 100
+theme_override_constants/margin_top = 60
 theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 100
+theme_override_constants/margin_bottom = 60
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1619204762]
+[node name="CenterContainer" type="CenterContainer" parent="MarginContainer" unique_id=2133196568]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/CenterContainer" unique_id=1619204762]
 layout_mode = 2
 alignment = 1
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer" unique_id=1357616785]
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/CenterContainer/VBoxContainer" unique_id=1357616785]
 z_index = 1
 layout_mode = 2
 texture = ExtResource("3_vuiv8")
 stretch_mode = 3
 
-[node name="Label3" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1063798843]
+[node name="Label3" type="Label" parent="MarginContainer/CenterContainer/VBoxContainer" unique_id=1063798843]
 layout_mode = 2
 text = " "
 label_settings = SubResource("LabelSettings_46gfj")
 
-[node name="Start" type="Button" parent="MarginContainer/VBoxContainer" unique_id=1316139302]
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer/CenterContainer/VBoxContainer" unique_id=1319940688]
+custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="ButtonContainer" type="VBoxContainer" parent="MarginContainer/CenterContainer/VBoxContainer/PanelContainer" unique_id=591725381]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Start" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer" unique_id=1316139302]
+layout_mode = 2
 text = "Enter the Museum"
 
-[node name="Multiplayer" type="Button" parent="MarginContainer/VBoxContainer" unique_id=290461112]
+[node name="Multiplayer" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer" unique_id=290461112]
 layout_mode = 2
-size_flags_horizontal = 3
 text = "Multiplayer"
 
-[node name="Settings" type="Button" parent="MarginContainer/VBoxContainer" unique_id=1469059825]
+[node name="Settings" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer" unique_id=1469059825]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 0
 text = "Settings"
 
-[node name="Quit" type="Button" parent="MarginContainer/VBoxContainer" unique_id=1195762940]
+[node name="Quit" type="Button" parent="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer" unique_id=1195762940]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
 text = "Quit"
 
-[node name="Language" parent="MarginContainer/VBoxContainer" unique_id=1277089359 instance=ExtResource("4_2nud1")]
+[node name="Language" parent="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer" unique_id=1277089359 instance=ExtResource("4_2nud1")]
 layout_mode = 2
 
 [node name="FadeIn" type="ColorRect" parent="." unique_id=1046280955]
@@ -92,7 +130,7 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
 [connection signal="visibility_changed" from="." to="." method="_on_visibility_changed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/Start" to="." method="_on_start_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/Multiplayer" to="." method="_on_multiplayer_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/Settings" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/Quit" to="." method="_on_quit_button_pressed"]
+[connection signal="pressed" from="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer/Start" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer/Multiplayer" to="." method="_on_multiplayer_pressed"]
+[connection signal="pressed" from="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer/Settings" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="MarginContainer/CenterContainer/VBoxContainer/PanelContainer/ButtonContainer/Quit" to="." method="_on_quit_button_pressed"]

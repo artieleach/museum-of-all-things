@@ -3,8 +3,8 @@ extends Node3D
 static var margin_top := 100
 
 func init(text: String) -> void:
-	var label = $SubViewport/Control/RichTextLabel
-	var t = TextUtils.strip_markup(text)
+	var label: RichTextLabel = $SubViewport/Control/RichTextLabel
+	var t: String = TextUtils.strip_markup(text)
 	label.text = t
 	call_deferred("_center_vertically", label)
 	MipmapThread.get_viewport_texture_with_mipmaps.call_deferred($SubViewport, func(texture):
@@ -12,22 +12,22 @@ func init(text: String) -> void:
 		$SubViewport.queue_free()
 	)
 
-func _center_vertically(label):
+func _center_vertically(label: RichTextLabel) -> void:
 	# Ensure the SubViewport is sized
-	var viewport_size = $SubViewport.size
+	var viewport_size: Vector2i = $SubViewport.size
 
 	# Get the content height from the RichTextLabel
-	var content_height = label.get_content_height()
+	var content_height: float = label.get_content_height()
 
 	if content_height > viewport_size.y - 2 * margin_top:
-		var text_len = len(label.text)
-		var new_len = text_len * (float(content_height - 2 * margin_top) / float(content_height))
+		var text_len: int = len(label.text)
+		var new_len: float = text_len * (float(content_height - 2 * margin_top) / float(content_height))
 		label.text = TextUtils.trim_to_length_sentence(label.text, min(text_len - 1, new_len))
 		call_deferred("_center_vertically", label)
 		return
 
 	# Calculate the centered Y position
-	var y_position = max((viewport_size.y - content_height) / 2, margin_top)
+	var y_position: float = max((viewport_size.y - content_height) / 2, margin_top)
 
 	# Set the position of the RichTextLabel
 	label.position.y = y_position

@@ -48,9 +48,7 @@ func _ready() -> void:
 	whitespace_re.compile("[\t ]+")
 	nl_re.compile("\n+")
 	alt_re.compile("alt=(.+?)\\|")
-	#image_field_re.compile("(photo|image\\|?)[^_\\|]*?=(.+?)(\\||$)")
 	image_field_re.compile("[\\|=]\\s*([^\\n|=]+\\.\\w{,4})")
-	#image_field_re.compile("photo")
 	tokenizer.compile("[^\\{\\}\\[\\]<>]+|[\\{\\}\\[\\]<>]")
 	image_name_re.compile("^([iI]mage:|[fF]ile:)")
 	exclude_image_re.compile("\\bicon\\b|\\blogo\\b|blue pencil")
@@ -352,7 +350,7 @@ func _create_items(title: String, result: Dictionary, prev_title: String) -> voi
 				items.append(text_items.pop_front())
 		items.append(image_items.pop_front())
 
-	call_deferred("emit_signal", "items_complete", {
+	items_complete.emit.call_deferred({
 		"title": title,
 		"doors": doors,
 		"items": items,

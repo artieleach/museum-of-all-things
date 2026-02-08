@@ -16,7 +16,7 @@ func _read_settings() -> Error:
 			# No settings file yet - this is fine, use empty settings
 			_is_loaded = true
 			return OK
-		push_error("SettingsManager: Failed to open settings file: %s" % error_string(err))
+		Log.error("SettingsManager", "Failed to open settings file: %s" % error_string(err))
 		settings_load_error.emit(err)
 		return err
 
@@ -25,7 +25,7 @@ func _read_settings() -> Error:
 
 	var parsed: Variant = JSON.parse_string(json_text)
 	if parsed == null and not json_text.is_empty():
-		push_error("SettingsManager: Failed to parse settings JSON")
+		Log.error("SettingsManager", "Failed to parse settings JSON")
 		settings_load_error.emit(ERR_PARSE_ERROR)
 		return ERR_PARSE_ERROR
 
@@ -42,7 +42,7 @@ func _write_settings() -> Error:
 	var file := FileAccess.open(_settings_file, FileAccess.WRITE)
 	if not file:
 		var err := FileAccess.get_open_error()
-		push_error("SettingsManager: Failed to open settings file for writing: %s" % error_string(err))
+		Log.error("SettingsManager", "Failed to open settings file for writing: %s" % error_string(err))
 		settings_save_error.emit(err)
 		return err
 

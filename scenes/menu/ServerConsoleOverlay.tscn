@@ -11,11 +11,11 @@ font_size = 16
 font_color = Color(0.7, 0.7, 0.7, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0, 0, 0, 0.8)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
+bg_color = Color(0.125, 0.129, 0.133, 0.9)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [node name="ServerConsoleOverlay" type="Control"]
 layout_mode = 3

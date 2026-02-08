@@ -6,16 +6,16 @@ signal vr_controls
 signal return_to_lobby
 signal start_race
 
-@onready var vbox = $MarginContainer/VBoxContainer
-@onready var race_button = $MarginContainer/VBoxContainer/Race
-@onready var cancel_race_button = $MarginContainer/VBoxContainer/CancelRace
+@onready var vbox = $MarginContainer/CenterContainer/VBoxContainer/PausePanel/PauseContent
+@onready var race_button = $MarginContainer/CenterContainer/VBoxContainer/PausePanel/PauseContent/Race
+@onready var cancel_race_button = $MarginContainer/CenterContainer/VBoxContainer/PausePanel/PauseContent/CancelRace
 
-func _on_visibility_changed():
+func _on_visibility_changed() -> void:
 	if visible and vbox:
 		vbox.get_node("Resume").grab_focus()
 		_update_race_button_visibility()
 
-func _ready():
+func _ready() -> void:
 	SettingsEvents.set_current_room.connect(set_current_room)
 	UIEvents.ui_cancel_pressed.connect(ui_cancel_pressed)
 	MultiplayerEvents.multiplayer_started.connect(_update_race_button_visibility)
@@ -32,40 +32,40 @@ func _ready():
 
 	_update_race_button_visibility()
 
-func ui_cancel_pressed():
+func ui_cancel_pressed() -> void:
 	if visible:
 		call_deferred("_on_resume_pressed")
 
-var current_room = "Lobby"
-func set_current_room(room):
+var current_room: String = "Lobby"
+func set_current_room(room: String) -> void:
 	current_room = room
 	vbox.get_node("Title").text = current_room + (" - " + tr("Paused"))
 	vbox.get_node("Open").disabled = current_room == "Lobby"
-	$MarginContainer/VBoxContainer/Language.visible = current_room == "Lobby"
+	$MarginContainer/CenterContainer/VBoxContainer/PausePanel/PauseContent/Language.visible = current_room == "Lobby"
 
-func _on_resume_pressed():
+func _on_resume_pressed() -> void:
 	resume.emit()
 
-func _on_settings_pressed():
+func _on_settings_pressed() -> void:
 	settings.emit()
 
-func _on_lobby_pressed():
+func _on_lobby_pressed() -> void:
 	return_to_lobby.emit()
 
-func _on_open_pressed():
+func _on_open_pressed() -> void:
 	var lang = TranslationServer.get_locale()
 	OS.shell_open("https://" + lang + ".wikipedia.org/wiki/" + current_room)
 
-func _on_quit_pressed():
+func _on_quit_pressed() -> void:
 	UIEvents.emit_quit_requested()
 
-func _on_ask_quit_pressed():
+func _on_ask_quit_pressed() -> void:
 	_on_quit_pressed()
 
-func _on_cancel_quit_pressed():
-	$MarginContainer/QuitContainer.visible = false
-	$MarginContainer/VBoxContainer.visible = true
-	$MarginContainer/VBoxContainer/Resume.grab_focus()
+func _on_cancel_quit_pressed() -> void:
+	$MarginContainer/CenterContainer/QuitContainer.visible = false
+	$MarginContainer/CenterContainer/VBoxContainer.visible = true
+	$MarginContainer/CenterContainer/VBoxContainer/PausePanel/PauseContent/Resume.grab_focus()
 
 func _on_vr_controls_pressed() -> void:
 	vr_controls.emit()

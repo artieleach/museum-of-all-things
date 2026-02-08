@@ -1,13 +1,13 @@
 extends Node3D
 
 
-func open():
+func open() -> void:
 	set_open(true)
 
-func close():
+func close() -> void:
 	set_open(false)
 
-func set_open(open = true, instant = false):
+func set_open(open: bool = true, instant: bool = false) -> void:
 	$Plane.visible = not open
 	if is_visible() and not instant:
 		var density_tween = get_tree().create_tween()

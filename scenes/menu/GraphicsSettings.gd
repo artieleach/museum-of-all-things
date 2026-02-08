@@ -2,7 +2,9 @@ extends VBoxContainer
 
 signal resume
 
-@onready var post_processing_options = ["none", "crt"]
+enum ScaleMode { BILINEAR, FSR1, FSR2 }
+
+var post_processing_options: Array[String] = ["none", "crt"]
 
 # Display options
 @onready var scale_mode: OptionButton = %ScaleMode
@@ -38,28 +40,28 @@ signal resume
 # Post-processing options
 @onready var post_processing_effect: OptionButton = %PostProcessingEffect
 
-var _loaded_settings = false
+var _loaded_settings: bool = false
 
 func _ready() -> void:
 	UIEvents.fullscreen_toggled.connect(_on_fullscreen_toggled)
 	_load_settings()
 
-	if scale_mode.selected == 0:
+	if scale_mode.selected == ScaleMode.BILINEAR:
 		get_tree().set_group("fsr_options", "visible", false)
 	else:
 		render_scale.hide()
 
-func ui_cancel_pressed():
+func ui_cancel_pressed() -> void:
 	if visible:
 		call_deferred("_on_resume_pressed")
 
-func _on_visibility_changed():
+func _on_visibility_changed() -> void:
 	if visible and is_inside_tree():
 		_load_settings()
-	elif _loaded_settings and not visible:
+	elif _loaded_settings and not is_visible_in_tree():
 		GraphicsManager.save_settings()
 
-func _load_settings():
+func _load_settings() -> void:
 	var e = GraphicsManager.get_env()
 	_loaded_settings = true
 
@@ -86,68 +88,68 @@ func _load_settings():
 
 	_update_scaling()
 
-func _on_restore_pressed():
+func _on_restore_pressed() -> void:
 	GraphicsManager.restore_default_settings()
 	_load_settings()
 
-func _on_resume_pressed():
+func _on_resume_pressed() -> void:
 	GraphicsManager.save_settings()
 	resume.emit()
 
-func _on_reflection_quality_value_changed(value: float):
+func _on_reflection_quality_value_changed(value: float) -> void:
 	GraphicsManager.get_env().ssr_max_steps = int(value)
 	reflection_quality_value.text = str(int(value))
 
-func _on_enable_reflections_toggled(toggled_on: bool):
+func _on_enable_reflections_toggled(toggled_on: bool) -> void:
 	GraphicsManager.get_env().ssr_enabled = toggled_on
 
-func _on_enable_ssil_toggled(toggled_on: bool):
+func _on_enable_ssil_toggled(toggled_on: bool) -> void:
 	GraphicsManager.get_env().ssil_enabled = toggled_on
 
-func _on_ambient_light_value_changed(value: float):
+func _on_ambient_light_value_changed(value: float) -> void:
 	GraphicsManager.get_env().ambient_light_energy = value
 	ambient_light_value.text = "%3.2f" % value
 
-func _on_max_fps_value_changed(value: float):
+func _on_max_fps_value_changed(value: float) -> void:
 	var is_unlimited = value <= max_fps.min_value
 	GraphicsManager.enable_fps_limit(not is_unlimited)
 	if not is_unlimited:
 		GraphicsManager.set_fps_limit(value)
 	_update_fps_label()
 
-func _update_fps_label():
+func _update_fps_label() -> void:
 	if max_fps.value <= max_fps.min_value:
 		max_fps_value.text = "Unlimited"
 	else:
 		max_fps_value.text = str(int(max_fps.value))
 
-func _on_vsync_toggled(toggled_on: bool):
+func _on_vsync_toggled(toggled_on: bool) -> void:
 	GraphicsManager.set_vsync_enabled(toggled_on)
 
-func _on_enable_fog_toggled(toggled_on: bool):
+func _on_enable_fog_toggled(toggled_on: bool) -> void:
 	GraphicsManager.get_env().fog_enabled = toggled_on
 
-func _on_fullscreen_toggled(toggled_on: bool):
+func _on_fullscreen_toggled(toggled_on: bool) -> void:
 	GraphicsManager.set_fullscreen(toggled_on)
 	fullscreen.set_pressed_no_signal(toggled_on)
 
-func _update_scaling():
-	var selected_scale_mode = scale_mode.selected
+func _update_scaling() -> void:
+	var selected_scale_mode: int = scale_mode.selected
 	GraphicsManager.set_scale_mode(selected_scale_mode)
 
 	# Show render scale if bilinear, FSR options otherwise
-	render_scale.visible = (selected_scale_mode == 0)
-	get_tree().set_group("fsr_options", "visible", (selected_scale_mode != 0))
+	render_scale.visible = (selected_scale_mode == ScaleMode.BILINEAR)
+	get_tree().set_group("fsr_options", "visible", (selected_scale_mode != ScaleMode.BILINEAR))
 
-	if selected_scale_mode == 0:  # Bilinear
+	if selected_scale_mode == ScaleMode.BILINEAR:
 		GraphicsManager.set_render_scale(render_scale.value)
 		return
 
 	# FSR
-	if selected_scale_mode == 1:  # FSR 1 has no "ultra performance"
+	if selected_scale_mode == ScaleMode.FSR1:  # FSR 1 has no "ultra performance"
 		fsr_quality.set_item_disabled(0, false)
 		fsr_quality.set_item_disabled(4, true)
-	if selected_scale_mode == 2:  # FSR 2 has no "ultra quality"
+	if selected_scale_mode == ScaleMode.FSR2:  # FSR 2 has no "ultra quality"
 		fsr_quality.set_item_disabled(0, true)
 		fsr_quality.set_item_disabled(4, false)
 
@@ -157,15 +159,15 @@ func _update_scaling():
 	render_scale.value = current_scale
 	render_scale_value.text = "%.0f %%\n" % (current_scale * 100)
 
-func _on_render_scale_value_changed(value: float):
+func _on_render_scale_value_changed(value: float) -> void:
 	render_scale_value.text = "%d %%\n" % (value * 100)
 	_update_scaling()
 
-func _on_scale_mode_value_changed(value: int):
+func _on_scale_mode_value_changed(value: int) -> void:
 	match value:
-		1:
+		ScaleMode.FSR1:
 			fsr_quality.select(0)
-		2:
+		ScaleMode.FSR2:
 			fsr_quality.select(1)
 
 	_update_scaling()
@@ -177,9 +179,9 @@ func _on_sharpness_scale_value_changed(value: float) -> void:
 	GraphicsManager.set_fsr_sharpness(value)
 	sharpness_scale_value.text = str(value)
 
-func _on_post_processing_effect_item_selected(index: int):
+func _on_post_processing_effect_item_selected(index: int) -> void:
 	GraphicsManager.set_post_processing(post_processing_options[index])
 
-func _on_render_distance_value_changed(value: float):
+func _on_render_distance_value_changed(value: float) -> void:
 	render_distance_value.text = "%dm" % int(value * 30)
 	GraphicsManager.set_render_distance_multiplier(value)

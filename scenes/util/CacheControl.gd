@@ -2,16 +2,16 @@ extends Node
 
 signal cache_size_result(cache_info)
 
-var cache_dir = "user://cache/"
-var global_cache_dir = ProjectSettings.globalize_path(cache_dir)
+var cache_dir: String = "user://cache/"
+var global_cache_dir: String = ProjectSettings.globalize_path(cache_dir)
 var _cache_stat_thread: Thread
 var _cache_stat_timer: Timer
-var CACHE_STAT_QUEUE = "CacheStat"
-var _cache_size_info = 0
-var _last_stat_time = 0
-var _max_stat_age = 2000
+var CACHE_STAT_QUEUE: String = "CacheStat"
+var _cache_size_info: int = 0
+var _last_stat_time: int = 0
+var _max_stat_age: int = 2000
 
-func _ready():
+func _ready() -> void:
 	if Platform.is_using_threads():
 		_cache_stat_thread = Thread.new()
 		_cache_stat_thread.start(_cache_stat_loop)
@@ -21,16 +21,16 @@ func _ready():
 		_cache_stat_timer.timeout.connect(_cache_stat_item)
 		_cache_stat_timer.start()
 
-func _exit_tree():
+func _exit_tree() -> void:
 	WorkQueue.set_quitting()
 	if _cache_stat_thread:
 		_cache_stat_thread.wait_to_finish()
 
-func _cache_stat_loop():
+func _cache_stat_loop() -> void:
 	while not WorkQueue.get_quitting():
 		_cache_stat_item()
 
-func _cache_stat_item():
+func _cache_stat_item() -> void:
 	var item = WorkQueue.process_queue(CACHE_STAT_QUEUE)
 	if item and len(item) > 0 and item[0] == "size":
 		if Time.get_ticks_msec() - _last_stat_time < _max_stat_age:
@@ -40,17 +40,17 @@ func _cache_stat_item():
 			_last_stat_time = Time.get_ticks_msec()
 			call_deferred("_emit_cache_size")
 
-func _emit_cache_size():
-	emit_signal("cache_size_result", _cache_size_info)
+func _emit_cache_size() -> void:
+	cache_size_result.emit(_cache_size_info)
 
-func auto_limit_cache_enabled():
+func auto_limit_cache_enabled() -> bool:
 	var settings = SettingsManager.get_settings("data")
 	if settings:
 		return settings.auto_limit_cache
 	else:
 		return true
 
-func clear_cache():
+func clear_cache() -> void:
 	var dir = DirAccess.open(cache_dir)
 	dir.list_dir_begin()
 
@@ -60,11 +60,11 @@ func clear_cache():
 			break
 		dir.remove(file)
 
-func calculate_cache_size():
+func calculate_cache_size() -> void:
 	if not Platform.is_web():
 		WorkQueue.add_item(CACHE_STAT_QUEUE, ["size"])
 
-func _get_cache_size():
+func _get_cache_size() -> int:
 	if Platform.is_web():
 		return -1
 	elif OS.get_name() == "Windows":
@@ -72,7 +72,7 @@ func _get_cache_size():
 	else:
 		return _get_cache_size_unix()
 
-func _get_cache_size_os_agnostic():
+func _get_cache_size_os_agnostic() -> int:
 	var dir = DirAccess.open(cache_dir)
 	dir.list_dir_begin()
 
@@ -86,7 +86,7 @@ func _get_cache_size_os_agnostic():
 		file = dir.get_next()
 	return total_length
 
-func _get_cache_size_unix():
+func _get_cache_size_unix() -> int:
 	var output = []
 	OS.execute("du", ["-sb", global_cache_dir], output)
 	if output.size() > 0:
@@ -95,7 +95,7 @@ func _get_cache_size_unix():
 			return int(parts[0])
 	return -1
 
-func _get_cache_size_windows():
+func _get_cache_size_windows() -> int:
 	var output = []
 	var command = "powershell"
 	var args = [
@@ -109,7 +109,7 @@ func _get_cache_size_windows():
 		return int(output[0].strip_edges())
 	return -1
 
-func cull_cache_to_size(max_size: int, target_size: int):
+func cull_cache_to_size(max_size: int, target_size: int) -> void:
 	var dir = DirAccess.open(cache_dir)
 	dir.list_dir_begin()
 

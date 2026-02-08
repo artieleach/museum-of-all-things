@@ -86,8 +86,8 @@ func on_settings_back() -> void:
 	if prev:
 		prev.call()
 	else:
-		emit_signal("game_start_requested")
+		game_start_requested.emit()
 
 
 func on_multiplayer_start_game() -> void:
-	emit_signal("multiplayer_start_requested")
+	multiplayer_start_requested.emit()

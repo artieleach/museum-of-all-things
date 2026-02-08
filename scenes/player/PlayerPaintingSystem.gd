@@ -102,7 +102,7 @@ func try_steal_target() -> bool:
 		var title: String = placed.get_meta("image_title")
 		var exhibit: String = placed.get_meta("exhibit_title")
 		var size: Vector2 = placed.get_meta("image_size")
-		emit_signal("steal_requested", exhibit, title, url, size)
+		steal_requested.emit(exhibit, title, url, size)
 		return true
 
 	# Walk up from collider to find ImageItem
@@ -125,7 +125,7 @@ func try_steal_target() -> bool:
 		return false
 
 	var image_size: Vector2 = image_item.get_image_size()
-	emit_signal("steal_requested", exhibit_title, image_item.title, image_item.image_url, image_size)
+	steal_requested.emit(exhibit_title, image_item.title, image_item.image_url, image_size)
 	return true
 
 
@@ -154,7 +154,7 @@ func try_place_painting() -> bool:
 	if abs(normal.y) > 0.5:
 		return false  # Too horizontal — it's a floor or ceiling
 
-	emit_signal("place_requested", _carried_exhibit_title, _carried_image_title, _carried_image_url, result.position, normal, _carried_image_size)
+	place_requested.emit(_carried_exhibit_title, _carried_image_title, _carried_image_url, result.position, normal, _carried_image_size)
 	return true
 
 
@@ -219,7 +219,7 @@ func process_eat(delta: float) -> void:
 	if Input.is_action_pressed("interact") and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		if not _eating:
 			_eating = true
-			emit_signal("eat_anim_started")
+			eat_anim_started.emit()
 		_eat_progress += delta / EAT_DURATION
 
 		var t: float = clamp(_eat_progress, 0.0, 1.0)
@@ -237,7 +237,7 @@ func process_eat(delta: float) -> void:
 			# Equip the eaten painting as the player's skin
 			if _carried_image_url != "":
 				MultiplayerEvents.emit_skin_selected(_carried_image_url, _carried_texture as ImageTexture)
-			emit_signal("eat_requested", _carried_exhibit_title, _carried_image_title)
+			eat_requested.emit(_carried_exhibit_title, _carried_image_title)
 			execute_drop()
 	elif _eating:
 		# Released early — reset
@@ -245,7 +245,7 @@ func process_eat(delta: float) -> void:
 		_eat_progress = 0.0
 		_carry_mesh_fp.position = CARRY_FP_POSITION
 		_carry_mesh_fp.rotation_degrees = CARRY_ROTATION
-		emit_signal("eat_anim_cancelled")
+		eat_anim_cancelled.emit()
 
 
 func show_tp_mesh(is_visible: bool) -> void:

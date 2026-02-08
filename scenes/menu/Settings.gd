@@ -11,19 +11,19 @@ signal resume
 	_vbox.get_node("DataSettings") if not Platform.is_web() else null,
 ]
 
-func _ready():
+func _ready() -> void:
 	UIEvents.ui_cancel_pressed.connect(_on_resume)
 	for i in range(_tab_scenes.size()):
 		if _tab_scenes[i] == null:
 			_tab_bar.set_tab_disabled(i, true)
 			_tab_bar.set_tab_hidden(i, true)
 
-func _on_visibility_changed():
+func _on_visibility_changed() -> void:
 	if visible:
 		_tab_bar.set_current_tab(0)
 		_tab_bar.grab_focus()
 
-func _on_tab_bar_tab_changed(tab: int):
+func _on_tab_bar_tab_changed(tab: int) -> void:
 	for i in range(_tab_scenes.size()):
 		if _tab_scenes[i] == null:
 			continue
@@ -32,14 +32,14 @@ func _on_tab_bar_tab_changed(tab: int):
 		else:
 			_tab_scenes[i].visible = false
 
-func _on_tab_left():
+func _on_tab_left() -> void:
 	if visible:
 		_tab_bar.select_next_available()
 
-func _on_tab_right():
+func _on_tab_right() -> void:
 	if visible:
 		_tab_bar.select_previous_available()
 
-func _on_resume():
+func _on_resume() -> void:
 	if visible:
 		resume.emit()

@@ -2,9 +2,28 @@
 
 [ext_resource type="Script" path="res://scenes/menu/VictoryScreen.gd" id="1_victory"]
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="2_theme"]
+[ext_resource type="FontFile" uid="uid://bxph8sc2vndn" path="res://assets/fonts/CormorantGaramond/CormorantGaramond-SemiBold.ttf" id="3_serif"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_winner"]
-font_size = 96
+font = ExtResource("3_serif")
+font_size = 48
+font_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.635, 0.663, 0.694, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+content_margin_left = 60.0
+content_margin_top = 40.0
+content_margin_right = 60.0
+content_margin_bottom = 40.0
 
 [node name="VictoryScreen" type="Control"]
 layout_mode = 3
@@ -23,28 +42,35 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.7)
+color = Color(0, 0, 0, 0.65)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer"]
+layout_mode = 2
 alignment = 1
 
-[node name="WinnerLabel" type="Label" parent="VBoxContainer"]
+[node name="WinnerLabel" type="Label" parent="CenterContainer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 text = "Player wins!"
 label_settings = SubResource("LabelSettings_winner")
 horizontal_alignment = 1
 
-[node name="Spacer" type="Control" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
+[node name="Spacer" type="Control" parent="CenterContainer/PanelContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 
-[node name="ContinueButton" type="Button" parent="VBoxContainer"]
+[node name="ContinueButton" type="Button" parent="CenterContainer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Continue"

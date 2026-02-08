@@ -59,5 +59,5 @@ func _process(_delta: float) -> void:
 		var direction: String = "exit" if distance_to_b.length() < distance_to_a.length() else "entry"
 
 		if direction != _previous_direction:
-			emit_signal("direction_changed", direction)
+			direction_changed.emit(direction)
 			_previous_direction = direction

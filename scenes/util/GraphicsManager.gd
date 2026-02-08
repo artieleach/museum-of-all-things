@@ -31,7 +31,7 @@ func init() -> void:
 	_env = get_tree().get_nodes_in_group("Environment")[0]
 
 	if not _env:
-		push_error("could not load environment node")
+		Log.error("GraphicsManager", "could not load environment node")
 		return
 
 	_default_settings_obj = _create_settings_obj()

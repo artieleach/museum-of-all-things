@@ -39,7 +39,7 @@ func _save_settings() -> void:
 	SettingsManager.save_settings(_settings_namespace, _create_settings_obj())
 
 func _on_visibility_changed() -> void:
-	if _loaded_settings and not visible:
+	if _loaded_settings and not is_visible_in_tree():
 		_save_settings()
 
 func _on_resume() -> void:

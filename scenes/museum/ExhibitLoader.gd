@@ -278,7 +278,7 @@ func _link_backlink_to_exit(exhibit: Node, hall: Hall) -> void:
 			new_hall = exit
 			break
 	if not new_hall and exhibit.has_method("get") and exhibit.entry:
-		push_error("could not backlink new hall")
+		Log.error("ExhibitLoader", "could not backlink new hall")
 		new_hall = exhibit.entry
 	if new_hall:
 		link_halls(hall, new_hall)
@@ -320,7 +320,7 @@ func _add_item(exhibit: Node3D, item_data: Dictionary) -> void:
 		if exhibit.has_item_slot():
 			_add_item(exhibit, item_data)
 		else:
-			push_error("unable to add item slots to exhibit.")
+			Log.error("ExhibitLoader", "unable to add item slots to exhibit")
 		return
 
 	var item: Node3D = WallItem.instantiate()

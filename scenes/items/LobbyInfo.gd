@@ -9,6 +9,10 @@ func _ready() -> void:
 		_generate_mipmaps()
 		SettingsEvents.set_language.connect(_generate_mipmaps)
 		
+func _exit_tree() -> void:
+	if SettingsEvents.set_language.is_connected(_generate_mipmaps):
+		SettingsEvents.set_language.disconnect(_generate_mipmaps)
+
 func _generate_mipmaps(_lang: String = "") -> void:
 	$SubViewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	MipmapThread.get_viewport_texture_with_mipmaps($SubViewport, func(texture):

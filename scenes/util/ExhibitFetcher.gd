@@ -166,7 +166,7 @@ func _fetch_images(files: Array, context: Variant) -> void:
 	var new_files := _get_uncached_titles(files)
 
 	if len(new_files) == 0:
-		call_deferred("emit_signal", "images_complete", files, context)
+		images_complete.emit.call_deferred(files, context)
 		return
 
 	if len(new_files) > MAX_BATCH_SIZE:
@@ -196,8 +196,8 @@ func _fetch_commons_images(category: String, context: Variant) -> void:
 		if result and result.has("images"):
 			for image in result.images:
 				if not _read_from_cache(image, WIKIMEDIA_COMMONS_PREFIX):
-					push_error("unable to read image from cache. category=%s image=%s" % [category, image])
-			call_deferred("emit_signal", "commons_images_complete", result.images, context)
+					Log.error("ExhibitFetcher", "unable to read image from cache. category=%s image=%s" % [category, image])
+			commons_images_complete.emit.call_deferred(result.images, context)
 			return
 
 	var url := _get_commons_url(category) + category.uri_encode()
@@ -212,7 +212,7 @@ func _fetch_wikidata(entity: String, context: Variant) -> void:
 	var new_entity := _get_uncached_titles([entity], WIKIDATA_PREFIX)
 
 	if len(new_entity) == 0:
-		call_deferred("emit_signal", "wikidata_complete", entity, context)
+		wikidata_complete.emit.call_deferred(entity, context)
 		return
 
 	var url := wikidata_endpoint + entity.uri_encode()
@@ -241,11 +241,11 @@ func _fetch_wikitext(titles: Array, context: Variant) -> void:
 	var new_titles := _get_uncached_titles(titles)
 
 	if len(new_titles) == 0:
-		call_deferred("emit_signal", "wikitext_complete", titles, context)
+		wikitext_complete.emit.call_deferred(titles, context)
 		return
 
 	if len(new_titles) > MAX_BATCH_SIZE:
-		push_error("Too many page requests at once")
+		Log.error("ExhibitFetcher", "Too many page requests at once")
 		return
 
 	var url := wikitext_endpoint + _join_titles(new_titles)
@@ -277,7 +277,7 @@ func _dispatch_request(url: String, ctx: Dictionary, caller_ctx: Variant) -> voi
 
 	var handle_result := func(result: Array) -> void:
 		if result[0] != OK:
-			push_error("failed to send http request ", result[0], " ", url)
+			Log.error("ExhibitFetcher", "failed to send http request %s %s" % [str(result[0]), url])
 			_delayed_advance_queue()
 		else:
 			_on_request_completed_wrapper(result[0], result[1], result[2], result[3], ctx, caller_ctx)
@@ -332,16 +332,16 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 			var location = _get_location_header(headers)
 			if location:
 				var title := _extract_title_from_wiki_url(location)
-				call_deferred("emit_signal", "random_complete", title, caller_ctx)
+				random_complete.emit.call_deferred(title, caller_ctx)
 				return true
-		call_deferred("emit_signal", "random_complete", null, caller_ctx)
+		random_complete.emit.call_deferred(null, caller_ctx)
 		return true
 
 	if result != 0 or response_code != 200:
 		if response_code != 404:
-			push_error("error in request ", result, " ", response_code, " ", ctx.url)
+			Log.error("ExhibitFetcher", "error in request %s %s %s" % [str(result), str(response_code), ctx.url])
 		if ctx.url.begins_with(wikitext_endpoint):
-			call_deferred("emit_signal", "wikitext_failed", ctx.new_titles, str(response_code))
+			wikitext_failed.emit.call_deferred(ctx.new_titles, str(response_code))
 		return true
 
 	var res = _get_json(body)
@@ -426,7 +426,7 @@ func _on_wikitext_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx:
 			# emit failed signal for a missing page
 			if page.has("missing"):
 				var original_title = _get_original_title(res.query, page.title)
-				call_deferred("emit_signal", "wikitext_failed", [original_title], "Missing")
+				wikitext_failed.emit.call_deferred([original_title], "Missing")
 				ctx.new_titles.erase(original_title)
 				ctx.titles.erase(original_title)
 				continue
@@ -445,7 +445,7 @@ func _on_wikitext_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx:
 		return _dispatch_continue(res.continue, wikitext_endpoint, ctx.new_titles, ctx, caller_ctx)
 	else:
 		_cache_all(ctx.new_titles)
-		call_deferred("emit_signal", "wikitext_complete", ctx.titles, caller_ctx)
+		wikitext_complete.emit.call_deferred(ctx.titles, caller_ctx)
 		# wikitext ignores queue, so return false to prevent queue advance after completion
 		return false
 
@@ -473,7 +473,7 @@ func _on_images_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: V
 
 	if len(file_batch) > 0:
 		_cache_all(file_batch)
-		call_deferred("emit_signal", "images_complete", file_batch, caller_ctx)
+		images_complete.emit.call_deferred(file_batch, caller_ctx)
 
 	# handle continues
 	if res.has("continue"):
@@ -505,7 +505,7 @@ func _on_commons_images_request_complete(res: Dictionary, ctx: Dictionary, calle
 
 	if len(file_batch) > 0:
 		_cache_all(file_batch, WIKIMEDIA_COMMONS_PREFIX)
-		call_deferred("emit_signal", "commons_images_complete", file_batch, caller_ctx)
+		commons_images_complete.emit.call_deferred(file_batch, caller_ctx)
 
 	# handle continues
 	if res.has("continue") and len(get_result(ctx.category).images) <= Platform.get_max_slots_per_exhibit():
@@ -531,16 +531,16 @@ func _on_wikidata_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx:
 				_set_page_field(ctx.entity, "commons_gallery", value)
 
 	_cache_all([ctx.entity], WIKIDATA_PREFIX)
-	call_deferred("emit_signal", "wikidata_complete", ctx.entity, caller_ctx)
+	wikidata_complete.emit.call_deferred(ctx.entity, caller_ctx)
 	return true
 
 func _on_search_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
 	if res.query.has("search"):
 		if len(res.query.search) > 0:
 			var result_title = res.query.search[0].title
-			call_deferred("emit_signal", "search_complete", result_title, caller_ctx)
+			search_complete.emit.call_deferred(result_title, caller_ctx)
 			return true
-	call_deferred("emit_signal", "search_complete", null, caller_ctx)
+	search_complete.emit.call_deferred(null, caller_ctx)
 	return true
 
 func _on_random_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: Variant) -> bool:
@@ -548,7 +548,7 @@ func _on_random_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx: V
 		var pages = res.query.pages
 		for page_id in pages.keys():
 			var result_title = pages[page_id].title
-			call_deferred("emit_signal", "random_complete", result_title, caller_ctx)
+			random_complete.emit.call_deferred(result_title, caller_ctx)
 			return true
-	call_deferred("emit_signal", "random_complete", null, caller_ctx)
+	random_complete.emit.call_deferred(null, caller_ctx)
 	return true

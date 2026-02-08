@@ -17,7 +17,8 @@ const UP: int = GridConstants.LEVEL_UP
 const FLAT: int = GridConstants.LEVEL_FLAT
 const DOWN: int = GridConstants.LEVEL_DOWN
 
-@onready var _grid_wrapper: PackedScene = preload("res://scenes/util/GridWrapper.tscn")
+const _GRID_WRAPPER: PackedScene = preload("res://scenes/util/GridWrapper.tscn")
+
 @onready var loader: Area3D = $LoaderTrigger
 @onready var entry_door: Node3D = $EntryDoor
 @onready var exit_door: Node3D = $ExitDoor
@@ -96,7 +97,7 @@ func init(grid: Variant, p_from_title: String, p_to_title: String, hall_start: V
 	loader.monitoring = true
 
 	if grid is GridMap:
-		_grid = _grid_wrapper.instantiate()
+		_grid = _GRID_WRAPPER.instantiate()
 		_grid.init(grid)
 		add_child(_grid)
 	else:
@@ -205,6 +206,6 @@ func _on_fetch_failed(titles: Array, message: String) -> void:
 func _on_direction_changed(direction: String) -> void:
 	player_direction = direction
 	if direction == "exit":
-		emit_signal("on_player_toward_exit")
+		on_player_toward_exit.emit()
 	else:
-		emit_signal("on_player_toward_entry")
+		on_player_toward_entry.emit()

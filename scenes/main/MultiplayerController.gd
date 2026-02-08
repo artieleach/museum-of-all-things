@@ -14,13 +14,13 @@ var _position_sync_timer: float = 0.0
 var _server_mode: bool = false
 var _server_port: int = 7777
 
-var NetworkPlayer: PackedScene = null
+var _network_player_scene: PackedScene = null
 var _starting_point: Vector3 = Vector3(0, 4, 0)
 
 
 func init(main: Node, network_player_scene: PackedScene, starting_point: Vector3) -> void:
 	_main = main
-	NetworkPlayer = network_player_scene
+	_network_player_scene = network_player_scene
 	_starting_point = starting_point
 	NetworkManager.player_room_changed.connect(_on_player_room_changed)
 
@@ -54,7 +54,7 @@ func spawn_network_player(peer_id: int) -> Node:
 	if _network_players.has(peer_id):
 		return _network_players[peer_id]
 
-	var net_player: Node = NetworkPlayer.instantiate()
+	var net_player: Node = _network_player_scene.instantiate()
 	net_player.name = "NetworkPlayer_" + str(peer_id)
 	net_player.is_local = false
 	_main.add_child(net_player)
@@ -72,7 +72,7 @@ func spawn_network_player(peer_id: int) -> Node:
 
 	Log.info("Multiplayer", "Spawned network player for peer %d" % peer_id)
 
-	emit_signal("player_spawned", peer_id)
+	player_spawned.emit(peer_id)
 	return net_player
 
 
@@ -82,15 +82,15 @@ func remove_network_player(peer_id: int, local_player: Node, mount_state: Dictio
 		if is_instance_valid(player_node):
 			# Handle mount cleanup before removing player
 			# If disconnected player had a rider, dismount them
-			if player_node._has_rider and is_instance_valid(player_node.mounted_by):
+			if player_node.has_rider and is_instance_valid(player_node.mounted_by):
 				player_node.mounted_by.execute_dismount()
 
 			# If disconnected player was riding someone, clear mount's rider state
-			if player_node._is_mounted and is_instance_valid(player_node.mounted_on):
+			if player_node.is_mounted and is_instance_valid(player_node.mounted_on):
 				player_node.mounted_on._remove_rider(player_node)
 
 			# If local player was mounted on disconnected player, dismount
-			if local_player and local_player._is_mounted and local_player.mounted_on == player_node:
+			if local_player and local_player.is_mounted and local_player.mounted_on == player_node:
 				local_player.execute_dismount()
 
 			player_node.queue_free()
@@ -101,7 +101,7 @@ func remove_network_player(peer_id: int, local_player: Node, mount_state: Dictio
 			mount_state.erase(peer_id)
 
 		MultiplayerEvents.emit_player_left(peer_id)
-		emit_signal("player_removed", peer_id)
+		player_removed.emit(peer_id)
 
 		Log.info("Multiplayer", "Removed network player for peer %d" % peer_id)
 
@@ -173,7 +173,7 @@ func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_
 
 			# Check if local player is mounted on this network player
 			var local_riding_this_player: bool = false
-			if local_player and "_is_mounted" in local_player and local_player._is_mounted:
+			if local_player and "is_mounted" in local_player and local_player.is_mounted:
 				if "mount_peer_id" in local_player and local_player.mount_peer_id == peer_id:
 					local_riding_this_player = true
 					# Only sync room if the exhibit exists on this client (or it's the lobby)
@@ -232,7 +232,7 @@ func _update_player_visibility(peer_id: int) -> void:
 	var remote_room: String = NetworkManager.get_player_room(peer_id)
 
 	# If mounted, use mount's room to handle room transition sync timing
-	if "_is_mounted" in net_player and net_player._is_mounted:
+	if "is_mounted" in net_player and net_player.is_mounted:
 		if "mount_peer_id" in net_player and net_player.mount_peer_id > 0:
 			var mount_room: String = NetworkManager.get_player_room(net_player.mount_peer_id)
 			if mount_room != "":
@@ -255,7 +255,7 @@ func update_all_player_visibility(local_player: Node) -> void:
 			var remote_room: String = NetworkManager.get_player_room(peer_id)
 
 			# If mounted, use mount's room to handle room transition sync timing
-			if "_is_mounted" in net_player and net_player._is_mounted:
+			if "is_mounted" in net_player and net_player.is_mounted:
 				if "mount_peer_id" in net_player and net_player.mount_peer_id > 0:
 					var mount_room: String = NetworkManager.get_player_room(net_player.mount_peer_id)
 					if mount_room != "":
