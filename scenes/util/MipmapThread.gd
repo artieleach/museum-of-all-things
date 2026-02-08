@@ -34,6 +34,7 @@ func _mipmap_process_item():
 		"get_texture_data":
 			# This item only happens on the compatibility renderer.
 			var image = item.texture.get_image()
+			image.flip_y()
 			_generate_mipmaps(image, item.callback)
 
 		"create_image":
