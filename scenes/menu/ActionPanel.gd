@@ -47,7 +47,8 @@ func _on_button_toggled_aux(button_state : bool, button : Button) -> void:
 		button.text = "..."
 	else:
 		update_action()
-	joypad_button_updated.emit(current_joypad_event)
+	if current_joypad_event:
+		joypad_button_updated.emit(current_joypad_event)
 
 func _on_focus_exited_aux(button : Button) -> void:
 	button.button_pressed = false

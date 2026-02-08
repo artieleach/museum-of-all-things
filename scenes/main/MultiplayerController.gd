@@ -159,7 +159,7 @@ func process_position_sync(delta: float, local_player: Node) -> bool:
 	return false
 
 
-func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node, current_room: String = "Lobby") -> void:
+func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float, is_mounted: bool, mounted_peer_id: int, local_player: Node, current_room: String = "Lobby", pointing: bool = false, pt_target: Vector3 = Vector3.ZERO) -> void:
 	# Update room in player_info
 	if NetworkManager.player_info.has(peer_id):
 		NetworkManager.player_info[peer_id].current_room = current_room
@@ -208,6 +208,8 @@ func apply_network_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_
 			if net_player.has_method("apply_network_mount_state"):
 				var mount_node: Node = get_player_by_peer_id(mounted_peer_id, local_player) if is_mounted else null
 				net_player.apply_network_mount_state(is_mounted, mounted_peer_id, mount_node)
+			if net_player.has_method("apply_network_pointing"):
+				net_player.apply_network_pointing(pointing, pt_target)
 
 
 func _on_player_room_changed(peer_id: int, _room: String) -> void:

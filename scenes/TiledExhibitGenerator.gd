@@ -57,6 +57,9 @@ var _no_props: bool = false
 var _exit_limit: int = 1000000
 var _min_room_dimension: int = 2
 var _max_room_dimension: int = 5
+var _mood: int = ExhibitMood.Mood.DEFAULT
+var _secret_room_count: int = 0
+var _secret_item_slots: Array = []
 
 
 func _ready() -> void:
@@ -116,6 +119,7 @@ func generate(params: Dictionary) -> void:
 
 	_no_props = params.has("no_props") and params.no_props
 	_exit_limit = params.exit_limit if params.has("exit_limit") else 1000000
+	_mood = params.get("mood", ExhibitMood.Mood.DEFAULT)
 
 	# init grid
 	_grid = _GRID_WRAPPER.instantiate()
@@ -298,6 +302,7 @@ func _decorate_room(room: Dictionary) -> void:
 
 	if !Engine.is_editor_hint() and not _no_props:
 		_decorate_room_center(center, width, length)
+		_try_place_secret_room(room)
 
 
 func _decorate_reserved_walls(last_room: Dictionary, hall_bounds: Array, dir: Vector3) -> void:
@@ -341,13 +346,20 @@ func _try_place_large_decoration(center: Vector3, width: int, length: int) -> bo
 		return false
 	var bounds: Array = _room_to_bounds(center, width, length)
 	var true_center: Vector3 = (bounds[0] + bounds[1]) / 2
-	var roll: int = _rng.randi_range(0, 3)
-	if roll == 0:
+
+	# Mood-biased decoration: nature/history prefer planters, astro/nature prefer pools
+	var pool_weight: int = 2 if ExhibitMood.prefers_pool(_mood) else 1
+	var planter_weight: int = 2 if ExhibitMood.prefers_planter(_mood) else 1
+	var empty_weight: int = 2
+	var total: int = pool_weight + planter_weight + empty_weight
+	var roll: int = _rng.randi_range(0, total - 1)
+
+	if roll < pool_weight:
 		var pool: Node3D = _POOL_SCENE.instantiate()
 		pool.position = GridUtils.grid_to_world(true_center)
 		add_child(pool)
 		return true
-	elif roll == 1:
+	elif roll < pool_weight + planter_weight:
 		var planter: Node3D = _PLANTER_SCENE.instantiate()
 		planter.position = GridUtils.grid_to_world(true_center)
 		planter.rotation.y = PI / 2 if length > width else 0.0
@@ -470,6 +482,106 @@ func _overlaps_room(corner1: Vector3, corner2: Vector3, y: int) -> bool:
 			if not GridUtils.safe_overwrite(_grid, Vector3(x, y, z)):
 				return true
 	return false
+
+
+func has_secret_room() -> bool:
+	return _secret_room_count > 0
+
+
+func get_secret_item_slots() -> Array:
+	return _secret_item_slots
+
+
+func _try_place_secret_room(room: Dictionary) -> void:
+	if _secret_room_count > 0:
+		return  # Only one secret room per exhibit
+	if not SecretRoomContent.should_have_secret(title, _room_count):
+		return
+
+	var center: Vector3 = room.center
+	var width: int = room.width
+	var length: int = room.length
+	if width < 3 and length < 3:
+		return  # Room too small for a secret passage
+
+	var bounds: Array = _room_to_bounds(center, width, length)
+	var c1: Vector3 = bounds[0]
+	var c2: Vector3 = bounds[1]
+	var y: int = int(center.y)
+
+	# Try each wall of the room for a secret passage
+	var wall_candidates: Array = []
+
+	# North wall (z = c1.z - 1)
+	for x: int in range(int(c1.x) + 1, int(c2.x)):
+		var wall_pos: Vector3 = Vector3(x, y, int(c1.z) - 1)
+		if _raw_grid.get_cell_item(wall_pos) == WALL:
+			wall_candidates.append({"pos": wall_pos, "dir": Vector3(0, 0, -1), "perp": Vector3(1, 0, 0)})
+	# South wall
+	for x: int in range(int(c1.x) + 1, int(c2.x)):
+		var wall_pos: Vector3 = Vector3(x, y, int(c2.z) + 1)
+		if _raw_grid.get_cell_item(wall_pos) == WALL:
+			wall_candidates.append({"pos": wall_pos, "dir": Vector3(0, 0, 1), "perp": Vector3(1, 0, 0)})
+	# West wall
+	for z: int in range(int(c1.z) + 1, int(c2.z)):
+		var wall_pos: Vector3 = Vector3(int(c1.x) - 1, y, z)
+		if _raw_grid.get_cell_item(wall_pos) == WALL:
+			wall_candidates.append({"pos": wall_pos, "dir": Vector3(-1, 0, 0), "perp": Vector3(0, 0, 1)})
+	# East wall
+	for z: int in range(int(c1.z) + 1, int(c2.z)):
+		var wall_pos: Vector3 = Vector3(int(c2.x) + 1, y, z)
+		if _raw_grid.get_cell_item(wall_pos) == WALL:
+			wall_candidates.append({"pos": wall_pos, "dir": Vector3(1, 0, 0), "perp": Vector3(0, 0, 1)})
+
+	if wall_candidates.is_empty():
+		return
+
+	CollectionUtils.shuffle(_rng, wall_candidates)
+
+	for candidate: Dictionary in wall_candidates:
+		var wall_pos: Vector3 = candidate.pos
+		var dir: Vector3 = candidate.dir
+		var perp: Vector3 = candidate.perp
+
+		# Secret room: 2x2 behind the wall
+		var secret_c1: Vector3 = wall_pos + dir - perp
+		var secret_c2: Vector3 = wall_pos + dir * 2 + perp
+
+		# Check overlap
+		if _overlaps_room(secret_c1, secret_c2, y):
+			continue
+
+		# Carve the secret room
+		_carve_room(secret_c1, secret_c2, y)
+
+		# Clear the wall cell to create passage
+		_grid.set_cell_item(wall_pos, -1, 0)
+		_grid.set_cell_item(Vector3(wall_pos.x, wall_pos.y + 1, wall_pos.z), -1, 0)
+		_grid.set_cell_item(Vector3(wall_pos.x, wall_pos.y + 2, wall_pos.z), CEILING, 0)
+		_grid.set_cell_item(Vector3(wall_pos.x, wall_pos.y - 1, wall_pos.z), _floor, 0)
+
+		# Place the SecretWall interactable
+		var secret_wall: SecretWall = SecretWall.new()
+		secret_wall.position = GridUtils.grid_to_world(wall_pos)
+		secret_wall.rotation.y = GridUtils.vec_to_rot(dir)
+		secret_wall.init(perp)
+		add_child(secret_wall)
+
+		# Add item slots inside secret room
+		var slot_dir: Vector3 = -dir
+		for sx: int in range(int(secret_c1.x), int(secret_c2.x) + 1):
+			for sz: int in range(int(secret_c1.z), int(secret_c2.z) + 1):
+				var slot_pos: Vector3 = Vector3(sx, y, sz)
+				if _raw_grid.get_cell_item(slot_pos) != WALL:
+					# Add slots facing walls
+					for check_dir: Vector3 in DIRECTIONS:
+						var neighbor: Vector3 = slot_pos + check_dir
+						if _raw_grid.get_cell_item(neighbor) == WALL:
+							var s: Array = [(slot_pos + neighbor) / 2.0, check_dir]
+							_secret_item_slots.append(s)
+
+		_secret_room_count += 1
+		break
 
 
 func get_rooms_for_npcs() -> Array:

@@ -18,10 +18,13 @@ var _menu_controller: MainMenuController = null
 var _multiplayer_controller: MultiplayerController = null
 var _mount_controller: MountController = null
 var _painting_controller: PaintingController = null
+var _pointing_controller: PointingController = null
 
-@onready var player_list_overlay: Control = $TabMenu/PlayerListOverlay
-@onready var _server_console_overlay: Control = $TabMenu/ServerConsoleOverlay
-@onready var _map_overlay: Control = $TabMenu/ExhibitMapOverlay
+@onready var _journal_overlay: JournalOverlay = %JournalOverlay
+@onready var player_list_overlay: Control = %PlayerListOverlay
+@onready var _server_console_overlay: Control = %ServerConsoleOverlay
+@onready var _map_overlay: Control = %ExhibitMapOverlay
+@onready var _guestbook_overlay: GuestbookOverlay = %GuestbookOverlay
 var game_started: bool = false
 
 
@@ -65,6 +68,21 @@ func _ready() -> void:
 	_painting_controller = PaintingController.new()
 	_painting_controller.init(self, _multiplayer_controller)
 	add_child(_painting_controller)
+
+	_pointing_controller = PointingController.new()
+	_pointing_controller.init(self)
+	add_child(_pointing_controller)
+
+	# Journal overlay
+	var journal_scene: PackedScene = preload("res://scenes/menu/JournalOverlay.tscn")
+	_journal_overlay = journal_scene.instantiate()
+	$TabMenu.add_child(_journal_overlay)
+	_journal_overlay.closed.connect(_on_journal_closed)
+
+	# Guestbook overlay
+	var guestbook_scene: PackedScene = preload("res://scenes/menu/GuestbookOverlay.tscn")
+	_guestbook_overlay = guestbook_scene.instantiate()
+	$TabMenu.add_child(_guestbook_overlay)
 
 	_parse_command_line()
 
@@ -222,6 +240,15 @@ func _input(event: InputEvent) -> void:
 		if _multiplayer_controller.is_multiplayer_game():
 			_server_console_overlay.toggle()
 
+	if event.is_action_pressed("toggle_journal"):
+		if _journal_overlay:
+			if _journal_overlay.is_open():
+				_journal_overlay.close()
+			else:
+				_journal_overlay.open()
+				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+				_player.pause()
+
 	if event.is_action_pressed("toggle_map") and not $CanvasLayer.visible:
 		_map_overlay.cycle_mode()
 
@@ -233,7 +260,9 @@ func _input(event: InputEvent) -> void:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	if event.is_action_pressed("click") and not $CanvasLayer.visible:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			var overlay_open: bool = (_journal_overlay and _journal_overlay.is_open()) or (_guestbook_overlay and _guestbook_overlay.is_open())
+			if not overlay_open:
+				Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 	# Tab key for player list overlay
 	if _multiplayer_controller.is_multiplayer_game() and not $CanvasLayer.visible:
@@ -262,6 +291,8 @@ func _process(delta: float) -> void:
 			current_room = _player.mounted_on.current_room
 		elif "current_room" in _player:
 			current_room = _player.current_room
+		var pointing: bool = _player.is_pointing
+		var pt_target: Vector3 = _player.point_target if pointing else Vector3.ZERO
 		_sync_player_position.rpc(
 			NetworkManager.get_unique_id(),
 			_player.global_position,
@@ -270,7 +301,9 @@ func _process(delta: float) -> void:
 			pivot_pos_y,
 			is_mounted,
 			mounted_peer_id,
-			current_room
+			current_room,
+			pointing,
+			pt_target
 		)
 
 
@@ -486,6 +519,24 @@ func _request_eat_painting(exhibit_title: String, image_title: String) -> void:
 	_painting_controller.request_eat(exhibit_title, image_title, _player)
 
 
+func _on_journal_closed() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	_player.start()
+
+
+func _open_guestbook(exhibit_title: String) -> void:
+	if _guestbook_overlay and not _guestbook_overlay.is_open():
+		_guestbook_overlay.open(exhibit_title)
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		_player.pause()
+
+
+func _on_local_reaction(reaction_index: int, target: Vector3) -> void:
+	_pointing_controller.spawn_reaction(reaction_index, target)
+	if _multiplayer_controller.is_multiplayer_game() and NetworkManager.is_multiplayer_active():
+		_reaction_sync.rpc(NetworkManager.get_unique_id(), reaction_index, target)
+
+
 func _broadcast_eat_anim_start() -> void:
 	if _multiplayer_controller.is_multiplayer_game() and NetworkManager.is_multiplayer_active():
 		var peer_id: int = NetworkManager.get_unique_id()
@@ -515,8 +566,8 @@ func _sync_exhibit_to_peer(exhibit_title: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1, current_room: String = "Lobby") -> void:
-	_multiplayer_controller.apply_network_position(peer_id, pos, rot_y, pivot_rot_x, pivot_pos_y, is_mounted, mounted_peer_id, _player, current_room)
+func _sync_player_position(peer_id: int, pos: Vector3, rot_y: float, pivot_rot_x: float, pivot_pos_y: float = 1.35, is_mounted: bool = false, mounted_peer_id: int = -1, current_room: String = "Lobby", pointing: bool = false, pt_target: Vector3 = Vector3.ZERO) -> void:
+	_multiplayer_controller.apply_network_position(peer_id, pos, rot_y, pivot_rot_x, pivot_pos_y, is_mounted, mounted_peer_id, _player, current_room, pointing, pt_target)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -583,3 +634,9 @@ func _eat_anim_start_sync(peer_id: int) -> void:
 @rpc("any_peer", "call_remote", "unreliable_ordered")
 func _eat_anim_cancel_sync(peer_id: int) -> void:
 	_painting_controller.apply_eat_anim_cancel(peer_id, _player)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _reaction_sync(peer_id: int, reaction_index: int, target: Vector3) -> void:
+	if peer_id != NetworkManager.get_unique_id():
+		_pointing_controller.spawn_reaction(reaction_index, target)

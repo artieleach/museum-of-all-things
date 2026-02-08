@@ -18,6 +18,14 @@ var remappable_actions_str := [
 	"jump",
 	"crouch",
 	"interact",
+	"point",
+	"reaction_1",
+	"reaction_2",
+	"reaction_3",
+	"reaction_4",
+	"toggle_journal",
+	"pin_to_journal",
+	"toggle_map",
 ]
 var current_joypad_id := 0
 

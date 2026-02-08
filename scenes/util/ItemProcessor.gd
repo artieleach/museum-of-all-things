@@ -143,6 +143,16 @@ func _create_text_items(title: String, extract: String) -> Array:
 				if len(stripped) > 0:
 					current_text_has_content = true
 					current_text += p_fmt % stripped
+			else:
+				if current_text_has_content:
+					_add_text_item(items, current_title, current_subtitle, current_text)
+				current_subtitle = ""
+				current_text = ""
+				current_text_has_content = false
+				var stripped: String = line.strip_edges()
+				if len(stripped) > 0:
+					current_text_has_content = true
+					current_text += p_fmt % stripped
 
 	if current_text_has_content:
 		_add_text_item(items, current_title, current_subtitle, current_text)
@@ -350,9 +360,13 @@ func _create_items(title: String, result: Dictionary, prev_title: String) -> voi
 				items.append(text_items.pop_front())
 		items.append(image_items.pop_front())
 
+	var categories: Array = result.get("categories", [])
+	var mood: int = ExhibitMood.compute_mood(categories)
+
 	items_complete.emit.call_deferred({
 		"title": title,
 		"doors": doors,
 		"items": items,
 		"extra_text": text_items,
+		"mood": mood,
 	})

@@ -1,14 +1,8 @@
 [gd_scene format=3 uid="uid://bj7vvqjer0u7e"]
 
-[ext_resource type="Script" path="res://scenes/menu/PlayerListOverlay.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bg2myb013h50f" path="res://scenes/menu/PlayerListOverlay.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="2_theme"]
-
 [ext_resource type="FontFile" uid="uid://bxph8sc2vndn" path="res://assets/fonts/CormorantGaramond/CormorantGaramond-SemiBold.ttf" id="3_serif"]
-
-[sub_resource type="LabelSettings" id="LabelSettings_title"]
-font = ExtResource("3_serif")
-font_size = 32
-font_color = Color(0, 0, 0, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(1, 1, 1, 0.95)
@@ -22,18 +16,23 @@ corner_radius_top_right = 2
 corner_radius_bottom_right = 2
 corner_radius_bottom_left = 2
 
-[node name="PlayerListOverlay" type="Control"]
+[sub_resource type="LabelSettings" id="LabelSettings_title"]
+font = ExtResource("3_serif")
+font_size = 32
+font_color = Color(0, 0, 0, 1)
+
+[node name="PlayerListOverlay" type="Control" unique_id=69461303]
 layout_mode = 3
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-grow_horizontal = 0
 offset_left = -300.0
 offset_bottom = 200.0
+grow_horizontal = 0
 theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
-[node name="PanelContainer" type="PanelContainer" parent="."]
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1236370625]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 20.0
@@ -41,24 +40,24 @@ offset_right = 280.0
 offset_bottom = 180.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer" unique_id=821021496]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 15
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer" unique_id=1228089107]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=2029407979]
 layout_mode = 2
 text = "Players Online"
 label_settings = SubResource("LabelSettings_title")
 
-[node name="Spacer" type="Control" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Spacer" type="Control" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=1259956902]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="PlayerListContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="PlayerListContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=1110249257]
 layout_mode = 2

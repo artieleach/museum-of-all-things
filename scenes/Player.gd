@@ -49,6 +49,9 @@ var _crouch_system: PlayerCrouchSystem = null
 var _mount_system: PlayerMountSystem = null
 var _skin_system: PlayerSkinSystem = null
 var _painting_system: PlayerPaintingSystem = null
+var _pointing_system: PlayerPointingSystem = null
+var _journal_system: PlayerJournalSystem = null
+var _footprint_system: PlayerFootprintSystem = null
 
 @onready var camera: Camera3D = $Pivot/Camera3D
 @onready var _pivot: Node3D = $Pivot
@@ -95,6 +98,20 @@ func _ready() -> void:
 	_painting_system.eat_anim_cancelled.connect(_on_eat_anim_cancelled)
 	add_child(_painting_system)
 
+	_pointing_system = PlayerPointingSystem.new()
+	_pointing_system.init(self)
+	_pointing_system.reaction_fired.connect(_on_reaction_fired)
+	add_child(_pointing_system)
+
+	_journal_system = PlayerJournalSystem.new()
+	_journal_system.init(self)
+	add_child(_journal_system)
+
+	_footprint_system = PlayerFootprintSystem.new()
+	_footprint_system.init(self)
+	add_child(_footprint_system)
+	_footstep_player.footstep_played.connect(_on_footstep_played)
+
 
 # =============================================================================
 # PUBLIC API - Facade methods that delegate to subsystems
@@ -119,6 +136,12 @@ var skin_url: String:
 # Painting API (delegates to PlayerPaintingSystem)
 var is_carrying_painting: bool:
 	get: return _painting_system.is_carrying() if _painting_system else false
+
+# Pointing API (delegates to PlayerPointingSystem)
+var is_pointing: bool:
+	get: return _pointing_system.is_pointing if _pointing_system else false
+var point_target: Vector3:
+	get: return _pointing_system.point_target if _pointing_system else Vector3.ZERO
 
 # Crouch API (delegates to PlayerCrouchSystem)
 var starting_height: float:
@@ -262,6 +285,17 @@ func _physics_process(delta: float) -> void:
 	# Process painting eat
 	if _painting_system:
 		_painting_system.process_eat(delta)
+
+	# Process pointing
+	if _pointing_system:
+		_pointing_system.process_pointing()
+
+	# Process stillness for ghost placement
+	if _footprint_system:
+		_footprint_system.process_stillness(delta)
+
+	if Input.is_action_just_pressed("pin_to_journal") and _journal_system:
+		_journal_system.try_pin_item()
 
 	if Input.is_action_just_pressed("reset_skin"):
 		MultiplayerEvents.emit_skin_reset()
@@ -526,3 +560,23 @@ func execute_steal_painting(texture: Texture2D, url: String, title: String, exhi
 func execute_drop_painting() -> void:
 	if _painting_system:
 		_painting_system.execute_drop()
+
+
+# =============================================================================
+# POINTING SYSTEM DELEGATION
+# =============================================================================
+
+func _on_reaction_fired(reaction_index: int, target: Vector3) -> void:
+	var main_node: Node = get_tree().current_scene
+	if main_node and main_node.has_method("_on_local_reaction"):
+		main_node._on_local_reaction(reaction_index, target)
+
+
+func _on_footstep_played() -> void:
+	if _footprint_system and is_local:
+		_footprint_system.place_footprint()
+
+
+func apply_network_pointing(pointing: bool, target: Vector3) -> void:
+	if _pointing_system:
+		_pointing_system.apply_network_pointing(pointing, target)

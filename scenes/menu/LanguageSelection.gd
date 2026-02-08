@@ -10,7 +10,7 @@ func _get_lang_array() -> Array:
 	return arr
 
 func _ready() -> void:
-	SettingsEvents.set_language.connect(_on_set_language)
+	SettingsEvents.language_changed.connect(_on_set_language)
 
 	_languages = _get_lang_array()
 	for i in range(1, len(_languages)):

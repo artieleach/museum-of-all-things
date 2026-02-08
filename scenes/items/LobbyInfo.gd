@@ -7,11 +7,11 @@ func _ready() -> void:
 	$SubViewport/Control/RichTextLabel.text = text
 	if not Engine.is_editor_hint():
 		_generate_mipmaps()
-		SettingsEvents.set_language.connect(_generate_mipmaps)
+		SettingsEvents.language_changed.connect(_generate_mipmaps)
 		
 func _exit_tree() -> void:
-	if SettingsEvents.set_language.is_connected(_generate_mipmaps):
-		SettingsEvents.set_language.disconnect(_generate_mipmaps)
+	if SettingsEvents.language_changed.is_connected(_generate_mipmaps):
+		SettingsEvents.language_changed.disconnect(_generate_mipmaps)
 
 func _generate_mipmaps(_lang: String = "") -> void:
 	$SubViewport.render_target_update_mode = SubViewport.UPDATE_ONCE

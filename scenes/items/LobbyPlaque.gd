@@ -25,12 +25,12 @@ func _ready() -> void:
 		$Subtitle.modulate = title_color
 		$Subtitle.text = subtitle_text
 		if not Engine.is_editor_hint():
-			SettingsEvents.set_language.connect(_resize_text)
+			SettingsEvents.language_changed.connect(_resize_text)
 			_resize_text()
 
 func _exit_tree() -> void:
-	if SettingsEvents.set_language.is_connected(_resize_text):
-		SettingsEvents.set_language.disconnect(_resize_text)
+	if SettingsEvents.language_changed.is_connected(_resize_text):
+		SettingsEvents.language_changed.disconnect(_resize_text)
 
 func _resize_text(_lang: String = "") -> void:
 	$Title.font_size = start_font_size_title

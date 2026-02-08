@@ -80,6 +80,7 @@ func set_fsr_quality(quality: int) -> void:
 			get_viewport().scaling_3d_scale = 1.0 / 3.0
 
 func set_fsr_sharpness(sharpness: float) -> void:
+	fsr_sharpness = sharpness
 	get_viewport().fsr_sharpness = sharpness
 
 func set_post_processing(_post_processing: String) -> void:

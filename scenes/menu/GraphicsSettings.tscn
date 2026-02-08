@@ -2,7 +2,6 @@
 
 [ext_resource type="Theme" uid="uid://dgt5fjkytx07d" path="res://assets/resources/menu_theme.tres" id="1_1c701"]
 [ext_resource type="Script" uid="uid://dtoqm3qrwbc3f" path="res://scenes/menu/GraphicsSettings.gd" id="2_lsij7"]
-
 [ext_resource type="FontFile" uid="uid://bxph8sc2vndn" path="res://assets/fonts/CormorantGaramond/CormorantGaramond-SemiBold.ttf" id="3_serif"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2yad8"]
@@ -272,7 +271,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 min_value = 20.0
-max_value = 240.0
+max_value = 244.0
 step = 5.0
 value = 60.0
 rounded = true

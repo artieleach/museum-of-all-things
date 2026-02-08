@@ -1,6 +1,8 @@
 extends Node3D
 ## Plays footstep sounds based on movement and floor surface type.
 
+signal footstep_played
+
 @onready var _audio_stream_player_3d: AudioStreamPlayer3D = $AudioStreamPlayer3D
 @onready var _water_enter_sound: AudioStream = preload("res://assets/sound/Footsteps/Water/Player Enters Water 2.ogg")
 
@@ -136,3 +138,4 @@ func _play_footstep(override_type: String = "") -> void:
 	playback.play_stream(step_sfx)
 
 	_last_in_water = step_type == "water"
+	footstep_played.emit()

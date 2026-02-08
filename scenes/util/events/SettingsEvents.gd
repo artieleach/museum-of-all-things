@@ -6,7 +6,7 @@ signal set_movement_speed(speed: float)
 signal set_invert_y(enabled: bool)
 signal set_mouse_sensitivity(factor: float)
 signal set_joypad_deadzone(value: float)
-signal set_language(language: String)
+signal language_changed(language: String)
 
 func emit_fullscreen_toggled(enabled: bool) -> void:
 	fullscreen_toggled.emit(enabled)

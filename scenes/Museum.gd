@@ -84,8 +84,9 @@ func sync_rider_to_room(room_title: String) -> void:
 	SettingsEvents.emit_set_current_room(room_title)
 	_start_queue()
 
-	# Update fog color
-	_tween_fog_color(ExhibitStyle.gen_fog(_current_room_title))
+	# Update fog color with mood
+	var rider_mood: int = _get_exhibit_mood(_current_room_title)
+	_tween_fog_color(ExhibitStyle.gen_fog(_current_room_title), rider_mood)
 
 
 func load_exhibit_for_rider(from_room: String, to_room: String) -> void:
@@ -183,7 +184,7 @@ func _ready() -> void:
 	ExhibitFetcher.commons_images_complete.connect(_on_commons_images_complete)
 	UIEvents.reset_custom_door.connect(_reset_custom_door)
 	UIEvents.set_custom_door.connect(_set_custom_door)
-	SettingsEvents.set_language.connect(_on_change_language)
+	SettingsEvents.language_changed.connect(_on_change_language)
 
 
 func init(player: Node) -> void:
@@ -263,6 +264,12 @@ func get_current_room() -> String:
 	return _current_room_title
 
 
+func _get_exhibit_mood(room_title: String) -> int:
+	if _exhibits.has(room_title) and _exhibits[room_title].has("mood"):
+		return _exhibits[room_title].mood
+	return ExhibitMood.Mood.DEFAULT
+
+
 func reset_to_lobby() -> void:
 	ExhibitGraph.reset()
 	for exit: Hall in $Lobby.exits:
@@ -302,19 +309,32 @@ func _set_current_room_title(title: String) -> void:
 	if RaceManager.is_race_active() and title == RaceManager.get_target_article():
 		RaceManager.notify_article_reached(NetworkManager.get_unique_id(), title)
 
-	_tween_fog_color(ExhibitStyle.gen_fog(_current_room_title))
+	var mood: int = _get_exhibit_mood(_current_room_title)
+	_tween_fog_color(ExhibitStyle.gen_fog(_current_room_title), mood)
 
 
-func _tween_fog_color(fog_color: Color) -> void:
+func _tween_fog_color(fog_color: Color, mood: int = ExhibitMood.Mood.DEFAULT) -> void:
 	var environment: Environment = $WorldEnvironment.environment
-	if environment.fog_light_color == fog_color:
-		return
 	if _fog_tween and _fog_tween.is_valid():
 		_fog_tween.kill()
 	_fog_tween = create_tween()
-	_fog_tween.tween_property(environment, "fog_light_color", fog_color, 1.0)
+	_fog_tween.set_parallel(true)
 	_fog_tween.set_trans(Tween.TRANS_LINEAR)
 	_fog_tween.set_ease(Tween.EASE_IN_OUT)
+
+	# Fog color from mood (overrides style-based fog for non-default moods)
+	var target_fog: Color = ExhibitMood.get_fog_color(mood) if mood != ExhibitMood.Mood.DEFAULT else fog_color
+	_fog_tween.tween_property(environment, "fog_light_color", target_fog, 1.0)
+
+	# Fog density (scaled relative to default depth of 10)
+	var target_depth: float = ExhibitMood.get_fog_depth(mood)
+	_fog_tween.tween_property(environment, "fog_density", 10.0 / target_depth, 1.0)
+
+	# Ambient light
+	var target_ambient_color: Color = ExhibitMood.get_ambient_color(mood)
+	var target_ambient_energy: float = ExhibitMood.get_ambient_energy(mood)
+	_fog_tween.tween_property(environment, "ambient_light_color", target_ambient_color, 1.0)
+	_fog_tween.tween_property(environment, "ambient_light_energy", target_ambient_energy, 1.0)
 
 
 # =============================================================================

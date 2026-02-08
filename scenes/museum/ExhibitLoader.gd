@@ -129,6 +129,11 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 		_loading_exhibits.erase(context.get("title", ""))
 		return
 
+	# Handle secret room content
+	if context.get("secret_room", false):
+		_on_secret_room_fetch_complete(context)
+		return
+
 	var backlink: bool = context.has("backlink") and context.backlink
 	var rider_load: bool = context.has("rider_load") and context.rider_load
 	var hall: Hall = context.entry if backlink else context.get("exit")
@@ -158,6 +163,7 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 	var doors: Array = data.doors
 	var items: Array = data.items
 	var extra_text: Array = data.extra_text
+	var mood: int = data.get("mood", ExhibitMood.Mood.DEFAULT)
 	var exhibit_height: int = get_free_exhibit_height()
 
 	var new_exhibit: Node3D = TiledExhibitGenerator.instantiate()
@@ -174,19 +180,16 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 		"start_pos": Vector3.UP * exhibit_height,
 		"min_room_dimension": _min_room_dimension,
 		"max_room_dimension": _max_room_dimension,
-		"room_count": max(
-			items.size() / _items_per_room_estimate,
-			_min_rooms_per_exhibit
-		),
 		"title": context.title,
 		"prev_title": prev_title,
 		"no_props": items.size() < 10,
 		"hall_type": hall_type,
 		"exit_limit": doors.size(),
+		"mood": mood,
 	})
 
 	if not _exhibits.has(context.title):
-		_exhibits[context.title] = { "entry": new_exhibit.entry, "exhibit": new_exhibit, "height": exhibit_height }
+		_exhibits[context.title] = { "entry": new_exhibit.entry, "exhibit": new_exhibit, "height": exhibit_height, "mood": mood }
 		_exhibit_hist.append(context.title)
 
 		# Spawn NPCs if enabled
@@ -219,6 +222,24 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 
 	_museum._queue_item_front(context.title, ExhibitFetcher.fetch_images.bind(image_titles, null))
 	_museum._queue_item(context.title, item_queue)
+
+	# Spawn persistent ghost silhouettes from previous visits
+	var ghosts: Array = TraceManager.get_ghosts(context.title)
+	for ghost_data: Dictionary in ghosts:
+		GhostSilhouette.spawn_from_data(new_exhibit, ghost_data)
+
+	# Queue secret room content fetch if exhibit has a secret room
+	if new_exhibit.has_secret_room():
+		var secret_article: String = SecretRoomContent.get_secret_article(context.title)
+		var secret_slots: Array = new_exhibit.get_secret_item_slots()
+		if secret_slots.size() > 0:
+			ExhibitFetcher.fetch([secret_article], {
+				"title": secret_article,
+				"secret_room": true,
+				"exhibit": new_exhibit,
+				"exhibit_title": context.title,
+				"secret_slots": secret_slots,
+			})
 
 	if backlink:
 		new_exhibit.entry.loader.body_entered.connect(_museum._on_loader_body_entered.bind(new_exhibit.entry, true))
@@ -296,6 +317,52 @@ func _cleanup_old_exhibits(new_title: String) -> void:
 				continue
 			erase_exhibit(key)
 			break
+
+
+func _on_secret_room_fetch_complete(context: Dictionary) -> void:
+	var result: Dictionary = ExhibitFetcher.get_result(context.title)
+	if not result:
+		return
+	var exhibit: Node3D = context.get("exhibit")
+	if not is_instance_valid(exhibit):
+		return
+
+	var secret_slots: Array = context.get("secret_slots", [])
+	if secret_slots.is_empty():
+		return
+
+	# Create items from the secret article
+	ItemProcessor.create_items(context.title, result)
+	var data: Dictionary
+	while not data:
+		data = await ItemProcessor.items_complete
+		if data.title != context.title:
+			data = {}
+
+	var items: Array = data.items
+	var slot_idx: int = 0
+	var image_titles: Array = []
+	for item_data: Dictionary in items:
+		if slot_idx >= secret_slots.size():
+			break
+		if item_data and item_data.has("type"):
+			if item_data.type == "image" and item_data.has("title") and item_data.title != "":
+				image_titles.append(item_data.title)
+			var slot: Array = secret_slots[slot_idx]
+			_museum._queue_item(context.exhibit_title, _add_item_at_slot.bind(exhibit, item_data, slot))
+			slot_idx += 1
+
+	if image_titles.size() > 0:
+		_museum._queue_item_front(context.exhibit_title, ExhibitFetcher.fetch_images.bind(image_titles, null))
+
+
+func _add_item_at_slot(exhibit: Node3D, item_data: Dictionary, slot: Array) -> void:
+	if not is_instance_valid(exhibit):
+		return
+	var item: Node3D = WallItem.instantiate()
+	item.position = GridUtils.grid_to_world(slot[0]) - slot[1] * 0.01
+	item.rotation.y = GridUtils.vec_to_rot(slot[1])
+	_init_item(exhibit, item, item_data)
 
 
 func erase_exhibit(key: String) -> void:

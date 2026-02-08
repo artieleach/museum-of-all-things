@@ -6,12 +6,12 @@ var start_font_size: int
 
 func _ready() -> void:
 	start_font_size = $Search.font_size
-	SettingsEvents.set_language.connect(_resize_text)
+	SettingsEvents.language_changed.connect(_resize_text)
 	_resize_text()
 
 func _exit_tree() -> void:
-	if SettingsEvents.set_language.is_connected(_resize_text):
-		SettingsEvents.set_language.disconnect(_resize_text)
+	if SettingsEvents.language_changed.is_connected(_resize_text):
+		SettingsEvents.language_changed.disconnect(_resize_text)
 
 func _resize_text(_lang: String = "") -> void:
 	for child in get_children():

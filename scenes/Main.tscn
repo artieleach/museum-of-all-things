@@ -14,7 +14,9 @@
 [ext_resource type="PackedScene" path="res://scenes/menu/RaceHUD.tscn" id="12_racehud"]
 [ext_resource type="PackedScene" path="res://scenes/menu/VictoryScreen.tscn" id="13_victory"]
 [ext_resource type="PackedScene" path="res://scenes/menu/ServerConsoleOverlay.tscn" id="14_srvcon"]
-[ext_resource type="PackedScene" path="res://scenes/menu/ExhibitMapOverlay.tscn" id="15_mapovly"]
+[ext_resource type="PackedScene" uid="uid://cp2i85wd6xow4" path="res://scenes/menu/ExhibitMapOverlay.tscn" id="15_mapovly"]
+[ext_resource type="PackedScene" uid="uid://fiwhbl6v82c0" path="res://scenes/menu/JournalOverlay.tscn" id="16_ft6cd"]
+[ext_resource type="PackedScene" path="res://scenes/menu/GuestbookOverlay.tscn" id="17_bb450"]
 
 [node name="Main" type="Node" unique_id=557895252]
 script = ExtResource("1_d7g3n")
@@ -85,14 +87,27 @@ sky_mode = 1
 [node name="TabMenu" type="CanvasLayer" parent="." unique_id=747814878]
 
 [node name="PlayerListOverlay" parent="TabMenu" unique_id=355744873 instance=ExtResource("11_plyrovly")]
+unique_name_in_owner = true
 visible = false
 
 [node name="RaceHUD" parent="TabMenu" unique_id=1376436483 instance=ExtResource("12_racehud")]
+unique_name_in_owner = true
 
-[node name="ServerConsoleOverlay" parent="TabMenu" instance=ExtResource("14_srvcon")]
+[node name="ServerConsoleOverlay" parent="TabMenu" unique_id=1406783071 instance=ExtResource("14_srvcon")]
+unique_name_in_owner = true
+visible = false
+anchors_preset = -1
+
+[node name="ExhibitMapOverlay" parent="TabMenu" unique_id=904511921 instance=ExtResource("15_mapovly")]
+unique_name_in_owner = true
 visible = false
 
-[node name="ExhibitMapOverlay" parent="TabMenu" instance=ExtResource("15_mapovly")]
+[node name="JournalOverlay" parent="TabMenu" unique_id=1483033310 instance=ExtResource("16_ft6cd")]
+unique_name_in_owner = true
+visible = false
+
+[node name="GuestbookOverlay" parent="TabMenu" unique_id=1573667143 instance=ExtResource("17_bb450")]
+unique_name_in_owner = true
 visible = false
 
 [connection signal="resume" from="CanvasLayer/Settings" to="." method="_on_settings_back"]

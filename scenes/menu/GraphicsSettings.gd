@@ -56,9 +56,9 @@ func ui_cancel_pressed() -> void:
 		call_deferred("_on_resume_pressed")
 
 func _on_visibility_changed() -> void:
-	if visible and is_inside_tree():
+	if is_visible_in_tree():
 		_load_settings()
-	elif _loaded_settings and not is_visible_in_tree():
+	elif _loaded_settings:
 		GraphicsManager.save_settings()
 
 func _load_settings() -> void:

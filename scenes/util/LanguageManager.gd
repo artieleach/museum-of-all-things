@@ -20,5 +20,5 @@ func set_locale(locale: String) -> void:
 	_locale = locale
 	TranslationServer.set_locale(locale)
 	ExhibitFetcher.set_language(locale)
-	SettingsEvents.set_language.emit(locale)
+	SettingsEvents.language_changed.emit(locale)
 	SettingsManager.save_settings(_settings_ns, _create_settings_obj())

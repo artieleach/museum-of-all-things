@@ -60,6 +60,8 @@ func clear_cache() -> void:
 			break
 		dir.remove(file)
 
+	_last_stat_time = 0
+
 func calculate_cache_size() -> void:
 	if not Platform.is_web():
 		WorkQueue.add_item(CACHE_STAT_QUEUE, ["size"])

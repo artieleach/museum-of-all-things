@@ -10,6 +10,8 @@ static func gen_floor(title: String) -> int:
 	return FLOOR_LIST[hash(title) % len(FLOOR_LIST)]
 
 static func gen_fog(title: String) -> Color:
+	if title == "Lobby":
+		return Color.WHITE
 	return FOG_LIST[hash(title) % len(FOG_LIST)]
 
 static func gen_item_material(title: String) -> String:

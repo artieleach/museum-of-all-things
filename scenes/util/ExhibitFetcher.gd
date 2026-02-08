@@ -24,7 +24,7 @@ var random_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?acti
 
 const RANDOM_LEVEL4_ENDPOINT: String = "https://randomincategory.toolforge.org/?category=A-Class%20level-3%20vital%20articles&category2=B-Class%20level-3%20vital%20articles&category3=C-Class%20level-3%20vital%20articles&category4=FA-Class%20level-3%20vital%20articles&category5=FL-Class%20level-3%20vital%20articles&category6=GA-Class%20level-3%20vital%20articles&category7=List-Class%20level-3%20vital%20articles&category8=Start-Class%20level-3%20vital%20articles&category9=Stub-Class%20level-3%20vital%20articles&server=en.wikipedia.org&cmnamespace=&cmtype=&returntype=subject"
 
-var wikitext_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops&ppprop=wikibase_item&explaintext=true&rvprop=content&format=json&redirects=1&origin=*&titles="
+var wikitext_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops|categories&ppprop=wikibase_item&explaintext=true&rvprop=content&cllimit=50&clshow=!hidden&format=json&redirects=1&origin=*&titles="
 var images_endpoint: String = "https://" + lang + ".wikipedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|url&iiurlwidth=640&iiextmetadatafilter=LicenseShortName|Artist&format=json&redirects=1&origin=*&titles="
 var wikidata_endpoint: String = "https://www.wikidata.org/w/api.php?action=wbgetclaims&uselang=" + lang + "&format=json&origin=*&entity="
 
@@ -84,7 +84,7 @@ func set_language(language: String) -> void:
 	wikipedia_prefix = "https://" + language + ".wikipedia.org/wiki/"
 	search_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&format=json&list=search&srprop=title&srsearch="
 	random_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=0&prop=info"
-	wikitext_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops&ppprop=wikibase_item&explaintext=true&rvprop=content&format=json&redirects=1&titles="
+	wikitext_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&prop=revisions|extracts|pageprops|categories&ppprop=wikibase_item&explaintext=true&rvprop=content&cllimit=50&clshow=!hidden&format=json&redirects=1&titles="
 	images_endpoint = "https://" + language + ".wikipedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|url&iiurlwidth=640&iiextmetadatafilter=LicenseShortName|Artist&format=json&redirects=1&titles="
 	wikidata_endpoint = "https://www.wikidata.org/w/api.php?action=wbgetclaims&uselang=" + language + "&format=json&entity="
 	wikimedia_commons_category_images_endpoint = "https://commons.wikimedia.org/w/api.php?action=query&uselang=" + language + "&generator=categorymembers&gcmtype=file&gcmlimit=max&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&iiextmetadatafilter=Artist|LicenseShortName&format=json&gcmtitle="
@@ -252,6 +252,7 @@ func _fetch_wikitext(titles: Array, context: Variant) -> void:
 	var ctx := {
 		"titles": titles,
 		"new_titles": new_titles,
+		"queue": WorkQueue.get_current_exhibit()
 	}
 
 	# dispatching mediawiki request
@@ -436,6 +437,12 @@ func _on_wikitext_request_complete(res: Dictionary, ctx: Dictionary, caller_ctx:
 				_set_page_field(page.title, "wikitext", revisions[0]["*"])
 			if page.has("extract"):
 				_set_page_field(page.title, "extract", page.extract)
+			if page.has("categories"):
+				var cat_names: Array = []
+				for cat: Dictionary in page.categories:
+					if cat.has("title"):
+						cat_names.append(cat.title)
+				_append_page_field(page.title, "categories", cat_names)
 			if page.has("pageprops") and page.pageprops.has("wikibase_item"):
 				var item = page.pageprops.wikibase_item
 				_set_page_field(page.title, "wikidata_entity", item)
