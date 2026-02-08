@@ -8,13 +8,13 @@ signal game_start_requested
 signal multiplayer_start_requested
 
 var _main: Node = null
-var _canvas_layer: CanvasLayer = null
+var _menu_layer: CanvasLayer = null
 var _menu_nav_queue: Array = []
 
 
 func init(main: Node, canvas_layer: CanvasLayer) -> void:
 	_main = main
-	_canvas_layer = canvas_layer
+	_menu_layer = canvas_layer
 
 
 func get_nav_queue() -> Array:
@@ -22,12 +22,12 @@ func get_nav_queue() -> Array:
 
 
 func open_menu(menu: Menu) -> void:
-	_canvas_layer.visible = menu != Menu.NONE
-	_canvas_layer.get_node("MainMenu").visible = menu == Menu.MAIN
-	_canvas_layer.get_node("PauseMenu").visible = menu == Menu.PAUSE
-	_canvas_layer.get_node("Settings").visible = menu == Menu.SETTINGS
-	_canvas_layer.get_node("PopupTerminalMenu").visible = menu == Menu.TERMINAL
-	_canvas_layer.get_node("MultiplayerMenu").visible = menu == Menu.MULTIPLAYER
+	_menu_layer.visible = menu != Menu.NONE
+	_menu_layer.get_node("MainMenu").visible = menu == Menu.MAIN
+	_menu_layer.get_node("PauseMenu").visible = menu == Menu.PAUSE
+	_menu_layer.get_node("Settings").visible = menu == Menu.SETTINGS
+	_menu_layer.get_node("PopupTerminalMenu").visible = menu == Menu.TERMINAL
+	_menu_layer.get_node("MultiplayerMenu").visible = menu == Menu.MULTIPLAYER
 
 
 func close_menus() -> void:
@@ -55,7 +55,7 @@ func open_multiplayer_menu() -> void:
 
 
 func is_menu_visible() -> bool:
-	return _canvas_layer.visible
+	return _menu_layer.visible
 
 
 func on_main_menu_settings() -> void:

@@ -56,9 +56,20 @@ check_files() {
     echo ""
 }
 
+cleanup_ssh() {
+    if [[ -n "$SSH_CONTROL_PATH" ]]; then
+        ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" "${REMOTE_USER}@${REMOTE_HOST}" 2>/dev/null || true
+    fi
+}
+
 deploy_files() {
     echo -e "${BLUE}Deploying to ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}${NC}"
     echo ""
+
+    # Set up SSH multiplexing so we only authenticate once
+    SSH_CONTROL_PATH="/tmp/ssh-moat-deploy-$$"
+    SSH_OPTS="-o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=60 -o ConnectTimeout=10"
+    trap cleanup_ssh EXIT
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo -e "${YELLOW}[DRY RUN]${NC} Would execute:"
@@ -70,7 +81,7 @@ deploy_files() {
 
     # Ensure remote directory exists
     echo "Ensuring remote directory exists..."
-    if ssh -o ConnectTimeout=10 "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_PATH}"; then
+    if ssh $SSH_OPTS "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_PATH}"; then
         echo -e "  ${GREEN}✓${NC} Directory ready"
     else
         echo -e "  ${RED}✗${NC} Failed to create directory"
@@ -79,29 +90,29 @@ deploy_files() {
 
     # Stop server if running (file may be locked)
     echo "Stopping server service..."
-    if ssh -o ConnectTimeout=10 "${REMOTE_USER}@${REMOTE_HOST}" "systemctl stop moat-server 2>/dev/null || true"; then
+    if ssh $SSH_OPTS "${REMOTE_USER}@${REMOTE_HOST}" "systemctl stop moat-server 2>/dev/null || true"; then
         echo -e "  ${GREEN}✓${NC} Service stopped"
     fi
 
     # Upload binary
     echo "Uploading server binary..."
-    if scp -o ConnectTimeout=10 "$SERVER_BINARY" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/"; then
+    if scp $SSH_OPTS "$SERVER_BINARY" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/"; then
         echo -e "  ${GREEN}✓${NC} Uploaded"
     else
         echo -e "  ${RED}✗${NC} Failed to upload"
         # Try to restart the service even if upload failed
-        ssh -o ConnectTimeout=10 "${REMOTE_USER}@${REMOTE_HOST}" "systemctl start moat-server 2>/dev/null || true"
+        ssh $SSH_OPTS "${REMOTE_USER}@${REMOTE_HOST}" "systemctl start moat-server 2>/dev/null || true"
         return 1
     fi
 
     # Ensure binary is executable and set ownership
     echo "Setting permissions..."
-    ssh -o ConnectTimeout=10 "${REMOTE_USER}@${REMOTE_HOST}" "chmod +x ${REMOTE_PATH}/MuseumOfAllThings_Server.x86_64 && chown artie:artie ${REMOTE_PATH}/MuseumOfAllThings_Server.x86_64"
+    ssh $SSH_OPTS "${REMOTE_USER}@${REMOTE_HOST}" "chmod +x ${REMOTE_PATH}/MuseumOfAllThings_Server.x86_64 && chown artie:artie ${REMOTE_PATH}/MuseumOfAllThings_Server.x86_64"
     echo -e "  ${GREEN}✓${NC} Permissions set"
 
     # Start the service back up
     echo "Starting server service..."
-    if ssh -o ConnectTimeout=10 "${REMOTE_USER}@${REMOTE_HOST}" "systemctl start moat-server"; then
+    if ssh $SSH_OPTS "${REMOTE_USER}@${REMOTE_HOST}" "systemctl start moat-server"; then
         echo -e "  ${GREEN}✓${NC} Service started"
     else
         echo -e "  ${RED}✗${NC} Failed to start service"
@@ -165,4 +176,5 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Deployment complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo -e "Server: ${CYAN}${REMOTE_HOST}:7777${NC}"
+echo -e "Server:  ${CYAN}ws://${REMOTE_HOST}:7777${NC}  (native)"
+echo -e "         ${CYAN}wss://${REMOTE_HOST}${NC}       (web, via reverse proxy)"

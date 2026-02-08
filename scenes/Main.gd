@@ -28,6 +28,13 @@ var _pointing_controller: PointingController = null
 @onready var _server_console_overlay: Control = %ServerConsoleOverlay
 @onready var _map_overlay: Control = %ExhibitMapOverlay
 @onready var _guestbook_overlay: GuestbookOverlay = %GuestbookOverlay
+@onready var _menu_layer: CanvasLayer = %MenuLayer
+@onready var _fps_label: Label = %FpsLabel
+@onready var _museum: Node3D = %Museum
+@onready var _game_launch_sting: AudioStreamPlayer = %GameLaunchSting
+@onready var _crt_post_processing: CanvasLayer = %CRTPostProcessing
+@onready var _world_light: DirectionalLight3D = %WorldLight
+@onready var _pause_menu: Control = %PauseMenu
 var game_started: bool = false
 
 
@@ -55,7 +62,7 @@ func _parse_command_line() -> void:
 func _ready() -> void:
 	# Initialize subsystems first
 	_menu_controller = MainMenuController.new()
-	_menu_controller.init(self, $CanvasLayer)
+	_menu_controller.init(self, _menu_layer)
 	_menu_controller.game_start_requested.connect(_start_game)
 	_menu_controller.multiplayer_start_requested.connect(_on_multiplayer_start_game)
 	add_child(_menu_controller)
@@ -76,17 +83,6 @@ func _ready() -> void:
 	_pointing_controller.init(self)
 	add_child(_pointing_controller)
 
-	# Journal overlay
-	var journal_scene: PackedScene = preload("res://scenes/menu/JournalOverlay.tscn")
-	_journal_overlay = journal_scene.instantiate()
-	$TabMenu.add_child(_journal_overlay)
-	_journal_overlay.closed.connect(_on_journal_closed)
-
-	# Guestbook overlay
-	var guestbook_scene: PackedScene = preload("res://scenes/menu/GuestbookOverlay.tscn")
-	_guestbook_overlay = guestbook_scene.instantiate()
-	$TabMenu.add_child(_guestbook_overlay)
-
 	_parse_command_line()
 
 	if _multiplayer_controller.is_server_mode():
@@ -94,7 +90,7 @@ func _ready() -> void:
 		return
 
 	if OS.has_feature("movie"):
-		$FpsLabel.visible = false
+		_fps_label.visible = false
 
 	_recreate_player()
 
@@ -108,7 +104,7 @@ func _ready() -> void:
 	UIEvents.quit_requested.connect(_on_quit_requested)
 
 	# Race signals
-	$CanvasLayer/PauseMenu.start_race.connect(_on_start_race_pressed)
+	_pause_menu.start_race.connect(_on_start_race_pressed)
 	RaceManager.race_started.connect(_on_race_started)
 	ExhibitFetcher.random_complete.connect(_on_random_article_complete)
 
@@ -123,13 +119,13 @@ func _ready() -> void:
 
 	call_deferred("_play_sting")
 
-	$DirectionalLight3D.visible = Platform.is_compatibility_renderer()
+	_world_light.visible = Platform.is_compatibility_renderer()
 
 	_pause_game()
 
 
 func _play_sting() -> void:
-	$GameLaunchSting.play()
+	_game_launch_sting.play()
 
 
 func _recreate_player() -> void:
@@ -150,7 +146,7 @@ func _recreate_player() -> void:
 
 
 func _change_post_processing(post_processing: String) -> void:
-	$CRTPostProcessing.visible = post_processing == "crt"
+	_crt_post_processing.visible = post_processing == "crt"
 
 
 func _start_game() -> void:
@@ -161,13 +157,13 @@ func _start_game() -> void:
 	_map_overlay.restore_after_pause()
 	if not game_started:
 		game_started = true
-		$Museum.init(_player)
+		_museum.init(_player)
 
 
 func _pause_game() -> void:
 	_player.pause()
 	if game_started:
-		if $CanvasLayer.visible:
+		if _menu_layer.visible:
 			return
 		_menu_controller.open_pause_menu()
 	else:
@@ -212,7 +208,7 @@ func _on_pause_menu_settings() -> void:
 func _on_pause_menu_return_to_lobby() -> void:
 	_player.rotation.y = starting_rotation
 	_player.position = starting_point
-	$Museum.reset_to_lobby()
+	_museum.reset_to_lobby()
 	_start_game()
 
 
@@ -233,11 +229,11 @@ func _input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("ui_accept"):
 		UIEvents.emit_ui_accept_pressed()
 
-	if Input.is_action_just_pressed("ui_cancel") and $CanvasLayer.visible:
+	if Input.is_action_just_pressed("ui_cancel") and _menu_layer.visible:
 		UIEvents.emit_ui_cancel_pressed()
 
 	if Input.is_action_just_pressed("show_fps"):
-		$FpsLabel.visible = not $FpsLabel.visible
+		_fps_label.visible = not _fps_label.visible
 
 	if Input.is_action_just_pressed("toggle_server_console"):
 		if _multiplayer_controller.is_multiplayer_game():
@@ -252,7 +248,7 @@ func _input(event: InputEvent) -> void:
 				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 				_player.pause()
 
-	if event.is_action_pressed("toggle_map") and not $CanvasLayer.visible:
+	if event.is_action_pressed("toggle_map") and not _menu_layer.visible:
 		_map_overlay.cycle_mode()
 
 	if event.is_action_pressed("pause"):
@@ -261,14 +257,14 @@ func _input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("free_pointer"):
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if event.is_action_pressed("click") and not $CanvasLayer.visible:
+	if event.is_action_pressed("click") and not _menu_layer.visible:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 			var overlay_open: bool = (_journal_overlay and _journal_overlay.is_open()) or (_guestbook_overlay and _guestbook_overlay.is_open())
 			if not overlay_open:
 				Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 	# Tab key for player list overlay
-	if _multiplayer_controller.is_multiplayer_game() and not $CanvasLayer.visible:
+	if _multiplayer_controller.is_multiplayer_game() and not _menu_layer.visible:
 		if event.is_action_pressed("show_player_list"):
 			player_list_overlay.visible = true
 		elif event.is_action_released("show_player_list"):
@@ -276,11 +272,11 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if $FpsLabel.visible:
+	if _fps_label.visible:
 		_fps_update_timer -= delta
 		if _fps_update_timer <= 0.0:
 			_fps_update_timer = 0.5
-			$FpsLabel.text = str(Engine.get_frames_per_second())
+			_fps_label.text = str(Engine.get_frames_per_second())
 
 	# Broadcast local player position to other players
 	if _multiplayer_controller.process_position_sync(delta, _player):
@@ -397,7 +393,7 @@ func _on_race_started(target_article: String) -> void:
 	_player.position = starting_point
 
 	# Reset to lobby
-	$Museum.reset_to_lobby()
+	_museum.reset_to_lobby()
 
 	# Start game (close menus, capture mouse)
 	_start_game()
@@ -430,7 +426,7 @@ func _start_dedicated_server() -> void:
 	game_started = true
 
 	# Initialize museum without a local player
-	$Museum.init(null)
+	_museum.init(null)
 
 	Log.info("Main", "Server started successfully. Waiting for players...")
 
@@ -564,7 +560,7 @@ func _notify_game_started() -> void:
 @rpc("authority", "call_remote", "reliable")
 func _sync_exhibit_to_peer(exhibit_title: String) -> void:
 	_debug_log("Main: Syncing exhibit to late joiner: " + exhibit_title)
-	$Museum.sync_to_exhibit(exhibit_title)
+	_museum.sync_to_exhibit(exhibit_title)
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")

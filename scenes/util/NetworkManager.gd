@@ -12,7 +12,7 @@ signal player_room_changed(id: int, room: String)
 const DEFAULT_PORT := Constants.DEFAULT_PORT
 const MAX_PLAYERS := Constants.MAX_PLAYERS
 
-var peer: ENetMultiplayerPeer = null
+var peer: WebSocketMultiplayerPeer = null
 var player_info: Dictionary = {}  # peer_id -> { name: String, color: Color, skin_url: String }
 var local_player_name: String = "Player"
 var local_player_color: Color = Color(0.2, 0.5, 0.8, 1.0)  # Default blue
@@ -28,8 +28,8 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 func host_game(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
-	peer = ENetMultiplayerPeer.new()
-	var error = peer.create_server(port, MAX_PLAYERS)
+	peer = WebSocketMultiplayerPeer.new()
+	var error := peer.create_server(port)
 	if error != OK:
 		peer = null
 		return error
@@ -47,8 +47,13 @@ func host_game(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 	return OK
 
 func join_game(address: String, port: int = DEFAULT_PORT) -> Error:
-	peer = ENetMultiplayerPeer.new()
-	var error = peer.create_client(address, port)
+	peer = WebSocketMultiplayerPeer.new()
+	var url: String
+	if Platform.is_web():
+		url = "wss://%s/game" % address  # Through reverse proxy (TLS required by browser)
+	else:
+		url = "ws://%s:%d" % [address, port]
+	var error := peer.create_client(url)
 	if error != OK:
 		peer = null
 		return error
@@ -56,7 +61,7 @@ func join_game(address: String, port: int = DEFAULT_PORT) -> Error:
 	multiplayer.multiplayer_peer = peer
 	is_hosting = false
 
-	Log.debug("Network", "Joining game at %s:%d" % [address, port])
+	Log.debug("Network", "Joining game at %s" % url)
 
 	return OK
 
