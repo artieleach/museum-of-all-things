@@ -1,6 +1,9 @@
 extends Node
 ## Main game controller handling initialization and delegating to subsystems.
 
+
+const _SKIN_EQUIP_SOUND: AudioStream = preload("res://assets/sound/UI/UI Crystal 1.ogg")
+
 @export var Player: PackedScene = preload("res://scenes/Player.tscn")
 @export var NetworkPlayer: PackedScene = preload("res://scenes/NetworkPlayer.tscn")
 @export var smooth_movement: bool = false
@@ -318,7 +321,6 @@ func _save_skin_preference(url: String) -> void:
 	SettingsManager.save_settings("player", player_settings)
 
 
-const _SKIN_EQUIP_SOUND: AudioStream = preload("res://assets/sound/UI/UI Crystal 1.ogg")
 
 func _on_skin_selected(url: String, _texture: ImageTexture) -> void:
 	NetworkManager.set_local_player_skin(url)
