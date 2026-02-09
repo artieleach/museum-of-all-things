@@ -6,6 +6,8 @@ var MIPMAP_FRAME_PACING = 6
 var thread: Thread
 
 func _ready():
+	if Platform.is_web():
+		MIPMAP_FRAME_PACING = 1
 	WorkQueue.setup_queue(MIPMAP_QUEUE, MIPMAP_FRAME_PACING)
 
 	if Platform.is_using_threads():
@@ -23,7 +25,9 @@ func _thread_loop():
 
 func _process(_delta: float) -> void:
 	if not Platform.is_using_threads():
-		_mipmap_process_item()
+		var batch: int = 3 if Platform.is_web() else 1
+		for _i in batch:
+			_mipmap_process_item()
 
 func _mipmap_process_item():
 	var item = WorkQueue.process_queue(MIPMAP_QUEUE)
@@ -35,12 +39,18 @@ func _mipmap_process_item():
 			# This item only happens on the compatibility renderer.
 			var image = item.texture.get_image()
 			image.flip_y()
-			_generate_mipmaps(image, item.callback)
+			if Platform.is_compatibility_renderer():
+				_create_and_emit_texture(image, item.callback)
+			else:
+				_generate_mipmaps(image, item.callback)
 
 		"create_image":
 			# This item only happens on RD renderers.
 			var image = Image.create_from_data(item.width, item.height, false, item.format, item.data)
-			_generate_mipmaps(image, item.callback)
+			if Platform.is_compatibility_renderer():
+				_create_and_emit_texture(image, item.callback)
+			else:
+				_generate_mipmaps(image, item.callback)
 
 		"generate_mipmaps":
 			var image = item.image

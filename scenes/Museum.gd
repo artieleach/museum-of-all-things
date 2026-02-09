@@ -156,7 +156,7 @@ func _ready() -> void:
 	_grid = $Lobby/GridMap
 
 	_queue_timer = Timer.new()
-	_queue_timer.wait_time = QUEUE_DELAY
+	_queue_timer.wait_time = 0.0 if Platform.is_web() else QUEUE_DELAY
 	_queue_timer.one_shot = true
 	_queue_timer.timeout.connect(_process_item_queue)
 	add_child(_queue_timer)
@@ -429,9 +429,13 @@ func _process_item_queue() -> void:
 	if queue.is_empty():
 		_queue_running = false
 		return
-	var callable: Callable = queue.pop_front()
+	var batch: int = 5 if Platform.is_web() else 1
+	for _i in batch:
+		if queue.is_empty():
+			break
+		var callable: Callable = queue.pop_front()
+		callable.call()
 	_queue_running = true
-	callable.call()
 	_queue_timer.start()
 
 

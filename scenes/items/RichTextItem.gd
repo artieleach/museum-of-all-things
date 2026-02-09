@@ -53,8 +53,20 @@ func _center_vertically(label: RichTextLabel) -> void:
 
 	# Text is positioned — render once and capture the texture
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-	MipmapThread.get_viewport_texture_with_mipmaps(vp, func(texture: Variant) -> void:
+	if Platform.is_compatibility_renderer():
+		# Skip MipmapThread entirely — grab viewport texture directly
+		await RenderingServer.frame_post_draw
+		if not is_instance_valid(vp):
+			return
+		var image: Image = vp.get_texture().get_image()
+		image.flip_y()
+		var texture: ImageTexture = ImageTexture.create_from_image(image)
 		if is_instance_valid(self):
 			$Sprite3D.texture = texture
 		vp.queue_free()
-	)
+	else:
+		MipmapThread.get_viewport_texture_with_mipmaps(vp, func(texture: Variant) -> void:
+			if is_instance_valid(self):
+				$Sprite3D.texture = texture
+			vp.queue_free()
+		)

@@ -8,6 +8,10 @@ var _current_exhibit: String = "Lobby"
 var _quitting: bool = false
 var _queue_map: Dictionary = {}
 
+func _ready() -> void:
+	if Platform.is_web():
+		DEFAULT_FRAME_PACING = 1
+
 func _exit_tree() -> void:
 	set_quitting()
 

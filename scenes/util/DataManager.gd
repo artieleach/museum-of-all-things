@@ -5,7 +5,7 @@ signal image_load_error(url: String, error: String)
 
 const COMMON_HEADERS: Array[String] = ["accept: image/png, image/jpeg; charset=utf-8"]
 const TEXTURE_QUEUE: String = "Textures"
-const TEXTURE_FRAME_PACING: int = 6
+var TEXTURE_FRAME_PACING: int = 6
 const SUPPORTED_IMAGE_FORMATS: Array[String] = ["PNG", "JPEG", "SVG", "WebP"]
 
 var _in_flight: Dictionary = {}
@@ -14,6 +14,8 @@ var _texture_load_thread_pool_size: int = 5
 var _texture_load_thread_pool: Array[Thread] = []
 
 func _ready() -> void:
+	if Platform.is_web():
+		TEXTURE_FRAME_PACING = 1
 	WorkQueue.setup_queue(TEXTURE_QUEUE, TEXTURE_FRAME_PACING)
 
 	if not Platform.is_web():
@@ -43,7 +45,9 @@ func _texture_load_thread_loop():
 
 func _process(_delta: float) -> void:
 	if not Platform.is_using_threads():
-		_texture_load_item()
+		var batch: int = 3 if Platform.is_web() else 1
+		for _i in batch:
+			_texture_load_item()
 
 func _texture_load_item():
 	var item = WorkQueue.process_queue(TEXTURE_QUEUE)
@@ -101,7 +105,10 @@ func _texture_load_item():
 				_emit_error(item.url, "Image has zero width")
 				return
 
-			_generate_mipmaps(item.url, image, item.ctx)
+			if Platform.is_compatibility_renderer():
+				_create_and_emit_texture(item.url, image, item.ctx)
+			else:
+				_generate_mipmaps(item.url, image, item.ctx)
 
 		"generate_mipmaps":
 			var image = item.image

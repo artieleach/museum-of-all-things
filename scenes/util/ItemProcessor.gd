@@ -68,7 +68,9 @@ func _processor_thread_loop() -> void:
 
 func _process(_delta: float) -> void:
 	if not Platform.is_using_threads():
-		_processor_thread_item()
+		var batch: int = 2 if Platform.is_web() else 1
+		for _i in batch:
+			_processor_thread_item()
 
 func _processor_thread_item() -> void:
 		var item: Variant = WorkQueue.process_queue(PROCESSOR_QUEUE)

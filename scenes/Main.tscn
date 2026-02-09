@@ -11,7 +11,7 @@
 [ext_resource type="AudioStream" uid="uid://b1h0hsbf5yxji" path="res://assets/sound/UI/UI Game Launch Sting/Game Launch Sting.ogg" id="9_ketwq"]
 [ext_resource type="PackedScene" uid="uid://bmp7qk2xnj5vy" path="res://scenes/menu/MultiplayerMenu.tscn" id="10_mpmenu"]
 [ext_resource type="PackedScene" uid="uid://bj7vvqjer0u7e" path="res://scenes/menu/PlayerListOverlay.tscn" id="11_plyrovly"]
-[ext_resource type="PackedScene" path="res://scenes/menu/RaceHUD.tscn" id="12_racehud"]
+[ext_resource type="PackedScene" uid="uid://cdw3l0qfrg837" path="res://scenes/menu/RaceHUD.tscn" id="12_racehud"]
 [ext_resource type="PackedScene" path="res://scenes/menu/VictoryScreen.tscn" id="13_victory"]
 [ext_resource type="PackedScene" path="res://scenes/menu/ServerConsoleOverlay.tscn" id="14_srvcon"]
 [ext_resource type="PackedScene" uid="uid://cp2i85wd6xow4" path="res://scenes/menu/ExhibitMapOverlay.tscn" id="15_mapovly"]
@@ -65,7 +65,7 @@ visible = false
 [node name="MultiplayerMenu" parent="MenuLayer" unique_id=230795045 instance=ExtResource("10_mpmenu")]
 visible = false
 
-[node name="VictoryScreen" parent="MenuLayer" unique_id=1583711091 instance=ExtResource("13_victory")]
+[node name="TabMenu#VictoryScreen" parent="." unique_id=1583711091 instance=ExtResource("13_victory")]
 visible = false
 
 [node name="FpsLabel" type="Label" parent="." unique_id=857624085]
