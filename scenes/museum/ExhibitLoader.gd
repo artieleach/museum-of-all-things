@@ -8,6 +8,7 @@ var _backlink_map: Dictionary = {}
 var _exhibit_hist: Array = []
 var _used_exhibit_heights: Dictionary = {}
 var _loading_exhibits: Dictionary = {}  # Track in-flight fetches to prevent duplicates
+var _logged_slot_cap: bool = false
 
 var _starting_height: int = 40
 var _height_increment: int = 20
@@ -168,6 +169,7 @@ func on_fetch_complete(_titles: Array, context: Dictionary) -> void:
 
 	var new_exhibit: Node3D = TiledExhibitGenerator.instantiate()
 	_museum.add_child(new_exhibit)
+	_logged_slot_cap = false
 
 	# For rider_load without hall, use default hall_type; don't connect exit_added
 	var hall_type: Array = hall.hall_type if is_instance_valid(hall) else [0, 0]
@@ -387,7 +389,9 @@ func _add_item(exhibit: Node3D, item_data: Dictionary) -> void:
 		if exhibit.has_item_slot():
 			_add_item(exhibit, item_data)
 		else:
-			Log.error("ExhibitLoader", "unable to add item slots to exhibit")
+			if not _logged_slot_cap:
+				Log.error("ExhibitLoader", "unable to add item slots to exhibit (further messages suppressed)")
+				_logged_slot_cap = true
 		return
 
 	var item: Node3D = WallItem.instantiate()
